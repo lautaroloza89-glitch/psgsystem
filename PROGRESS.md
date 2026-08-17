@@ -73,7 +73,7 @@ escuela-patin-app/
 
 | # | Módulo | Depende de | Estado |
 |---|---|---|---|
-| 1 | Setup base (proyecto, config, deploy vacío) | — | 🟡 En progreso |
+| 1 | Setup base (proyecto, config, deploy vacío) | — | ✅ Terminado |
 | 2 | Modelo de datos (tablas en Supabase) | 1 | ⬜ Pendiente |
 | 3 | Auth + roles | 2 | ⬜ Pendiente |
 | 4 | Módulo Tareas/Proyectos | 3 | ⬜ Pendiente |
@@ -95,8 +95,8 @@ Estados: ⬜ Pendiente · 🟡 En progreso · ✅ Terminado
 
 ## 7. Estado actual
 
-**Módulo activo:** #1 — Setup base (🟡 en progreso).
-**Próximo paso:** completar el setup (deps instaladas, configs de Next/TypeScript/Tailwind, git inicializado con primer commit, deploy vacío en Vercel).
+**Módulo activo:** #2 — Modelo de datos (⬜ pendiente).
+**Próximo paso:** definir las tablas en Supabase a partir de `docs/modelo-datos.md`.
 
 ## 8. Log de sesiones
 
@@ -104,4 +104,4 @@ Estados: ⬜ Pendiente · 🟡 En progreso · ✅ Terminado
 
 | Fecha | Módulo trabajado | Resultado |
 |---|---|---|
-| — | — | — |
+| 2026-08-17 | 1 — Setup base | Next.js + TypeScript + Tailwind v4 configurados, build local OK. Git inicializado, primer commit pusheado a `github.com/lautaroloza89-glitch/PSG---System` (main). Proyecto Supabase creado y keys cargadas en `.env.local`. Deploy vacío funcionando en `https://psgsystem.vercel.app` (200 OK, placeholder visible). Módulo cerrado ✅. |
