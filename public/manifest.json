@@ -1,0 +1,10 @@
+{
+  "name": "Escuela de Patín",
+  "short_name": "Patín App",
+  "description": "App de gestión para escuela de patín",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": []
+}
