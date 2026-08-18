@@ -33,7 +33,7 @@ export function EstadoSelector({
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-2">
-        <label htmlFor="estado" className="text-sm font-medium">
+        <label htmlFor="estado" className="text-label font-medium">
           Estado
         </label>
         {pending && <Spinner className="h-3.5 w-3.5 text-text-subtle" />}

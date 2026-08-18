@@ -26,7 +26,7 @@ export function TareaCard({
       className="block rounded-lg border border-border bg-surface p-5 shadow-xs transition duration-[var(--duration-base)] ease-standard hover:border-border-strong hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
     >
       <div className="flex items-start justify-between gap-2">
-        <Titulo className="text-base font-semibold">{tarea.titulo}</Titulo>
+        <Titulo className="text-lg font-semibold">{tarea.titulo}</Titulo>
         <EstadoBadge estado={tarea.estado} />
       </div>
       <p className="mt-2 text-sm text-text-subtle">

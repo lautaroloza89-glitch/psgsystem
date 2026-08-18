@@ -4,7 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { FiltroEstadoTabs } from "@/components/tareas/FiltroEstadoTabs";
 import { TareaCard, type TareaCardData } from "@/components/tareas/TareaCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { EstadoTarea } from "@/types";
+
+const MENSAJE_VACIO: Record<EstadoTarea | "Todas", string> = {
+  Todas: "No hay tareas para mostrar.",
+  Pendiente: "No hay tareas pendientes.",
+  "En progreso": "No hay tareas en progreso.",
+  Completada: "No hay tareas completadas.",
+};
 
 export const metadata: Metadata = { title: "Tareas" };
 
@@ -65,7 +73,7 @@ export default async function TareasPage({
       <FiltroEstadoTabs actual={filtroEstado ?? "Todas"} />
 
       {tareas.length === 0 ? (
-        <p className="text-sm text-text-subtle">No hay tareas para mostrar.</p>
+        <EmptyState mensaje={MENSAJE_VACIO[filtroEstado ?? "Todas"]} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tareas.map((tarea) => (

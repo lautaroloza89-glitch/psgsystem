@@ -5,6 +5,7 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { TareaCard, type TareaCardData } from "@/components/tareas/TareaCard";
 import { TurnoCard, type TurnoCardData } from "@/components/horarios/TurnoCard";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { EstadoTarea, EstadoTurno } from "@/types";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -135,7 +136,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
         {tareasProximas.length === 0 ? (
-          <p className="text-sm text-text-subtle">No hay tareas pendientes.</p>
+          <EmptyState mensaje="No hay tareas pendientes." />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tareasProximas.map((tarea) => (
@@ -156,7 +157,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
         {turnosProximos.length === 0 ? (
-          <p className="text-sm text-text-subtle">No hay turnos próximos.</p>
+          <EmptyState mensaje="No hay turnos próximos." />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {turnosProximos.map((turno) => (

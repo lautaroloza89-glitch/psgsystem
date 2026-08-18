@@ -37,7 +37,7 @@ export function TurnoForm({
   return (
     <form action={formAction} className="space-y-5">
       <div className="space-y-1.5">
-        <label htmlFor="fecha" className="text-sm font-medium">
+        <label htmlFor="fecha" className="text-label font-medium">
           Fecha
         </label>
         <input
@@ -52,7 +52,7 @@ export function TurnoForm({
 
       <div className="flex gap-4">
         <div className="flex-1 space-y-1.5">
-          <label htmlFor="hora_inicio" className="text-sm font-medium">
+          <label htmlFor="hora_inicio" className="text-label font-medium">
             Hora inicio
           </label>
           <input
@@ -65,7 +65,7 @@ export function TurnoForm({
           />
         </div>
         <div className="flex-1 space-y-1.5">
-          <label htmlFor="hora_fin" className="text-sm font-medium">
+          <label htmlFor="hora_fin" className="text-label font-medium">
             Hora fin
           </label>
           <input
@@ -80,7 +80,7 @@ export function TurnoForm({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="grupo_nivel" className="text-sm font-medium">
+        <label htmlFor="grupo_nivel" className="text-label font-medium">
           Grupo / nivel
         </label>
         <input
@@ -95,7 +95,7 @@ export function TurnoForm({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="capacidad" className="text-sm font-medium">
+        <label htmlFor="capacidad" className="text-label font-medium">
           Capacidad
         </label>
         <input
@@ -111,7 +111,7 @@ export function TurnoForm({
 
       {profile.rol === "Admin" ? (
         <div className="space-y-1.5">
-          <label htmlFor="profesor_id" className="text-sm font-medium">
+          <label htmlFor="profesor_id" className="text-label font-medium">
             Profesor
           </label>
           <select

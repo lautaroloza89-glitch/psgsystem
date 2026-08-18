@@ -1,67 +1,55 @@
 @import "tailwindcss";
 
 @theme {
-  /* Color — primario (Índigo Deportivo), acento y apoyo, anclados al hex exacto elegido en el paso 1.
-     Escala regenerada con mezcla pareja hacia blanco (50-400) y hacia negro con tinte frío (600-900),
-     la versión original tenía los tonos 50-400 casi idénticos entre sí y un salto brusco a 500. */
-  --color-primary-50: #f2f3f8;
-  --color-primary-100: #e6e7f1;
-  --color-primary-200: #cdd0e3;
-  --color-primary-300: #afb4d3;
-  --color-primary-400: #858dbc;
-  --color-primary-500: #2d3a8c;
-  --color-primary-600: #273175;
-  --color-primary-700: #20295f;
-  --color-primary-800: #191f45;
-  --color-primary-900: #12152a;
+  /* Color — paleta navy/crema formalizada en docs/plan-navegacion-equipo.md (punto 1).
+     Escalas 50-900 generadas a partir de los hex exactos del plan (quedan en el stop 500),
+     mezclando hacia blanco para 50-400 y hacia un oscuro con tinte navy para 600-900. */
+  --color-primary-50: #f2f2f7;
+  --color-primary-100: #e2e2ec;
+  --color-primary-200: #c0c0d7;
+  --color-primary-300: #9b9bbf;
+  --color-primary-400: #69699f;
+  --color-primary-500: #2e2e7a;
+  --color-primary-600: #292a6c;
+  --color-primary-700: #24255d;
+  --color-primary-800: #1e204d;
+  --color-primary-900: #191c3f;
 
-  --color-accent-50: #fefaf3;
-  --color-accent-100: #fdf5e7;
-  --color-accent-200: #fcead0;
-  --color-accent-300: #fadeb5;
-  --color-accent-400: #f7cd8d;
-  --color-accent-500: #f2a93b;
-  --color-accent-600: #c88c33;
-  --color-accent-700: #9e702b;
-  --color-accent-800: #705022;
-  --color-accent-900: #3d2d18;
+  --color-success-50: #f2f7f4;
+  --color-success-100: #e0ece6;
+  --color-success-200: #bcd7c9;
+  --color-success-300: #93bfa9;
+  --color-success-400: #5d9f7e;
+  --color-success-500: #1e7a4c;
+  --color-success-600: #1c6846;
+  --color-success-700: #1a5640;
+  --color-success-800: #174139;
+  --color-success-900: #152f33;
 
-  --color-support-50: #f3fbfa;
-  --color-support-100: #e8f7f5;
-  --color-support-200: #d1f0eb;
-  --color-support-300: #b6e7e0;
-  --color-support-400: #90dacf;
-  --color-support-500: #3fbfad;
-  --color-support-600: #359e90;
-  --color-support-700: #2c7e74;
-  --color-support-800: #215a54;
-  --color-support-900: #163231;
+  --color-warning-50: #fbf8f0;
+  --color-warning-100: #f5eedd;
+  --color-warning-200: #eadbb6;
+  --color-warning-300: #ddc58a;
+  --color-warning-400: #cca84f;
+  --color-warning-500: #b8860b;
+  --color-warning-600: #9a7211;
+  --color-warning-700: #7c5d16;
+  --color-warning-800: #5b471c;
+  --color-warning-900: #3d3222;
 
-  /* Neutros — interpolados entre el fondo (cálido) y el texto (frío) elegidos en el paso 1 */
-  --color-neutral-50: #faf7f2;
-  --color-neutral-100: #e9e6e3;
-  --color-neutral-200: #d8d6d5;
-  --color-neutral-300: #c0bfc1;
-  --color-neutral-400: #a4a4a9;
-  --color-neutral-500: #84858d;
-  --color-neutral-600: #686a76;
-  --color-neutral-700: #4e5160;
-  --color-neutral-800: #393d4d;
-  --color-neutral-900: #23283b;
+  --color-info-50: #f2f6fe;
+  --color-info-100: #e0e9fc;
+  --color-info-200: #bed0f9;
+  --color-info-300: #96b4f5;
+  --color-info-400: #628ff1;
+  --color-info-500: #2563eb;
+  --color-info-600: #2255c8;
+  --color-info-700: #1e47a6;
+  --color-info-800: #1a377f;
+  --color-info-900: #17295c;
 
-  /* Semánticos — success/error retocados para pasar AA con texto blanco; warning/info reusan acento y apoyo.
-     Misma corrección de escala pareja que en primary/accent/support (50-400 tenían el mismo salto a 500). */
-  --color-success-50: #f1f7f4;
-  --color-success-100: #e2efe8;
-  --color-success-200: #c5dfd2;
-  --color-success-300: #a4ccb7;
-  --color-success-400: #74b291;
-  --color-success-500: #0f7a42;
-  --color-success-600: #0e6639;
-  --color-success-700: #0d522f;
-  --color-success-800: #0c3b25;
-  --color-success-900: #0b2319;
-
+  /* Error — sin cambios, fuera del alcance de esta corrección (el plan no define un token
+     de error/destructivo); se mantiene la escala roja ya usada para cancelar/borrar. */
   --color-error-50: #fcf3f3;
   --color-error-100: #f8e8e6;
   --color-error-200: #f2d1cd;
@@ -73,73 +61,60 @@
   --color-error-800: #5d211d;
   --color-error-900: #341515;
 
-  --color-warning-50: var(--color-accent-50);
-  --color-warning-100: var(--color-accent-100);
-  --color-warning-200: var(--color-accent-200);
-  --color-warning-300: var(--color-accent-300);
-  --color-warning-400: var(--color-accent-400);
-  --color-warning-500: var(--color-accent-500);
-  --color-warning-600: var(--color-accent-600);
-  --color-warning-700: var(--color-accent-700);
-  --color-warning-800: var(--color-accent-800);
-  --color-warning-900: var(--color-accent-900);
+  /* Neutros — interpolados entre bg-primary (crema, #F7F5F0) y text-primary (navy, #1A1A2E)
+     del plan, para que fondo/bordes/superficies queden dentro de la misma paleta. */
+  --color-neutral-50: #f7f5f0;
+  --color-neutral-100: #e5e3e0;
+  --color-neutral-200: #cfcecd;
+  --color-neutral-300: #b5b3b6;
+  --color-neutral-400: #949299;
+  --color-neutral-500: #72727c;
+  --color-neutral-600: #585764;
+  --color-neutral-700: #403f4f;
+  --color-neutral-800: #2c2c3e;
+  --color-neutral-900: #1a1a2e;
 
-  --color-info-50: var(--color-support-50);
-  --color-info-100: var(--color-support-100);
-  --color-info-200: var(--color-support-200);
-  --color-info-300: var(--color-support-300);
-  --color-info-400: var(--color-support-400);
-  --color-info-500: var(--color-support-500);
-  --color-info-600: var(--color-support-600);
-  --color-info-700: var(--color-support-700);
-  --color-info-800: var(--color-support-800);
-  --color-info-900: var(--color-support-900);
-
-  /* Roles semánticos planos — lo que van a usar los componentes, no las escalas numeradas directamente */
+  /* Roles semánticos planos — lo que usan los componentes, mapeados 1 a 1 a la tabla
+     de colores del plan (bg-primary, text-primary, text-secondary, accent). */
   --color-bg: var(--color-neutral-50);
   --color-surface: #ffffff;
   --color-surface-muted: var(--color-neutral-100);
   --color-border: var(--color-neutral-200);
   --color-border-strong: var(--color-neutral-300);
   --color-text: var(--color-neutral-900);
-  --color-text-muted: var(--color-neutral-700);
-  /* neutral-600, no -500: -500 da 3.67:1 sobre surface/bg, falla AA texto normal (4.5:1) */
-  --color-text-subtle: var(--color-neutral-600);
-  --color-text-inverted: var(--color-neutral-50);
-
-  /* Texto sobre fondos de color — accent y support son claros, necesitan texto oscuro, no blanco */
+  /* text-secondary del plan (#5C5C6E): da 6:1 sobre bg-primary y sobre surface blanca,
+     por encima del piso de 4.5:1 exigido. Se usa igual para "muted" y "subtle": el plan
+     define un solo piso de texto secundario, no dos matices distintos. */
+  --color-text-muted: #5c5c6e;
+  --color-text-subtle: #5c5c6e;
   --color-on-primary: #ffffff;
-  --color-on-accent: var(--color-neutral-900);
-  --color-on-support: var(--color-neutral-900);
-  --color-on-success: #ffffff;
-  --color-on-error: #ffffff;
-  --color-on-warning: var(--color-on-accent);
-  --color-on-info: var(--color-on-support);
 
   --color-focus-ring: var(--color-primary-500);
 
-  /* Tipografía — familia y escala modular 1.25x sobre base 16px */
+  /* Tipografía — familia sin cambios; escala ajustada a la tabla del punto 2 del plan.
+     Piso duro de 14px (texto secundario: fecha, asignado) en toda la app. */
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 
-  --text-xs: 0.625rem;
-  --text-xs--line-height: 1.5;
-  --text-sm: 0.8125rem;
-  --text-sm--line-height: 1.5;
+  /* xs se alinea a sm (14px): ningún texto de la app baja de ahí, ni siquiera badges. */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.4;
+  /* Texto secundario (fecha, asignado, metadata) — 14px, el mínimo permitido. */
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.4;
+  /* Labels de formulario — 15px. */
+  --text-label: 0.9375rem;
+  --text-label--line-height: 1.4;
   --text-base: 1rem;
   --text-base--line-height: 1.55;
-  --text-lg: 1.25rem;
-  --text-lg--line-height: 1.4;
-  --text-xl: 1.5625rem;
-  --text-xl--line-height: 1.35;
-  --text-2xl: 1.9375rem;
-  --text-2xl--line-height: 1.3;
-  --text-3xl: 2.4375rem;
-  --text-3xl--line-height: 1.25;
-  --text-4xl: 3.0625rem;
-  --text-4xl--line-height: 1.2;
-  --text-5xl: 3.8125rem;
-  --text-5xl--line-height: 1.15;
+  /* Título de tarjeta (nombre de tarea/turno) — 18px. */
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.35;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.3;
+  /* Título de sección (ej. "Tareas") — 28px. */
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 1.25;
 
   /* Espaciado: se usa la escala numérica default de Tailwind (p-4, gap-6, etc.) directamente.
      Nota: NO definir acá tokens --spacing-xs/sm/md/lg/xl/2xl/3xl — en Tailwind v4 ese namespace

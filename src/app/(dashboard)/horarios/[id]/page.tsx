@@ -48,7 +48,7 @@ export default async function TurnoDetallePage({
           href="/horarios"
           className="rounded text-sm text-text-subtle transition-colors duration-[var(--duration-fast)] ease-standard hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         >
-          ← Volver a horarios
+          ← Volver
         </Link>
       </div>
 

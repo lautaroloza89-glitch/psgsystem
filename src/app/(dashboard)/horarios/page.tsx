@@ -4,7 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { FiltroEstadoTurnoTabs } from "@/components/horarios/FiltroEstadoTurnoTabs";
 import { TurnoCard, type TurnoCardData } from "@/components/horarios/TurnoCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { EstadoTurno } from "@/types";
+
+const MENSAJE_VACIO: Record<EstadoTurno | "Todas", string> = {
+  Todas: "No hay turnos para mostrar.",
+  Activo: "No hay turnos activos.",
+  Cancelado: "No hay turnos cancelados.",
+};
 
 export const metadata: Metadata = { title: "Horarios" };
 
@@ -69,7 +76,7 @@ export default async function HorariosPage({
       <FiltroEstadoTurnoTabs actual={filtroEstado ?? "Todas"} />
 
       {turnos.length === 0 ? (
-        <p className="text-sm text-text-subtle">No hay turnos para mostrar.</p>
+        <EmptyState mensaje={MENSAJE_VACIO[filtroEstado ?? "Todas"]} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {turnos.map((turno) => (

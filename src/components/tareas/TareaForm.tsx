@@ -35,7 +35,7 @@ export function TareaForm({
   return (
     <form action={formAction} className="space-y-5">
       <div className="space-y-1.5">
-        <label htmlFor="titulo" className="text-sm font-medium">
+        <label htmlFor="titulo" className="text-label font-medium">
           Título
         </label>
         <input
@@ -49,7 +49,7 @@ export function TareaForm({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="descripcion" className="text-sm font-medium">
+        <label htmlFor="descripcion" className="text-label font-medium">
           Descripción
         </label>
         <textarea
@@ -63,7 +63,7 @@ export function TareaForm({
 
       <div className="flex gap-4">
         <div className="flex-1 space-y-1.5">
-          <label htmlFor="fecha_inicio" className="text-sm font-medium">
+          <label htmlFor="fecha_inicio" className="text-label font-medium">
             Fecha de inicio
           </label>
           <input
@@ -75,7 +75,7 @@ export function TareaForm({
           />
         </div>
         <div className="flex-1 space-y-1.5">
-          <label htmlFor="fecha_vencimiento" className="text-sm font-medium">
+          <label htmlFor="fecha_vencimiento" className="text-label font-medium">
             Fecha de vencimiento
           </label>
           <input
@@ -89,7 +89,7 @@ export function TareaForm({
       </div>
 
       <fieldset className="space-y-1.5">
-        <legend className="text-sm font-medium">Responsables</legend>
+        <legend className="text-label font-medium">Responsables</legend>
         <AsignadosChecklist usuarios={usuarios} seleccionados={defaultValues?.asignadosIds} />
       </fieldset>
 

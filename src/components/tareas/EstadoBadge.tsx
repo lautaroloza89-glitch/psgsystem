@@ -9,7 +9,7 @@ const ESTILOS: Record<EstadoTarea, string> = {
 export function EstadoBadge({ estado }: { estado: EstadoTarea }) {
   return (
     <span
-      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${ESTILOS[estado]}`}
+      className={`inline-block rounded-full px-2.5 py-1 text-sm font-medium ${ESTILOS[estado]}`}
     >
       {estado}
     </span>

@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
-import { LogoutButton } from "@/components/ui/logout-button";
-import { PrimaryNav } from "@/components/ui/primary-nav";
+import { AppHeader } from "@/components/ui/AppHeader";
 
 export default async function DashboardLayout({
   children,
@@ -23,26 +21,7 @@ export default async function DashboardLayout({
       >
         Saltar al contenido principal
       </a>
-      <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-8">
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            <Link
-              href="/dashboard"
-              className="rounded text-sm font-semibold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-            >
-              Escuela de Patín
-            </Link>
-            <PrimaryNav />
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-sm">
-              <span className="font-medium">{profile.nombre}</span>
-              <span className="ml-2 text-text-subtle">{profile.rol}</span>
-            </div>
-            <LogoutButton />
-          </div>
-        </div>
-      </header>
+      <AppHeader />
       <main id="main-content" className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
         {children}
       </main>

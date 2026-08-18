@@ -46,7 +46,7 @@ export default function LoginPage() {
         <h1 className="text-xl font-bold tracking-tight">Escuela de Patín</h1>
 
         <div className="space-y-1.5">
-          <label htmlFor="email" className="text-sm font-medium">
+          <label htmlFor="email" className="text-label font-medium">
             Email
           </label>
           <input
@@ -61,7 +61,7 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="password" className="text-sm font-medium">
+          <label htmlFor="password" className="text-label font-medium">
             Contraseña
           </label>
           <input
