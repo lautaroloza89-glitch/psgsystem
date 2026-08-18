@@ -134,7 +134,11 @@ export function TurnoForm({
         </p>
       )}
 
-      {state.error && <p className="text-sm text-error-600">{state.error}</p>}
+      {state.error && (
+        <p role="alert" aria-live="assertive" className="text-sm text-error-600">
+          {state.error}
+        </p>
+      )}
 
       <button
         type="submit"

@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Escuela de Patín",
+  title: {
+    default: "Escuela de Patín",
+    template: "%s · Escuela de Patín",
+  },
   description: "App de gestión para escuela de patín",
 };
 

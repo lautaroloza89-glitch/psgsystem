@@ -1,10 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { TareaCard, type TareaCardData } from "@/components/tareas/TareaCard";
 import { TurnoCard, type TurnoCardData } from "@/components/horarios/TurnoCard";
 import { StatCard } from "@/components/dashboard/StatCard";
 import type { EstadoTarea, EstadoTurno } from "@/types";
+
+export const metadata: Metadata = { title: "Dashboard" };
 
 const LIMITE_ITEMS = 5;
 
@@ -136,7 +139,7 @@ export default async function DashboardPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tareasProximas.map((tarea) => (
-              <TareaCard key={tarea.id} tarea={tarea} />
+              <TareaCard key={tarea.id} tarea={tarea} headingLevel="h3" />
             ))}
           </div>
         )}
@@ -157,7 +160,7 @@ export default async function DashboardPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {turnosProximos.map((turno) => (
-              <TurnoCard key={turno.id} turno={turno} />
+              <TurnoCard key={turno.id} turno={turno} headingLevel="h3" />
             ))}
           </div>
         )}

@@ -1,9 +1,12 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { FiltroEstadoTurnoTabs } from "@/components/horarios/FiltroEstadoTurnoTabs";
 import { TurnoCard, type TurnoCardData } from "@/components/horarios/TurnoCard";
 import type { EstadoTurno } from "@/types";
+
+export const metadata: Metadata = { title: "Horarios" };
 
 const ESTADOS_VALIDOS: EstadoTurno[] = ["Activo", "Cancelado"];
 

@@ -51,7 +51,11 @@ export function EstadoSelector({
           </option>
         ))}
       </select>
-      {error && <p className="text-sm text-error-600">{error}</p>}
+      {error && (
+        <p role="alert" aria-live="assertive" className="text-sm text-error-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -103,7 +103,8 @@
   --color-border-strong: var(--color-neutral-300);
   --color-text: var(--color-neutral-900);
   --color-text-muted: var(--color-neutral-700);
-  --color-text-subtle: var(--color-neutral-500);
+  /* neutral-600, no -500: -500 da 3.67:1 sobre surface/bg, falla AA texto normal (4.5:1) */
+  --color-text-subtle: var(--color-neutral-600);
   --color-text-inverted: var(--color-neutral-50);
 
   /* Texto sobre fondos de color — accent y support son claros, necesitan texto oscuro, no blanco */

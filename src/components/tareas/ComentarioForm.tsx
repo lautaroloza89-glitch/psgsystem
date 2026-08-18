@@ -30,7 +30,11 @@ export function ComentarioForm({ tareaId }: { tareaId: string }) {
         placeholder="Dejar un comentario..."
         className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm transition-colors duration-[var(--duration-fast)] ease-standard focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-focus-ring"
       />
-      {state.error && <p className="text-sm text-error-600">{state.error}</p>}
+      {state.error && (
+        <p role="alert" aria-live="assertive" className="text-sm text-error-600">
+          {state.error}
+        </p>
+      )}
       <button
         type="submit"
         disabled={pending}

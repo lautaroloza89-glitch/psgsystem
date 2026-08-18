@@ -14,14 +14,22 @@ export interface TurnoCardData {
   profesorNombre: string | null;
 }
 
-export function TurnoCard({ turno }: { turno: TurnoCardData }) {
+export function TurnoCard({
+  turno,
+  headingLevel = "h2",
+}: {
+  turno: TurnoCardData;
+  /** "h3" cuando la tarjeta va anidada bajo una sección ya encabezada por un h2 (ej. Dashboard). */
+  headingLevel?: "h2" | "h3";
+}) {
+  const Titulo = headingLevel;
   return (
     <Link
       href={`/horarios/${turno.id}`}
       className="block rounded-lg border border-border bg-surface p-5 shadow-xs transition duration-[var(--duration-base)] ease-standard hover:border-border-strong hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
     >
       <div className="flex items-start justify-between gap-2">
-        <h2 className="text-base font-semibold">{turno.grupo_nivel}</h2>
+        <Titulo className="text-base font-semibold">{turno.grupo_nivel}</Titulo>
         <EstadoTurnoBadge estado={turno.estado} />
       </div>
       <p className="mt-2 text-sm text-text-subtle">

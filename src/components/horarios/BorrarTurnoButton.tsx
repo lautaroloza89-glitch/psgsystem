@@ -32,7 +32,11 @@ export function BorrarTurnoButton({ turnoId }: { turnoId: string }) {
         {pending && <Spinner className="h-4 w-4" />}
         {pending ? "Borrando..." : "Borrar turno"}
       </button>
-      {error && <p className="text-sm text-error-600">{error}</p>}
+      {error && (
+        <p role="alert" aria-live="assertive" className="text-sm text-error-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

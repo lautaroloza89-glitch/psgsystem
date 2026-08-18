@@ -11,14 +11,22 @@ export interface TareaCardData {
   asignados: { nombre: string }[];
 }
 
-export function TareaCard({ tarea }: { tarea: TareaCardData }) {
+export function TareaCard({
+  tarea,
+  headingLevel = "h2",
+}: {
+  tarea: TareaCardData;
+  /** "h3" cuando la tarjeta va anidada bajo una sección ya encabezada por un h2 (ej. Dashboard). */
+  headingLevel?: "h2" | "h3";
+}) {
+  const Titulo = headingLevel;
   return (
     <Link
       href={`/tareas/${tarea.id}`}
       className="block rounded-lg border border-border bg-surface p-5 shadow-xs transition duration-[var(--duration-base)] ease-standard hover:border-border-strong hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
     >
       <div className="flex items-start justify-between gap-2">
-        <h2 className="text-base font-semibold">{tarea.titulo}</h2>
+        <Titulo className="text-base font-semibold">{tarea.titulo}</Titulo>
         <EstadoBadge estado={tarea.estado} />
       </div>
       <p className="mt-2 text-sm text-text-subtle">

@@ -1,8 +1,12 @@
+import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { TurnoForm } from "@/components/horarios/TurnoForm";
 import { editarTurno } from "../../actions";
+
+export const metadata: Metadata = { title: "Editar turno" };
 
 export default async function EditarTurnoPage({
   params,
@@ -43,6 +47,14 @@ export default async function EditarTurnoPage({
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
+      <div>
+        <Link
+          href={`/horarios/${id}`}
+          className="rounded text-sm text-text-subtle transition-colors duration-[var(--duration-fast)] ease-standard hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        >
+          ← Volver al turno
+        </Link>
+      </div>
       <h1 className="text-2xl font-bold tracking-tight">Editar turno</h1>
       <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         <TurnoForm

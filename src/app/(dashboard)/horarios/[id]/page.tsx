@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
@@ -7,6 +8,8 @@ import { ToggleEstadoTurnoButton } from "@/components/horarios/ToggleEstadoTurno
 import { BorrarTurnoButton } from "@/components/horarios/BorrarTurnoButton";
 import { formatFecha } from "@/lib/utils/date";
 import type { EstadoTurno } from "@/types";
+
+export const metadata: Metadata = { title: "Detalle de turno" };
 
 export default async function TurnoDetallePage({
   params,

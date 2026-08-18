@@ -88,12 +88,16 @@ export function TareaForm({
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <span className="text-sm font-medium">Responsables</span>
+      <fieldset className="space-y-1.5">
+        <legend className="text-sm font-medium">Responsables</legend>
         <AsignadosChecklist usuarios={usuarios} seleccionados={defaultValues?.asignadosIds} />
-      </div>
+      </fieldset>
 
-      {state.error && <p className="text-sm text-error-600">{state.error}</p>}
+      {state.error && (
+        <p role="alert" aria-live="assertive" className="text-sm text-error-600">
+          {state.error}
+        </p>
+      )}
 
       <button
         type="submit"

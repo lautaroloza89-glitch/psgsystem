@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
@@ -8,6 +9,8 @@ import { ComentariosList, type ComentarioData } from "@/components/tareas/Coment
 import { ComentarioForm } from "@/components/tareas/ComentarioForm";
 import { formatFecha } from "@/lib/utils/date";
 import type { EstadoTarea } from "@/types";
+
+export const metadata: Metadata = { title: "Detalle de tarea" };
 
 export default async function TareaDetallePage({
   params,

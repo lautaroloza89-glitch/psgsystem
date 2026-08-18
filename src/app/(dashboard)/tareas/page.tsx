@@ -1,9 +1,12 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { FiltroEstadoTabs } from "@/components/tareas/FiltroEstadoTabs";
 import { TareaCard, type TareaCardData } from "@/components/tareas/TareaCard";
 import type { EstadoTarea } from "@/types";
+
+export const metadata: Metadata = { title: "Tareas" };
 
 const ESTADOS_VALIDOS: EstadoTarea[] = ["Pendiente", "En progreso", "Completada"];
 
