@@ -43,7 +43,7 @@ export default async function EditarTurnoPage({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Editar turno</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Editar turno</h1>
       <TurnoForm
         action={editarTurnoConId}
         profile={{ id: profile!.id, rol: profile!.rol }}

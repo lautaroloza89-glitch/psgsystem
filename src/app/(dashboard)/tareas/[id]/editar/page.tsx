@@ -47,7 +47,7 @@ export default async function EditarTareaPage({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Editar tarea</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Editar tarea</h1>
       <TareaForm
         action={editarTareaConId}
         usuarios={usuarios ?? []}

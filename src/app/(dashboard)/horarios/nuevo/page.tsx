@@ -21,7 +21,7 @@ export default async function NuevoTurnoPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Nuevo turno</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Nuevo turno</h1>
       <TurnoForm
         action={crearTurno}
         profile={{ id: profile.id, rol: profile.rol }}

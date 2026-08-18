@@ -68,12 +68,12 @@ export default async function TareaDetallePage({
       </div>
 
       <div className="flex items-start justify-between gap-2">
-        <h1 className="text-xl font-semibold">{tarea.titulo}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{tarea.titulo}</h1>
         <EstadoBadge estado={tarea.estado as EstadoTarea} />
       </div>
 
       {tarea.descripcion && (
-        <p className="text-sm text-black/70">{tarea.descripcion}</p>
+        <p className="text-base text-black/70">{tarea.descripcion}</p>
       )}
 
       <div className="flex gap-6 text-sm text-black/50">
@@ -83,8 +83,8 @@ export default async function TareaDetallePage({
 
       {asignados.length > 0 && (
         <div>
-          <h2 className="text-sm font-medium">Responsables</h2>
-          <p className="text-sm text-black/70">
+          <h2 className="text-lg font-semibold">Responsables</h2>
+          <p className="text-base text-black/70">
             {asignados.map((a) => a.nombre).join(", ")}
           </p>
         </div>
@@ -102,7 +102,7 @@ export default async function TareaDetallePage({
       <EstadoSelector tareaId={tarea.id} estadoActual={tarea.estado as EstadoTarea} />
 
       <div className="space-y-3">
-        <h2 className="text-sm font-medium">Comentarios</h2>
+        <h2 className="text-lg font-semibold">Comentarios</h2>
         <ComentariosList comentarios={comentarios} />
         <ComentarioForm tareaId={tarea.id} />
       </div>

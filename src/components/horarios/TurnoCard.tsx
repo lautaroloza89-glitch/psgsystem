@@ -21,7 +21,7 @@ export function TurnoCard({ turno }: { turno: TurnoCardData }) {
       className="block rounded-lg border border-black/10 p-4 hover:border-black/30"
     >
       <div className="flex items-start justify-between gap-2">
-        <h2 className="font-medium">{turno.grupo_nivel}</h2>
+        <h2 className="text-base font-semibold">{turno.grupo_nivel}</h2>
         <EstadoTurnoBadge estado={turno.estado} />
       </div>
       <p className="mt-2 text-sm text-black/50">

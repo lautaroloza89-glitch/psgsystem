@@ -19,7 +19,7 @@ export default async function NuevaTareaPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Nueva tarea</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Nueva tarea</h1>
       <TareaForm action={crearTarea} usuarios={usuarios ?? []} modo="crear" />
     </div>
   );

@@ -39,7 +39,7 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         className="w-full max-w-sm space-y-4 rounded-lg border border-black/10 p-6"
       >
-        <h1 className="text-xl font-semibold">Escuela de Patín</h1>
+        <h1 className="text-xl font-bold tracking-tight">Escuela de Patín</h1>
 
         <div className="space-y-1">
           <label htmlFor="email" className="text-sm font-medium">

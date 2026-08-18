@@ -110,7 +110,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Dashboard</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
 
       {contadores && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -123,7 +123,7 @@ export default async function DashboardPage() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-medium">Tareas próximas a vencer</h2>
+          <h2 className="text-lg font-semibold">Tareas próximas a vencer</h2>
           <Link href="/tareas" className="text-sm text-black/50 hover:text-black">
             Ver todas
           </Link>
@@ -141,7 +141,7 @@ export default async function DashboardPage() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-medium">Próximos turnos</h2>
+          <h2 className="text-lg font-semibold">Próximos turnos</h2>
           <Link href="/horarios" className="text-sm text-black/50 hover:text-black">
             Ver todos
           </Link>

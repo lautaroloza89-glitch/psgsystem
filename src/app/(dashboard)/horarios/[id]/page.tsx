@@ -47,11 +47,11 @@ export default async function TurnoDetallePage({
       </div>
 
       <div className="flex items-start justify-between gap-2">
-        <h1 className="text-xl font-semibold">{turno.grupo_nivel}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{turno.grupo_nivel}</h1>
         <EstadoTurnoBadge estado={turno.estado as EstadoTurno} />
       </div>
 
-      <div className="space-y-1 text-sm text-black/70">
+      <div className="space-y-1 text-base text-black/70">
         <p>Fecha: {formatFecha(turno.fecha)}</p>
         <p>
           Horario: {turno.hora_inicio.slice(0, 5)}–{turno.hora_fin.slice(0, 5)}

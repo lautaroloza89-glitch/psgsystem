@@ -30,7 +30,7 @@ export function ComentariosList({ comentarios }: { comentarios: ComentarioData[]
             </span>
             <span>{formatFechaHora(comentario.created_at)}</span>
           </div>
-          <p className="mt-1">{comentario.comentario}</p>
+          <p className="mt-1 text-base">{comentario.comentario}</p>
         </li>
       ))}
     </ul>

@@ -52,7 +52,7 @@ export default async function HorariosPage({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Horarios</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Horarios</h1>
         {puedeCrear && (
           <Link
             href="/horarios/nuevo"

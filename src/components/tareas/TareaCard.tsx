@@ -18,7 +18,7 @@ export function TareaCard({ tarea }: { tarea: TareaCardData }) {
       className="block rounded-lg border border-black/10 p-4 hover:border-black/30"
     >
       <div className="flex items-start justify-between gap-2">
-        <h2 className="font-medium">{tarea.titulo}</h2>
+        <h2 className="text-base font-semibold">{tarea.titulo}</h2>
         <EstadoBadge estado={tarea.estado} />
       </div>
       <p className="mt-2 text-sm text-black/50">
