@@ -42,22 +42,24 @@ export default async function EditarTurnoPage({
   const editarTurnoConId = editarTurno.bind(null, id);
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-lg space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Editar turno</h1>
-      <TurnoForm
-        action={editarTurnoConId}
-        profile={{ id: profile!.id, rol: profile!.rol }}
-        profesores={profesores}
-        modo="editar"
-        defaultValues={{
-          fecha: turno.fecha,
-          hora_inicio: turno.hora_inicio.slice(0, 5),
-          hora_fin: turno.hora_fin.slice(0, 5),
-          grupo_nivel: turno.grupo_nivel,
-          capacidad: String(turno.capacidad),
-          profesor_id: turno.profesor_id ?? "",
-        }}
-      />
+      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
+        <TurnoForm
+          action={editarTurnoConId}
+          profile={{ id: profile!.id, rol: profile!.rol }}
+          profesores={profesores}
+          modo="editar"
+          defaultValues={{
+            fecha: turno.fecha,
+            hora_inicio: turno.hora_inicio.slice(0, 5),
+            hora_fin: turno.hora_fin.slice(0, 5),
+            grupo_nivel: turno.grupo_nivel,
+            capacidad: String(turno.capacidad),
+            profesor_id: turno.profesor_id ?? "",
+          }}
+        />
+      </div>
     </div>
   );
 }

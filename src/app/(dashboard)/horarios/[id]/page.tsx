@@ -39,43 +39,45 @@ export default async function TurnoDetallePage({
       (profile.rol === "Profesor" && turno.profesor_id === profile.id));
 
   return (
-    <div className="max-w-lg space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <Link href="/horarios" className="text-sm text-black/50 hover:text-black">
+        <Link href="/horarios" className="text-sm text-text-subtle hover:text-text">
           ← Volver a horarios
         </Link>
       </div>
 
-      <div className="flex items-start justify-between gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">{turno.grupo_nivel}</h1>
-        <EstadoTurnoBadge estado={turno.estado as EstadoTurno} />
-      </div>
-
-      <div className="space-y-1 text-base text-black/70">
-        <p>Fecha: {formatFecha(turno.fecha)}</p>
-        <p>
-          Horario: {turno.hora_inicio.slice(0, 5)}–{turno.hora_fin.slice(0, 5)}
-        </p>
-        <p>Profesor: {profesorNombre ?? "Sin asignar"}</p>
-        <p>Capacidad: {turno.capacidad}</p>
-      </div>
-
-      {puedeEditar && (
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/horarios/${turno.id}/editar`}
-            className="inline-block rounded border border-black/20 px-4 py-2 text-sm font-medium hover:border-black/40"
-          >
-            Editar turno
-          </Link>
-          <ToggleEstadoTurnoButton
-            turnoId={turno.id}
-            estadoActual={turno.estado as EstadoTurno}
-          />
+      <div className="space-y-6 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="text-2xl font-bold tracking-tight">{turno.grupo_nivel}</h1>
+          <EstadoTurnoBadge estado={turno.estado as EstadoTurno} />
         </div>
-      )}
 
-      {profile?.rol === "Admin" && <BorrarTurnoButton turnoId={turno.id} />}
+        <div className="space-y-1 text-base text-text-muted">
+          <p>Fecha: {formatFecha(turno.fecha)}</p>
+          <p>
+            Horario: {turno.hora_inicio.slice(0, 5)}–{turno.hora_fin.slice(0, 5)}
+          </p>
+          <p>Profesor: {profesorNombre ?? "Sin asignar"}</p>
+          <p>Capacidad: {turno.capacidad}</p>
+        </div>
+
+        {puedeEditar && (
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/horarios/${turno.id}/editar`}
+              className="inline-block rounded-md border border-border-strong px-4 py-2 text-sm font-medium hover:border-neutral-400"
+            >
+              Editar turno
+            </Link>
+            <ToggleEstadoTurnoButton
+              turnoId={turno.id}
+              estadoActual={turno.estado as EstadoTurno}
+            />
+          </div>
+        )}
+
+        {profile?.rol === "Admin" && <BorrarTurnoButton turnoId={turno.id} />}
+      </div>
     </div>
   );
 }

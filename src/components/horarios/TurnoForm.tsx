@@ -31,8 +31,8 @@ export function TurnoForm({
   const [state, formAction, pending] = useActionState(action, initialState);
 
   return (
-    <form action={formAction} className="max-w-lg space-y-4">
-      <div className="space-y-1">
+    <form action={formAction} className="space-y-5">
+      <div className="space-y-1.5">
         <label htmlFor="fecha" className="text-sm font-medium">
           Fecha
         </label>
@@ -42,12 +42,12 @@ export function TurnoForm({
           type="date"
           required
           defaultValue={defaultValues?.fecha}
-          className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
         />
       </div>
 
       <div className="flex gap-4">
-        <div className="flex-1 space-y-1">
+        <div className="flex-1 space-y-1.5">
           <label htmlFor="hora_inicio" className="text-sm font-medium">
             Hora inicio
           </label>
@@ -57,10 +57,10 @@ export function TurnoForm({
             type="time"
             required
             defaultValue={defaultValues?.hora_inicio}
-            className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
           />
         </div>
-        <div className="flex-1 space-y-1">
+        <div className="flex-1 space-y-1.5">
           <label htmlFor="hora_fin" className="text-sm font-medium">
             Hora fin
           </label>
@@ -70,12 +70,12 @@ export function TurnoForm({
             type="time"
             required
             defaultValue={defaultValues?.hora_fin}
-            className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
           />
         </div>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <label htmlFor="grupo_nivel" className="text-sm font-medium">
           Grupo / nivel
         </label>
@@ -86,11 +86,11 @@ export function TurnoForm({
           required
           placeholder="Ej. Iniciación, Nivel 2"
           defaultValue={defaultValues?.grupo_nivel}
-          className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
         />
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <label htmlFor="capacidad" className="text-sm font-medium">
           Capacidad
         </label>
@@ -101,12 +101,12 @@ export function TurnoForm({
           min={1}
           required
           defaultValue={defaultValues?.capacidad}
-          className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
         />
       </div>
 
       {profile.rol === "Admin" ? (
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <label htmlFor="profesor_id" className="text-sm font-medium">
             Profesor
           </label>
@@ -114,7 +114,7 @@ export function TurnoForm({
             id="profesor_id"
             name="profesor_id"
             defaultValue={defaultValues?.profesor_id ?? ""}
-            className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
           >
             <option value="">Sin asignar</option>
             {profesores.map((p) => (
@@ -125,17 +125,17 @@ export function TurnoForm({
           </select>
         </div>
       ) : (
-        <p className="text-sm text-black/50">
+        <p className="text-sm text-text-subtle">
           Este turno queda asignado a vos como profesor.
         </p>
       )}
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state.error && <p className="text-sm text-error-600">{state.error}</p>}
 
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded bg-black py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="w-full rounded-md bg-primary-500 py-2.5 text-sm font-medium text-on-primary disabled:opacity-50"
       >
         {pending ? "Guardando..." : modo === "crear" ? "Crear turno" : "Guardar cambios"}
       </button>

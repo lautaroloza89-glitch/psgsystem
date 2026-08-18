@@ -21,10 +21,10 @@ export function FiltroEstadoTabs({ actual }: { actual: string }) {
                 ? "/tareas"
                 : `/tareas?estado=${encodeURIComponent(opcion.value)}`
             }
-            className={`rounded-full border px-3 py-1 text-sm ${
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium ${
               activo
-                ? "border-black bg-black text-white"
-                : "border-black/20 text-black/70 hover:border-black/40"
+                ? "border-primary-500 bg-primary-500 text-on-primary"
+                : "border-border text-text-muted hover:border-neutral-400"
             }`}
           >
             {opcion.label}

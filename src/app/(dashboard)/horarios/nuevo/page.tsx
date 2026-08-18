@@ -20,14 +20,16 @@ export default async function NuevoTurnoPage() {
   const profesores = (usuarios ?? []).filter((u) => u.rol === "Profesor" || u.dicta_clases);
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-lg space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Nuevo turno</h1>
-      <TurnoForm
-        action={crearTurno}
-        profile={{ id: profile.id, rol: profile.rol }}
-        profesores={profesores}
-        modo="crear"
-      />
+      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
+        <TurnoForm
+          action={crearTurno}
+          profile={{ id: profile.id, rol: profile.rol }}
+          profesores={profesores}
+          modo="crear"
+        />
+      </div>
     </div>
   );
 }

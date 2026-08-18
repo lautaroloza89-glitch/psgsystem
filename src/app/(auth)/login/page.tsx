@@ -37,11 +37,11 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center px-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-4 rounded-lg border border-black/10 p-6"
+        className="w-full max-w-sm space-y-5 rounded-xl border border-border bg-surface p-8 shadow-sm"
       >
         <h1 className="text-xl font-bold tracking-tight">Escuela de Patín</h1>
 
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <label htmlFor="email" className="text-sm font-medium">
             Email
           </label>
@@ -52,11 +52,11 @@ export default function LoginPage() {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
           />
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <label htmlFor="password" className="text-sm font-medium">
             Contraseña
           </label>
@@ -67,16 +67,16 @@ export default function LoginPage() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-error-600">{error}</p>}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded bg-black py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="w-full rounded-md bg-primary-500 py-2.5 text-sm font-medium text-on-primary disabled:opacity-50"
         >
           {loading ? "Ingresando..." : "Ingresar"}
         </button>

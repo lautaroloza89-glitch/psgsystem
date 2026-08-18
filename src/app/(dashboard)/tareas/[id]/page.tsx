@@ -60,48 +60,50 @@ export default async function TareaDetallePage({
         (tarea.created_by === profile.id || estaAsignado)));
 
   return (
-    <div className="max-w-lg space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <Link href="/tareas" className="text-sm text-black/50 hover:text-black">
+        <Link href="/tareas" className="text-sm text-text-subtle hover:text-text">
           ← Volver a tareas
         </Link>
       </div>
 
-      <div className="flex items-start justify-between gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">{tarea.titulo}</h1>
-        <EstadoBadge estado={tarea.estado as EstadoTarea} />
-      </div>
-
-      {tarea.descripcion && (
-        <p className="text-base text-black/70">{tarea.descripcion}</p>
-      )}
-
-      <div className="flex gap-6 text-sm text-black/50">
-        <span>Inicio: {formatFecha(tarea.fecha_inicio)}</span>
-        <span>Vence: {formatFecha(tarea.fecha_vencimiento)}</span>
-      </div>
-
-      {asignados.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold">Responsables</h2>
-          <p className="text-base text-black/70">
-            {asignados.map((a) => a.nombre).join(", ")}
-          </p>
+      <div className="space-y-6 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="text-2xl font-bold tracking-tight">{tarea.titulo}</h1>
+          <EstadoBadge estado={tarea.estado as EstadoTarea} />
         </div>
-      )}
 
-      {puedeEditar && (
-        <Link
-          href={`/tareas/${tarea.id}/editar`}
-          className="inline-block rounded border border-black/20 px-4 py-2 text-sm font-medium hover:border-black/40"
-        >
-          Editar tarea
-        </Link>
-      )}
+        {tarea.descripcion && (
+          <p className="text-base text-text-muted">{tarea.descripcion}</p>
+        )}
 
-      <EstadoSelector tareaId={tarea.id} estadoActual={tarea.estado as EstadoTarea} />
+        <div className="flex gap-6 text-sm text-text-subtle">
+          <span>Inicio: {formatFecha(tarea.fecha_inicio)}</span>
+          <span>Vence: {formatFecha(tarea.fecha_vencimiento)}</span>
+        </div>
 
-      <div className="space-y-3">
+        {asignados.length > 0 && (
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">Responsables</h2>
+            <p className="text-base text-text-muted">
+              {asignados.map((a) => a.nombre).join(", ")}
+            </p>
+          </div>
+        )}
+
+        {puedeEditar && (
+          <Link
+            href={`/tareas/${tarea.id}/editar`}
+            className="inline-block rounded-md border border-border-strong px-4 py-2 text-sm font-medium hover:border-neutral-400"
+          >
+            Editar tarea
+          </Link>
+        )}
+
+        <EstadoSelector tareaId={tarea.id} estadoActual={tarea.estado as EstadoTarea} />
+      </div>
+
+      <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         <h2 className="text-lg font-semibold">Comentarios</h2>
         <ComentariosList comentarios={comentarios} />
         <ComentarioForm tareaId={tarea.id} />

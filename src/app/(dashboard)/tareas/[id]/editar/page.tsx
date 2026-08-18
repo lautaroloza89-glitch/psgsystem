@@ -46,20 +46,22 @@ export default async function EditarTareaPage({
   const editarTareaConId = editarTarea.bind(null, id);
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-lg space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Editar tarea</h1>
-      <TareaForm
-        action={editarTareaConId}
-        usuarios={usuarios ?? []}
-        modo="editar"
-        defaultValues={{
-          titulo: tarea.titulo,
-          descripcion: tarea.descripcion ?? "",
-          fecha_inicio: tarea.fecha_inicio ?? "",
-          fecha_vencimiento: tarea.fecha_vencimiento ?? "",
-          asignadosIds,
-        }}
-      />
+      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
+        <TareaForm
+          action={editarTareaConId}
+          usuarios={usuarios ?? []}
+          modo="editar"
+          defaultValues={{
+            titulo: tarea.titulo,
+            descripcion: tarea.descripcion ?? "",
+            fecha_inicio: tarea.fecha_inicio ?? "",
+            fecha_vencimiento: tarea.fecha_vencimiento ?? "",
+            asignadosIds,
+          }}
+        />
+      </div>
     </div>
   );
 }

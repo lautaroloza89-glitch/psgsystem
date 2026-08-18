@@ -39,7 +39,7 @@ export function EstadoSelector({
         value={estado}
         disabled={pending}
         onChange={(e) => handleChange(e.target.value as EstadoTarea)}
-        className="w-full rounded border border-black/20 px-3 py-2 text-sm disabled:opacity-50"
+        className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm disabled:opacity-50"
       >
         {ESTADOS.map((opcion) => (
           <option key={opcion} value={opcion}>
@@ -47,7 +47,7 @@ export function EstadoSelector({
           </option>
         ))}
       </select>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-error-600">{error}</p>}
     </div>
   );
 }

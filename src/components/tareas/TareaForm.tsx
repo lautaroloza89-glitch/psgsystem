@@ -29,8 +29,8 @@ export function TareaForm({
   const [state, formAction, pending] = useActionState(action, initialState);
 
   return (
-    <form action={formAction} className="max-w-lg space-y-4">
-      <div className="space-y-1">
+    <form action={formAction} className="space-y-5">
+      <div className="space-y-1.5">
         <label htmlFor="titulo" className="text-sm font-medium">
           Título
         </label>
@@ -40,11 +40,11 @@ export function TareaForm({
           type="text"
           required
           defaultValue={defaultValues?.titulo}
-          className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
         />
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <label htmlFor="descripcion" className="text-sm font-medium">
           Descripción
         </label>
@@ -53,12 +53,12 @@ export function TareaForm({
           name="descripcion"
           rows={3}
           defaultValue={defaultValues?.descripcion}
-          className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
         />
       </div>
 
       <div className="flex gap-4">
-        <div className="flex-1 space-y-1">
+        <div className="flex-1 space-y-1.5">
           <label htmlFor="fecha_inicio" className="text-sm font-medium">
             Fecha de inicio
           </label>
@@ -67,10 +67,10 @@ export function TareaForm({
             name="fecha_inicio"
             type="date"
             defaultValue={defaultValues?.fecha_inicio}
-            className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
           />
         </div>
-        <div className="flex-1 space-y-1">
+        <div className="flex-1 space-y-1.5">
           <label htmlFor="fecha_vencimiento" className="text-sm font-medium">
             Fecha de vencimiento
           </label>
@@ -79,22 +79,22 @@ export function TareaForm({
             name="fecha_vencimiento"
             type="date"
             defaultValue={defaultValues?.fecha_vencimiento}
-            className="w-full rounded border border-black/20 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
           />
         </div>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <span className="text-sm font-medium">Responsables</span>
         <AsignadosChecklist usuarios={usuarios} seleccionados={defaultValues?.asignadosIds} />
       </div>
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state.error && <p className="text-sm text-error-600">{state.error}</p>}
 
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded bg-black py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="w-full rounded-md bg-primary-500 py-2.5 text-sm font-medium text-on-primary disabled:opacity-50"
       >
         {pending
           ? "Guardando..."

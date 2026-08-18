@@ -17,15 +17,15 @@ export interface ComentarioData {
 
 export function ComentariosList({ comentarios }: { comentarios: ComentarioData[] }) {
   if (comentarios.length === 0) {
-    return <p className="text-sm text-black/50">Todavía no hay comentarios.</p>;
+    return <p className="text-sm text-text-subtle">Todavía no hay comentarios.</p>;
   }
 
   return (
     <ul className="space-y-3">
       {comentarios.map((comentario) => (
-        <li key={comentario.id} className="rounded border border-black/10 p-3 text-sm">
-          <div className="flex items-center justify-between text-black/50">
-            <span className="font-medium text-black/70">
+        <li key={comentario.id} className="rounded-md border border-border bg-surface-muted p-4 text-sm">
+          <div className="flex items-center justify-between text-text-subtle">
+            <span className="font-medium text-text-muted">
               {comentario.autor?.nombre ?? "Usuario eliminado"}
             </span>
             <span>{formatFechaHora(comentario.created_at)}</span>

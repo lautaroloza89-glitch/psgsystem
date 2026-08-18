@@ -46,13 +46,13 @@ export default async function TareasPage({
   const puedeCrear = profile?.rol === "Admin" || profile?.rol === "Profesor";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Tareas</h1>
         {puedeCrear && (
           <Link
             href="/tareas/nueva"
-            className="rounded bg-black px-4 py-2 text-sm font-medium text-white"
+            className="rounded-md bg-primary-500 px-5 py-2.5 text-sm font-medium text-on-primary"
           >
             Nueva tarea
           </Link>
@@ -62,9 +62,9 @@ export default async function TareasPage({
       <FiltroEstadoTabs actual={filtroEstado ?? "Todas"} />
 
       {tareas.length === 0 ? (
-        <p className="text-sm text-black/50">No hay tareas para mostrar.</p>
+        <p className="text-sm text-text-subtle">No hay tareas para mostrar.</p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tareas.map((tarea) => (
             <TareaCard key={tarea.id} tarea={tarea} />
           ))}

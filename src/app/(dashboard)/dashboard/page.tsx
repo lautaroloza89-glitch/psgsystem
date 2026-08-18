@@ -109,11 +109,11 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
 
       {contadores && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatCard label="Tareas pendientes" value={contadores.pendientes} />
           <StatCard label="Tareas en progreso" value={contadores.enProgreso} />
           <StatCard label="Turnos hoy" value={contadores.turnosHoy} />
@@ -121,17 +121,17 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <section className="space-y-3">
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Tareas próximas a vencer</h2>
-          <Link href="/tareas" className="text-sm text-black/50 hover:text-black">
+          <Link href="/tareas" className="text-sm text-text-subtle hover:text-text">
             Ver todas
           </Link>
         </div>
         {tareasProximas.length === 0 ? (
-          <p className="text-sm text-black/50">No hay tareas pendientes.</p>
+          <p className="text-sm text-text-subtle">No hay tareas pendientes.</p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tareasProximas.map((tarea) => (
               <TareaCard key={tarea.id} tarea={tarea} />
             ))}
@@ -139,17 +139,17 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Próximos turnos</h2>
-          <Link href="/horarios" className="text-sm text-black/50 hover:text-black">
+          <Link href="/horarios" className="text-sm text-text-subtle hover:text-text">
             Ver todos
           </Link>
         </div>
         {turnosProximos.length === 0 ? (
-          <p className="text-sm text-black/50">No hay turnos próximos.</p>
+          <p className="text-sm text-text-subtle">No hay turnos próximos.</p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {turnosProximos.map((turno) => (
               <TurnoCard key={turno.id} turno={turno} />
             ))}

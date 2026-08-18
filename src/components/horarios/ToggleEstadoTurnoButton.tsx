@@ -34,10 +34,10 @@ export function ToggleEstadoTurnoButton({
         type="button"
         onClick={handleClick}
         disabled={pending}
-        className={`rounded border px-4 py-2 text-sm font-medium disabled:opacity-50 ${
+        className={`rounded-md border px-4 py-2 text-sm font-medium disabled:opacity-50 ${
           estado === "Activo"
-            ? "border-red-200 text-red-700 hover:border-red-400"
-            : "border-green-200 text-green-700 hover:border-green-400"
+            ? "border-error-200 text-error-700 hover:border-error-400"
+            : "border-success-200 text-success-700 hover:border-success-400"
         }`}
       >
         {pending
@@ -46,7 +46,7 @@ export function ToggleEstadoTurnoButton({
             ? "Cancelar turno"
             : "Reactivar turno"}
       </button>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-error-600">{error}</p>}
     </div>
   );
 }

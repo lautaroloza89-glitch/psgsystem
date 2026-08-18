@@ -15,14 +15,16 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen">
-      <header className="flex items-center justify-between border-b border-black/10 px-4 py-3">
-        <div className="text-sm">
-          <span className="font-medium">{profile.nombre}</span>
-          <span className="ml-2 text-black/50">{profile.rol}</span>
+      <header className="border-b border-border bg-surface">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-8">
+          <div className="text-sm">
+            <span className="font-medium">{profile.nombre}</span>
+            <span className="ml-2 text-text-subtle">{profile.rol}</span>
+          </div>
+          <LogoutButton />
         </div>
-        <LogoutButton />
       </header>
-      <main className="p-4">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-10">{children}</main>
     </div>
   );
 }

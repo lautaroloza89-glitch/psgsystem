@@ -175,3 +175,8 @@
   --ease-standard: var(--ease-in-out);
   --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
 }
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
