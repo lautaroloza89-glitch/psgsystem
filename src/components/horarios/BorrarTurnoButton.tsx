@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { borrarTurno } from "@/app/(dashboard)/horarios/actions";
+import { Spinner } from "@/components/ui/spinner";
 
 export function BorrarTurnoButton({ turnoId }: { turnoId: string }) {
   const [error, setError] = useState<string | null>(null);
@@ -26,8 +27,9 @@ export function BorrarTurnoButton({ turnoId }: { turnoId: string }) {
         type="button"
         onClick={handleClick}
         disabled={pending}
-        className="rounded-md border border-error-300 px-4 py-2 text-sm font-medium text-error-700 hover:border-error-500 disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-md border border-error-300 px-4 py-2 text-sm font-medium text-error-700 transition-colors duration-[var(--duration-fast)] ease-standard hover:border-error-500 hover:bg-error-50 active:bg-error-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       >
+        {pending && <Spinner className="h-4 w-4" />}
         {pending ? "Borrando..." : "Borrar turno"}
       </button>
       {error && <p className="text-sm text-error-600">{error}</p>}

@@ -21,10 +21,10 @@ export function FiltroEstadoTabs({ actual }: { actual: string }) {
                 ? "/tareas"
                 : `/tareas?estado=${encodeURIComponent(opcion.value)}`
             }
-            className={`rounded-full border px-4 py-1.5 text-sm font-medium ${
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
               activo
-                ? "border-primary-500 bg-primary-500 text-on-primary"
-                : "border-border text-text-muted hover:border-neutral-400"
+                ? "border-primary-500 bg-primary-500 text-on-primary hover:bg-primary-600"
+                : "border-border text-text-muted hover:border-neutral-400 hover:bg-surface-muted"
             }`}
           >
             {opcion.label}

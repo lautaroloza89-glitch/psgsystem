@@ -4,6 +4,10 @@ import { useActionState } from "react";
 import type { User } from "@/types";
 import type { FormState } from "@/app/(dashboard)/tareas/actions";
 import { AsignadosChecklist } from "./AsignadosChecklist";
+import { Spinner } from "@/components/ui/spinner";
+
+const INPUT_CLASS =
+  "w-full rounded-md border border-border-strong px-3 py-2.5 text-sm transition-colors duration-[var(--duration-fast)] ease-standard focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-focus-ring";
 
 export interface TareaFormDefaultValues {
   titulo: string;
@@ -40,7 +44,7 @@ export function TareaForm({
           type="text"
           required
           defaultValue={defaultValues?.titulo}
-          className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
+          className={INPUT_CLASS}
         />
       </div>
 
@@ -53,7 +57,7 @@ export function TareaForm({
           name="descripcion"
           rows={3}
           defaultValue={defaultValues?.descripcion}
-          className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
+          className={INPUT_CLASS}
         />
       </div>
 
@@ -67,7 +71,7 @@ export function TareaForm({
             name="fecha_inicio"
             type="date"
             defaultValue={defaultValues?.fecha_inicio}
-            className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
+            className={INPUT_CLASS}
           />
         </div>
         <div className="flex-1 space-y-1.5">
@@ -79,7 +83,7 @@ export function TareaForm({
             name="fecha_vencimiento"
             type="date"
             defaultValue={defaultValues?.fecha_vencimiento}
-            className="w-full rounded-md border border-border-strong px-3 py-2.5 text-sm"
+            className={INPUT_CLASS}
           />
         </div>
       </div>
@@ -94,8 +98,9 @@ export function TareaForm({
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-primary-500 py-2.5 text-sm font-medium text-on-primary disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-md bg-primary-500 py-2.5 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       >
+        {pending && <Spinner />}
         {pending
           ? "Guardando..."
           : modo === "crear"

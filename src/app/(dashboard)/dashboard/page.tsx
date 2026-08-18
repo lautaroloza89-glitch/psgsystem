@@ -124,7 +124,10 @@ export default async function DashboardPage() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Tareas próximas a vencer</h2>
-          <Link href="/tareas" className="text-sm text-text-subtle hover:text-text">
+          <Link
+            href="/tareas"
+            className="rounded text-sm text-text-subtle transition-colors duration-[var(--duration-fast)] ease-standard hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          >
             Ver todas
           </Link>
         </div>
@@ -142,7 +145,10 @@ export default async function DashboardPage() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Próximos turnos</h2>
-          <Link href="/horarios" className="text-sm text-text-subtle hover:text-text">
+          <Link
+            href="/horarios"
+            className="rounded text-sm text-text-subtle transition-colors duration-[var(--duration-fast)] ease-standard hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          >
             Ver todos
           </Link>
         </div>

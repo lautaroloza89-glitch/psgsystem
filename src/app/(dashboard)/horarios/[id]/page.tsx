@@ -41,7 +41,10 @@ export default async function TurnoDetallePage({
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <Link href="/horarios" className="text-sm text-text-subtle hover:text-text">
+        <Link
+          href="/horarios"
+          className="rounded text-sm text-text-subtle transition-colors duration-[var(--duration-fast)] ease-standard hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        >
           ← Volver a horarios
         </Link>
       </div>
@@ -65,7 +68,7 @@ export default async function TurnoDetallePage({
           <div className="flex flex-wrap gap-2">
             <Link
               href={`/horarios/${turno.id}/editar`}
-              className="inline-block rounded-md border border-border-strong px-4 py-2 text-sm font-medium hover:border-neutral-400"
+              className="inline-block rounded-md border border-border-strong px-4 py-2 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard hover:border-neutral-400 hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             >
               Editar turno
             </Link>

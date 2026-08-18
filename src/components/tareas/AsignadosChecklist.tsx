@@ -12,14 +12,14 @@ export function AsignadosChecklist({
       {usuarios.map((usuario) => (
         <label
           key={usuario.id}
-          className="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-surface-muted"
+          className="flex items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-surface-muted"
         >
           <input
             type="checkbox"
             name="asignados"
             value={usuario.id}
             defaultChecked={seleccionados?.includes(usuario.id)}
-            className="h-4 w-4 accent-primary-500"
+            className="h-4 w-4 rounded accent-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
           />
           <span>{usuario.nombre}</span>
           <span className="text-text-subtle">{usuario.rol}</span>
