@@ -1,1 +1,177 @@
 @import "tailwindcss";
+
+@theme {
+  /* Color — primario (Índigo Deportivo), acento y apoyo, anclados al hex exacto elegido en el paso 1.
+     Escala regenerada con mezcla pareja hacia blanco (50-400) y hacia negro con tinte frío (600-900),
+     la versión original tenía los tonos 50-400 casi idénticos entre sí y un salto brusco a 500. */
+  --color-primary-50: #f2f3f8;
+  --color-primary-100: #e6e7f1;
+  --color-primary-200: #cdd0e3;
+  --color-primary-300: #afb4d3;
+  --color-primary-400: #858dbc;
+  --color-primary-500: #2d3a8c;
+  --color-primary-600: #273175;
+  --color-primary-700: #20295f;
+  --color-primary-800: #191f45;
+  --color-primary-900: #12152a;
+
+  --color-accent-50: #fefaf3;
+  --color-accent-100: #fdf5e7;
+  --color-accent-200: #fcead0;
+  --color-accent-300: #fadeb5;
+  --color-accent-400: #f7cd8d;
+  --color-accent-500: #f2a93b;
+  --color-accent-600: #c88c33;
+  --color-accent-700: #9e702b;
+  --color-accent-800: #705022;
+  --color-accent-900: #3d2d18;
+
+  --color-support-50: #f3fbfa;
+  --color-support-100: #e8f7f5;
+  --color-support-200: #d1f0eb;
+  --color-support-300: #b6e7e0;
+  --color-support-400: #90dacf;
+  --color-support-500: #3fbfad;
+  --color-support-600: #359e90;
+  --color-support-700: #2c7e74;
+  --color-support-800: #215a54;
+  --color-support-900: #163231;
+
+  /* Neutros — interpolados entre el fondo (cálido) y el texto (frío) elegidos en el paso 1 */
+  --color-neutral-50: #faf7f2;
+  --color-neutral-100: #e9e6e3;
+  --color-neutral-200: #d8d6d5;
+  --color-neutral-300: #c0bfc1;
+  --color-neutral-400: #a4a4a9;
+  --color-neutral-500: #84858d;
+  --color-neutral-600: #686a76;
+  --color-neutral-700: #4e5160;
+  --color-neutral-800: #393d4d;
+  --color-neutral-900: #23283b;
+
+  /* Semánticos — success/error retocados para pasar AA con texto blanco; warning/info reusan acento y apoyo.
+     Misma corrección de escala pareja que en primary/accent/support (50-400 tenían el mismo salto a 500). */
+  --color-success-50: #f1f7f4;
+  --color-success-100: #e2efe8;
+  --color-success-200: #c5dfd2;
+  --color-success-300: #a4ccb7;
+  --color-success-400: #74b291;
+  --color-success-500: #0f7a42;
+  --color-success-600: #0e6639;
+  --color-success-700: #0d522f;
+  --color-success-800: #0c3b25;
+  --color-success-900: #0b2319;
+
+  --color-error-50: #fcf3f3;
+  --color-error-100: #f8e8e6;
+  --color-error-200: #f2d1cd;
+  --color-error-300: #eab6b0;
+  --color-error-400: #df8f86;
+  --color-error-500: #c73e2f;
+  --color-error-600: #a53529;
+  --color-error-700: #832b23;
+  --color-error-800: #5d211d;
+  --color-error-900: #341515;
+
+  --color-warning-50: var(--color-accent-50);
+  --color-warning-100: var(--color-accent-100);
+  --color-warning-200: var(--color-accent-200);
+  --color-warning-300: var(--color-accent-300);
+  --color-warning-400: var(--color-accent-400);
+  --color-warning-500: var(--color-accent-500);
+  --color-warning-600: var(--color-accent-600);
+  --color-warning-700: var(--color-accent-700);
+  --color-warning-800: var(--color-accent-800);
+  --color-warning-900: var(--color-accent-900);
+
+  --color-info-50: var(--color-support-50);
+  --color-info-100: var(--color-support-100);
+  --color-info-200: var(--color-support-200);
+  --color-info-300: var(--color-support-300);
+  --color-info-400: var(--color-support-400);
+  --color-info-500: var(--color-support-500);
+  --color-info-600: var(--color-support-600);
+  --color-info-700: var(--color-support-700);
+  --color-info-800: var(--color-support-800);
+  --color-info-900: var(--color-support-900);
+
+  /* Roles semánticos planos — lo que van a usar los componentes, no las escalas numeradas directamente */
+  --color-bg: var(--color-neutral-50);
+  --color-surface: #ffffff;
+  --color-surface-muted: var(--color-neutral-100);
+  --color-border: var(--color-neutral-200);
+  --color-border-strong: var(--color-neutral-300);
+  --color-text: var(--color-neutral-900);
+  --color-text-muted: var(--color-neutral-700);
+  --color-text-subtle: var(--color-neutral-500);
+  --color-text-inverted: var(--color-neutral-50);
+
+  /* Texto sobre fondos de color — accent y support son claros, necesitan texto oscuro, no blanco */
+  --color-on-primary: #ffffff;
+  --color-on-accent: var(--color-neutral-900);
+  --color-on-support: var(--color-neutral-900);
+  --color-on-success: #ffffff;
+  --color-on-error: #ffffff;
+  --color-on-warning: var(--color-on-accent);
+  --color-on-info: var(--color-on-support);
+
+  --color-focus-ring: var(--color-primary-500);
+
+  /* Tipografía — familia y escala modular 1.25x sobre base 16px */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  --text-xs: 0.625rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1rem;
+  --text-base--line-height: 1.55;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.4;
+  --text-xl: 1.5625rem;
+  --text-xl--line-height: 1.35;
+  --text-2xl: 1.9375rem;
+  --text-2xl--line-height: 1.3;
+  --text-3xl: 2.4375rem;
+  --text-3xl--line-height: 1.25;
+  --text-4xl: 3.0625rem;
+  --text-4xl--line-height: 1.2;
+  --text-5xl: 3.8125rem;
+  --text-5xl--line-height: 1.15;
+
+  /* Espaciado — alias semánticos sobre grid de 8pt; no reemplazan la escala numérica de Tailwind */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+
+  /* Radios — estilo "modern" del skill, base 8px */
+  --radius: 0.5rem;
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  /* Sombras — capas sutiles con tinte hacia primary-900 en vez de negro puro */
+  --shadow-2xs: 0 1px rgb(9 12 28 / 0.04);
+  --shadow-xs: 0 1px 2px rgb(9 12 28 / 0.05);
+  --shadow-sm: 0 1px 2px rgb(9 12 28 / 0.06), 0 1px 3px rgb(9 12 28 / 0.08);
+  --shadow-md: 0 2px 4px rgb(9 12 28 / 0.06), 0 4px 8px rgb(9 12 28 / 0.08);
+  --shadow-lg: 0 4px 8px rgb(9 12 28 / 0.06), 0 10px 20px rgb(9 12 28 / 0.10);
+  --shadow-xl: 0 8px 16px rgb(9 12 28 / 0.08), 0 20px 32px rgb(9 12 28 / 0.12);
+  --shadow-2xl: 0 16px 32px rgb(9 12 28 / 0.10), 0 32px 64px rgb(9 12 28 / 0.16);
+
+  /* Animación — duración y curvas, para usar vía duration-[var(--duration-base)] o en JS */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 500ms;
+  --ease-standard: var(--ease-in-out);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+}
