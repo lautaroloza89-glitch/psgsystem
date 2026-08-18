@@ -8,7 +8,7 @@
 - **Una tarea puede tener varios responsables**: relación muchos a muchos vía `tarea_asignados`.
 - **El comentario del Empleado se guarda como historial**: tabla `tarea_comentarios` (no se sobreescribe, se acumula).
 - **Los turnos son por fecha puntual, no por día de la semana recurrente**: cada fila de `turnos` es una ocurrencia concreta con su propia `fecha`, para poder cancelar un día puntual (lluvia, feriado) sin afectar el resto del horario.
-- **RLS (Row Level Security) está habilitada en las 5 tablas, sin políticas todavía.** Esto bloquea el acceso vía la anon key hasta que el Módulo 3 (Auth + roles) defina las políticas por rol. `service_role` sigue teniendo acceso completo.
+- **RLS (Row Level Security) está habilitada en las 5 tablas, con políticas por rol definidas en el Módulo 3** (`supabase/migrations/20260817140000_auth_roles_rls.sql`): Admin ve/edita todo; Profesor gestiona las tareas que creó o donde está asignado, y sus propios turnos; Empleado ve solo lo asignado a él, puede cambiar el estado de su tarea (bloqueado a nivel trigger para el resto de las columnas) y comentar; todos los usuarios autenticados pueden ver la tabla `users` completa y todos los `turnos` (horario compartido de la escuela). `service_role` sigue teniendo acceso completo.
 
 ## Tablas
 
@@ -99,5 +99,4 @@ users ──┬──< tareas (created_by)
 ## Fuera de alcance de este módulo
 
 - No hay tabla de alumnos/inscriptos: `capacidad` en `turnos` es solo un número, no hay roster de estudiantes (fuera del alcance del proyecto según el resumen general).
-- No hay políticas de RLS todavía (se definen en el Módulo 3, junto con Auth).
-- No hay lógica de aplicación (queries, hooks) — solo el esquema de base de datos.
+- No hay lógica de aplicación de negocio (queries de Tareas/Horarios, hooks) — eso es de los Módulos 4 y 5.
