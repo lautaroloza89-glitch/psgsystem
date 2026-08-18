@@ -5,5 +5,6 @@ export interface User {
   email: string;
   nombre: string;
   rol: Rol;
+  dicta_clases: boolean;
   created_at: string;
 }

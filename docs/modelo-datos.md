@@ -1,6 +1,7 @@
 # Modelo de datos
 
-> Modelo final del Módulo 2. Implementado en `supabase/migrations/20260817120000_modelo_datos_inicial.sql`.
+> Modelo base del Módulo 2, implementado en `supabase/migrations/20260817120000_modelo_datos_inicial.sql`.
+> Extendido en el Módulo 5 (`supabase/migrations/20260818150000_users_dicta_clases.sql`) con la columna `dicta_clases` en `users`, necesaria para el formulario de turnos.
 
 ## Decisiones tomadas
 
@@ -22,6 +23,7 @@ Perfil de cada usuario de la app, ligado 1 a 1 con `auth.users` (Supabase Auth, 
 | `email` | `text` | `not null`, `unique` |
 | `nombre` | `text` | `not null` |
 | `rol` | `text` | `not null`, check: `'Admin' \| 'Profesor' \| 'Empleado'` |
+| `dicta_clases` | `boolean` | `not null`, default `false` (Módulo 5). No es un rol de permisos: distingue, entre los usuarios que pueden figurar como profesor de un turno, a los `Admin` que además dictan clases (ej. la Head Coach) de los que no (ej. la Secretaria). Todo `rol = 'Profesor'` lo tiene en `true`. |
 | `created_at` | `timestamptz` | default `now()` |
 
 ### `tareas`
