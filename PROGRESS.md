@@ -18,7 +18,7 @@ No maneja carga de archivos, fotos ni audios (fuera de alcance por ahora).
 | Rol | Puede |
 |---|---|
 | **Admin** (dueño) | Crear/editar/borrar todo. Ver todo. Gestionar usuarios y permisos. |
-| **Profesor** | Crear y gestionar sus tareas/proyectos y sus horarios asignados. |
+| **Profesor** | Crear y gestionar sus tareas y sus horarios asignados. |
 | **Empleado** | Ve solo lo asignado a él. Puede cambiar el estado de su propia tarea (Pendiente → En progreso → Completada) y dejar un comentario corto. NO edita estructura, fechas ni asignados. |
 
 ## 3. Stack propuesto (ajustable antes de arrancar la sesión 1)
@@ -37,7 +37,7 @@ escuela-patin-app/
 ├── PROGRESS.md              ← este archivo
 ├── docs/
 │   ├── modelo-datos.md      ← tablas y campos (a definir)
-│   ├── roadmap-general.md   ← mapa general (tareas/proyectos)
+│   ├── roadmap-general.md   ← mapa general (tareas)
 │   └── mapa-horarios.md     ← mapa aparte de horarios/turnos
 ├── public/
 │   ├── manifest.json
@@ -74,9 +74,9 @@ escuela-patin-app/
 | # | Módulo | Depende de | Estado |
 |---|---|---|---|
 | 1 | Setup base (proyecto, config, deploy vacío) | — | ✅ Terminado |
-| 2 | Modelo de datos (tablas en Supabase) | 1 | ⬜ Pendiente |
+| 2 | Modelo de datos (tablas en Supabase) | 1 | ✅ Terminado |
 | 3 | Auth + roles | 2 | ⬜ Pendiente |
-| 4 | Módulo Tareas/Proyectos | 3 | ⬜ Pendiente |
+| 4 | Módulo Tareas | 3 | ⬜ Pendiente |
 | 5 | Módulo Horarios/Turnos | 3 | ⬜ Pendiente |
 | 6 | Dashboard | 4, 5 | ⬜ Pendiente |
 | 7 | Notificaciones | 4, 5 | ⬜ Pendiente |
@@ -95,8 +95,8 @@ Estados: ⬜ Pendiente · 🟡 En progreso · ✅ Terminado
 
 ## 7. Estado actual
 
-**Módulo activo:** #2 — Modelo de datos (⬜ pendiente).
-**Próximo paso:** definir las tablas en Supabase a partir de `docs/modelo-datos.md`.
+**Módulo activo:** #3 — Auth + roles (⬜ pendiente).
+**Próximo paso:** implementar login y roles en Supabase Auth a partir de `docs/modelo-datos.md` (tabla `users`).
 
 ## 8. Log de sesiones
 
@@ -105,3 +105,4 @@ Estados: ⬜ Pendiente · 🟡 En progreso · ✅ Terminado
 | Fecha | Módulo trabajado | Resultado |
 |---|---|---|
 | 2026-08-17 | 1 — Setup base | Next.js + TypeScript + Tailwind v4 configurados, build local OK. Git inicializado, primer commit pusheado a `github.com/lautaroloza89-glitch/PSG---System` (main). Proyecto Supabase creado y keys cargadas en `.env.local`. Deploy vacío funcionando en `https://psgsystem.vercel.app` (200 OK, placeholder visible). Módulo cerrado ✅. |
+| 2026-08-17 | 2 — Modelo de datos | Definidas 5 tablas (`users`, `tareas`, `tarea_asignados`, `tarea_comentarios`, `turnos`) según decisiones acordadas: tareas y proyectos unificados en una sola tabla, tareas con varios responsables (many-to-many), comentarios como historial, turnos por fecha puntual (no recurrente) con estado Activo/Cancelado para poder cancelar un día sin borrar el registro. Migración `supabase/migrations/20260817120000_modelo_datos_inicial.sql` aplicada contra el proyecto real (`gbnpebqcobtoegeagmcl`) vía Management API, verificada (5 tablas + RLS habilitada en todas, sin políticas aún — se definen en el Módulo 3). `docs/modelo-datos.md` actualizado con el modelo final. Tipos TypeScript creados en `src/types/` (`User`, `Tarea`, `TareaAsignado`, `TareaComentario`, `Turno`). `tsc --noEmit` sin errores. Módulo cerrado ✅. |

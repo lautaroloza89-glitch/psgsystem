@@ -1,6 +1,6 @@
 # Roadmap general
 
-> Mapa general de tareas y proyectos.
+> Mapa general de tareas.
 
 ## Fase 1 — Base
 - [ ] Setup del proyecto (Next.js + Supabase)
