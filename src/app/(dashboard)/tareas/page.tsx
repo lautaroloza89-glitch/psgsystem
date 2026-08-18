@@ -1,0 +1,75 @@
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { FiltroEstadoTabs } from "@/components/tareas/FiltroEstadoTabs";
+import { TareaCard, type TareaCardData } from "@/components/tareas/TareaCard";
+import type { EstadoTarea } from "@/types";
+
+const ESTADOS_VALIDOS: EstadoTarea[] = ["Pendiente", "En progreso", "Completada"];
+
+export default async function TareasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ estado?: string }>;
+}) {
+  const { estado } = await searchParams;
+  const filtroEstado = ESTADOS_VALIDOS.includes(estado as EstadoTarea)
+    ? (estado as EstadoTarea)
+    : null;
+
+  const profile = await getCurrentUserProfile();
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("tareas")
+    .select(
+      "id, titulo, estado, fecha_vencimiento, tarea_asignados(usuario_id, users(nombre))"
+    )
+    .order("fecha_vencimiento", { ascending: true, nullsFirst: false });
+
+  if (filtroEstado) {
+    query = query.eq("estado", filtroEstado);
+  }
+
+  const { data } = await query;
+
+  const tareas: TareaCardData[] = (data ?? []).map((tarea) => ({
+    id: tarea.id,
+    titulo: tarea.titulo,
+    estado: tarea.estado as EstadoTarea,
+    fecha_vencimiento: tarea.fecha_vencimiento,
+    asignados: (tarea.tarea_asignados ?? []).flatMap((a) =>
+      a.users ? [{ nombre: (a.users as unknown as { nombre: string }).nombre }] : []
+    ),
+  }));
+
+  const puedeCrear = profile?.rol === "Admin" || profile?.rol === "Profesor";
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Tareas</h1>
+        {puedeCrear && (
+          <Link
+            href="/tareas/nueva"
+            className="rounded bg-black px-4 py-2 text-sm font-medium text-white"
+          >
+            Nueva tarea
+          </Link>
+        )}
+      </div>
+
+      <FiltroEstadoTabs actual={filtroEstado ?? "Todas"} />
+
+      {tareas.length === 0 ? (
+        <p className="text-sm text-black/50">No hay tareas para mostrar.</p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {tareas.map((tarea) => (
+            <TareaCard key={tarea.id} tarea={tarea} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
