@@ -140,14 +140,9 @@
   --text-5xl: 3.8125rem;
   --text-5xl--line-height: 1.15;
 
-  /* Espaciado — alias semánticos sobre grid de 8pt; no reemplazan la escala numérica de Tailwind */
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
-  --spacing-2xl: 3rem;
-  --spacing-3xl: 4rem;
+  /* Espaciado: se usa la escala numérica default de Tailwind (p-4, gap-6, etc.) directamente.
+     Nota: NO definir acá tokens --spacing-xs/sm/md/lg/xl/2xl/3xl — en Tailwind v4 ese namespace
+     alimenta TODAS las utilidades de tamaño con esos nombres (max-w-sm, w-lg, etc. quedan pisados). */
 
   /* Radios — estilo "modern" del skill, base 8px */
   --radius: 0.5rem;
