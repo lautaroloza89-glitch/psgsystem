@@ -6,7 +6,7 @@ import { TurnoForm } from "@/components/horarios/TurnoForm";
 import { BackButton } from "@/components/ui/BackButton";
 import { crearTurno } from "../actions";
 
-export const metadata: Metadata = { title: "Nueva Clase / Turno" };
+export const metadata: Metadata = { title: "Nueva Clase/Turno" };
 
 export default async function NuevoTurnoPage() {
   const profile = await getCurrentUserProfile();
@@ -26,7 +26,7 @@ export default async function NuevoTurnoPage() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <BackButton href="/horarios" />
-      <h1 className="text-2xl font-bold tracking-tight">Nueva Clase / Turno</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Nueva Clase/Turno</h1>
       <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         <TurnoForm
           action={crearTurno}
