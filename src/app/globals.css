@@ -151,3 +151,15 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
 }
+
+/* iOS Safari hace zoom automático al enfocar un input con font-size < 16px
+   y no siempre vuelve al nivel original al desenfocar. El !important es
+   necesario para pisar las utilidades de Tailwind (text-sm, text-label, etc.)
+   que ya traen los inputs/selects/textareas de los formularios. */
+@media (max-width: 639.98px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

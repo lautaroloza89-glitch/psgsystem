@@ -6,6 +6,7 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { EstadoTurnoBadge } from "@/components/horarios/EstadoTurnoBadge";
 import { ToggleEstadoTurnoButton } from "@/components/horarios/ToggleEstadoTurnoButton";
 import { BorrarTurnoButton } from "@/components/horarios/BorrarTurnoButton";
+import { BackButton } from "@/components/ui/BackButton";
 import { formatFecha } from "@/lib/utils/date";
 import type { EstadoTurno } from "@/types";
 
@@ -43,14 +44,7 @@ export default async function TurnoDetallePage({
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <Link
-          href="/horarios"
-          className="rounded text-sm text-text-subtle transition-colors duration-[var(--duration-fast)] ease-standard hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-        >
-          ← Volver
-        </Link>
-      </div>
+      <BackButton href="/horarios" />
 
       <div className="space-y-6 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         <div className="flex items-start justify-between gap-2">
@@ -64,7 +58,7 @@ export default async function TurnoDetallePage({
             Horario: {turno.hora_inicio.slice(0, 5)}–{turno.hora_fin.slice(0, 5)}
           </p>
           <p>Profesor: {profesorNombre ?? "Sin asignar"}</p>
-          <p>Capacidad: {turno.capacidad}</p>
+          {turno.capacidad != null && <p>Capacidad: {turno.capacidad}</p>}
         </div>
 
         {puedeEditar && (

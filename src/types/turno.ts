@@ -6,7 +6,7 @@ export interface Turno {
   hora_inicio: string;
   hora_fin: string;
   grupo_nivel: string;
-  capacidad: number;
+  capacidad: number | null;
   profesor_id: string | null;
   estado: EstadoTurno;
   created_at: string;

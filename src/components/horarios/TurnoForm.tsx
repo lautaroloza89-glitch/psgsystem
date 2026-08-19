@@ -13,7 +13,6 @@ export interface TurnoFormDefaultValues {
   hora_inicio: string;
   hora_fin: string;
   grupo_nivel: string;
-  capacidad: string;
   profesor_id: string;
 }
 
@@ -50,7 +49,7 @@ export function TurnoForm({
         />
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row">
         <div className="flex-1 space-y-1.5">
           <label htmlFor="hora_inicio" className="text-label font-medium">
             Hora inicio
@@ -90,21 +89,6 @@ export function TurnoForm({
           required
           placeholder="Ej. Iniciación, Nivel 2"
           defaultValue={defaultValues?.grupo_nivel}
-          className={INPUT_CLASS}
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <label htmlFor="capacidad" className="text-label font-medium">
-          Capacidad
-        </label>
-        <input
-          id="capacidad"
-          name="capacidad"
-          type="number"
-          min={1}
-          required
-          defaultValue={defaultValues?.capacidad}
           className={INPUT_CLASS}
         />
       </div>

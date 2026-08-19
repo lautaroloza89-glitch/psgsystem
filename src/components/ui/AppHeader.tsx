@@ -8,23 +8,9 @@ import { LogoutButton } from "@/components/ui/logout-button";
 const ENLACES = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/tareas", label: "Tareas" },
-  { href: "/horarios", label: "Horarios" },
+  { href: "/horarios", label: "Clases / Turnos" },
   { href: "/miembros", label: "Miembros del equipo" },
 ];
-
-function getScreenLabel(pathname: string): string {
-  if (pathname === "/dashboard") return "Dashboard";
-  if (pathname === "/tareas") return "Tareas";
-  if (pathname === "/tareas/nueva") return "Nueva tarea";
-  if (/^\/tareas\/[^/]+\/editar$/.test(pathname)) return "Editar tarea";
-  if (/^\/tareas\/[^/]+$/.test(pathname)) return "Detalle de tarea";
-  if (pathname === "/horarios") return "Horarios";
-  if (pathname === "/horarios/nuevo") return "Nuevo turno";
-  if (/^\/horarios\/[^/]+\/editar$/.test(pathname)) return "Editar turno";
-  if (/^\/horarios\/[^/]+$/.test(pathname)) return "Detalle de turno";
-  if (pathname === "/miembros") return "Miembros del equipo";
-  return "Patín Saint Germain";
-}
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -58,7 +44,7 @@ export function AppHeader() {
   return (
     <>
       <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3 sm:px-8">
+        <div className="mx-auto flex max-w-5xl items-center px-4 py-3 sm:px-8">
           <button
             ref={botonRef}
             type="button"
@@ -70,9 +56,6 @@ export function AppHeader() {
           >
             <span aria-hidden="true">☰</span>
           </button>
-          <span className="text-lg font-semibold tracking-tight">
-            {getScreenLabel(pathname)}
-          </span>
         </div>
       </header>
 

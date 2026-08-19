@@ -13,7 +13,7 @@ const MENSAJE_VACIO: Record<EstadoTurno | "Todas", string> = {
   Cancelado: "No hay turnos cancelados.",
 };
 
-export const metadata: Metadata = { title: "Horarios" };
+export const metadata: Metadata = { title: "Clases / Turnos" };
 
 const ESTADOS_VALIDOS: EstadoTurno[] = ["Activo", "Cancelado"];
 
@@ -62,13 +62,13 @@ export default async function HorariosPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Horarios</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Clases / Turnos</h1>
         {puedeCrear && (
           <Link
             href="/horarios/nuevo"
             className="rounded-md bg-primary-500 px-5 py-2.5 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           >
-            Nuevo turno
+            Nueva Clase / Turno
           </Link>
         )}
       </div>

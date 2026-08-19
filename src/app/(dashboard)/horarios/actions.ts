@@ -15,10 +15,9 @@ function leerCamposTurno(formData: FormData) {
   const hora_inicio = (formData.get("hora_inicio") as string) ?? "";
   const hora_fin = (formData.get("hora_fin") as string) ?? "";
   const grupo_nivel = ((formData.get("grupo_nivel") as string) ?? "").trim();
-  const capacidad = Number(formData.get("capacidad"));
   const profesor_id = (formData.get("profesor_id") as string) || null;
 
-  return { fecha, hora_inicio, hora_fin, grupo_nivel, capacidad, profesor_id };
+  return { fecha, hora_inicio, hora_fin, grupo_nivel, profesor_id };
 }
 
 function validarCamposTurno({
@@ -26,13 +25,9 @@ function validarCamposTurno({
   hora_inicio,
   hora_fin,
   grupo_nivel,
-  capacidad,
 }: ReturnType<typeof leerCamposTurno>): string | null {
   if (!fecha || !hora_inicio || !hora_fin || !grupo_nivel) {
     return "Completá fecha, horario y grupo/nivel.";
-  }
-  if (!Number.isFinite(capacidad) || capacidad <= 0) {
-    return "La capacidad tiene que ser un número mayor a 0.";
   }
   if (hora_fin <= hora_inicio) {
     return "La hora de fin tiene que ser posterior a la de inicio.";
@@ -55,7 +50,7 @@ export async function crearTurno(
     return { error: errorValidacion };
   }
 
-  const { fecha, hora_inicio, hora_fin, grupo_nivel, capacidad, profesor_id } = campos;
+  const { fecha, hora_inicio, hora_fin, grupo_nivel, profesor_id } = campos;
   const profesorFinal = profile.rol === "Profesor" ? profile.id : profesor_id;
 
   const supabase = await createClient();
@@ -66,7 +61,6 @@ export async function crearTurno(
       hora_inicio,
       hora_fin,
       grupo_nivel,
-      capacidad,
       profesor_id: profesorFinal,
     })
     .select("id")
@@ -96,14 +90,13 @@ export async function editarTurno(
     return { error: errorValidacion };
   }
 
-  const { fecha, hora_inicio, hora_fin, grupo_nivel, capacidad, profesor_id } = campos;
+  const { fecha, hora_inicio, hora_fin, grupo_nivel, profesor_id } = campos;
 
   const update: Record<string, unknown> = {
     fecha,
     hora_inicio,
     hora_fin,
     grupo_nivel,
-    capacidad,
   };
   // Un Profesor no puede reasignar el turno a otro profesor (RLS lo rechazaría
   // de todos modos); solo Admin puede tocar profesor_id.

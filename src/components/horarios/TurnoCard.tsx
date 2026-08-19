@@ -9,7 +9,7 @@ export interface TurnoCardData {
   hora_inicio: string;
   hora_fin: string;
   grupo_nivel: string;
-  capacidad: number;
+  capacidad: number | null;
   estado: EstadoTurno;
   profesorNombre: string | null;
 }
@@ -36,7 +36,8 @@ export function TurnoCard({
         {formatFecha(turno.fecha)} · {turno.hora_inicio.slice(0, 5)}–{turno.hora_fin.slice(0, 5)}
       </p>
       <p className="mt-1 text-sm text-text-subtle">
-        {turno.profesorNombre ?? "Sin profesor asignado"} · Capacidad {turno.capacidad}
+        {turno.profesorNombre ?? "Sin profesor asignado"}
+        {turno.capacidad != null && ` · Capacidad ${turno.capacidad}`}
       </p>
     </Link>
   );

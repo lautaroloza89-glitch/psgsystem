@@ -2,6 +2,7 @@
 
 > Modelo base del Módulo 2, implementado en `supabase/migrations/20260817120000_modelo_datos_inicial.sql`.
 > Extendido en el Módulo 5 (`supabase/migrations/20260818150000_users_dicta_clases.sql`) con la columna `dicta_clases` en `users`, necesaria para el formulario de turnos.
+> Extendido en la corrección mobile del 2026-08-19 (`supabase/migrations/20260819120000_turnos_capacidad_opcional.sql`): `turnos.capacidad` deja de ser `not null` — se sacó del formulario de "Nueva Clase / Turno" y "Editar turno", la columna se mantiene por si se vuelve a usar más adelante.
 
 ## Decisiones tomadas
 
@@ -77,7 +78,7 @@ Horarios/turnos de la escuela. Cada fila es una ocurrencia puntual (fecha concre
 | `hora_inicio` | `time` | `not null` |
 | `hora_fin` | `time` | `not null`, check: `hora_fin > hora_inicio` |
 | `grupo_nivel` | `text` | `not null`, texto libre (ej. "Iniciación", "Nivel 2") |
-| `capacidad` | `integer` | `not null`, check: `capacidad > 0` |
+| `capacidad` | `integer` | opcional (ver nota arriba), check: `capacidad > 0` cuando no es null |
 | `profesor_id` | `uuid` | FK a `users(id)`, `on delete set null`, opcional |
 | `estado` | `text` | `not null`, default `'Activo'`, check: `'Activo' \| 'Cancelado'` |
 | `created_at` | `timestamptz` | default `now()` |
