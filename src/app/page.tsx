@@ -1,7 +1,7 @@
-export default function Home() {
-  return (
-    <main className="flex min-h-screen items-center justify-center">
-      <h1 className="text-xl font-bold tracking-tight">Escuela de Patín</h1>
-    </main>
-  );
+import { redirect } from "next/navigation";
+import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+
+export default async function Home() {
+  const profile = await getCurrentUserProfile();
+  redirect(profile ? "/dashboard" : "/login");
 }

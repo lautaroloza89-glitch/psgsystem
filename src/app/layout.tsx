@@ -3,8 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Escuela de Patín",
-    template: "%s · Escuela de Patín",
+    default: "Patín Saint Germain",
+    template: "%s · Patín Saint Germain",
   },
   description: "App de gestión para escuela de patín",
 };

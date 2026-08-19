@@ -23,7 +23,7 @@ function getScreenLabel(pathname: string): string {
   if (/^\/horarios\/[^/]+\/editar$/.test(pathname)) return "Editar turno";
   if (/^\/horarios\/[^/]+$/.test(pathname)) return "Detalle de turno";
   if (pathname === "/miembros") return "Miembros del equipo";
-  return "Escuela de Patín";
+  return "Patín Saint Germain";
 }
 
 export function AppHeader() {
@@ -92,7 +92,7 @@ export function AppHeader() {
             className="absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col bg-surface p-4 shadow-xl"
           >
             <div className="flex items-center justify-between">
-              <span className="text-lg font-semibold tracking-tight">Escuela de Patín</span>
+              <span className="text-lg font-semibold tracking-tight">Patín Saint Germain</span>
               <button
                 type="button"
                 onClick={() => setAbierto(false)}
