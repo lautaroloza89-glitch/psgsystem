@@ -88,7 +88,7 @@ escuela-patin-app/
 | 1 | Setup base (proyecto, config, deploy vacío) | — | ✅ Terminado |
 | 2 | Modelo de datos (tablas en Supabase) | 1 | ✅ Terminado |
 | 3 | Auth + roles | 2 | ✅ Terminado |
-| 4 | Módulo Tareas | 3 | 🟡 En revisión |
+| 4 | Módulo Tareas | 3 | ✅ Terminado |
 | 5 | Módulo Horarios/Turnos | 3 | ✅ Terminado |
 | 6 | Dashboard | 4, 5 | ✅ Terminado |
 | 7 | Notificaciones | 4, 5 | ⬜ Pendiente |
