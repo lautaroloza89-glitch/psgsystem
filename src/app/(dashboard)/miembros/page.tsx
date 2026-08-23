@@ -9,7 +9,7 @@ export default async function MiembrosPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("users")
-    .select("id, nombre, email, rol")
+    .select("id, nombre, email, rol, cargo")
     .order("nombre");
 
   const miembros: MiembroCardData[] = data ?? [];

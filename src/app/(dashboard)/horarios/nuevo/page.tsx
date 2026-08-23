@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Nueva Clase/Turno" };
 export default async function NuevoTurnoPage() {
   const profile = await getCurrentUserProfile();
 
-  if (!profile || profile.rol === "Empleado") {
+  if (!profile || profile.rol === "Empleado" || profile.rol === "Patinador") {
     redirect("/horarios");
   }
 

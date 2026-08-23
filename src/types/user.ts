@@ -1,4 +1,4 @@
-export type Rol = "Admin" | "Profesor" | "Empleado";
+export type Rol = "Admin" | "Profesor" | "Empleado" | "Head Coach" | "Patinador";
 
 export interface User {
   id: string;
@@ -6,5 +6,6 @@ export interface User {
   nombre: string;
   rol: Rol;
   dicta_clases: boolean;
+  cargo: string | null;
   created_at: string;
 }

@@ -8,8 +8,9 @@ import { EstadoSelector } from "@/components/tareas/EstadoSelector";
 import { ComentariosList, type ComentarioData } from "@/components/tareas/ComentariosList";
 import { ComentarioForm } from "@/components/tareas/ComentarioForm";
 import { BackButton } from "@/components/ui/BackButton";
+import { UsuarioRolCargo } from "@/components/ui/UsuarioRolCargo";
 import { formatFecha } from "@/lib/utils/date";
-import type { EstadoTarea } from "@/types";
+import type { EstadoTarea, Rol } from "@/types";
 
 export const metadata: Metadata = { title: "Detalle de tarea" };
 
@@ -25,7 +26,7 @@ export default async function TareaDetallePage({
   const { data: tarea } = await supabase
     .from("tareas")
     .select(
-      "id, titulo, descripcion, estado, fecha_inicio, fecha_vencimiento, created_by, tarea_asignados(usuario_id, users(nombre))"
+      "id, titulo, descripcion, estado, fecha_inicio, fecha_vencimiento, created_by, tarea_asignados(usuario_id, users(nombre, rol, cargo))"
     )
     .eq("id", id)
     .single();
@@ -49,7 +50,14 @@ export default async function TareaDetallePage({
 
   const asignados = (tarea.tarea_asignados ?? []).flatMap((a) =>
     a.users
-      ? [{ id: a.usuario_id, nombre: (a.users as unknown as { nombre: string }).nombre }]
+      ? [
+          {
+            id: a.usuario_id,
+            nombre: (a.users as unknown as { nombre: string }).nombre,
+            rol: (a.users as unknown as { rol: Rol }).rol,
+            cargo: (a.users as unknown as { cargo: string | null }).cargo,
+          },
+        ]
       : []
   );
 
@@ -60,7 +68,7 @@ export default async function TareaDetallePage({
   const puedeEditar =
     !!profile &&
     (profile.rol === "Admin" ||
-      (profile.rol === "Profesor" &&
+      ((profile.rol === "Profesor" || profile.rol === "Head Coach") &&
         (tarea.created_by === profile.id || estaAsignado)));
 
   return (
@@ -85,9 +93,11 @@ export default async function TareaDetallePage({
         {asignados.length > 0 && (
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Responsables</h2>
-            <p className="text-base text-text-muted">
-              {asignados.map((a) => a.nombre).join(", ")}
-            </p>
+            <div className="space-y-2">
+              {asignados.map((a) => (
+                <UsuarioRolCargo key={a.id} nombre={a.nombre} rol={a.rol} cargo={a.cargo} />
+              ))}
+            </div>
           </div>
         )}
 

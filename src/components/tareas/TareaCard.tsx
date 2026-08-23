@@ -1,6 +1,7 @@
 import Link from "next/link";
-import type { EstadoTarea } from "@/types";
+import type { EstadoTarea, Rol } from "@/types";
 import { EstadoBadge } from "./EstadoBadge";
+import { UsuarioRolCargo } from "@/components/ui/UsuarioRolCargo";
 import { formatFecha } from "@/lib/utils/date";
 
 export interface TareaCardData {
@@ -8,7 +9,7 @@ export interface TareaCardData {
   titulo: string;
   estado: EstadoTarea;
   fecha_vencimiento: string | null;
-  asignados: { nombre: string }[];
+  asignados: { nombre: string; rol: Rol; cargo: string | null }[];
 }
 
 export function TareaCard({
@@ -33,9 +34,11 @@ export function TareaCard({
         Vence: {formatFecha(tarea.fecha_vencimiento)}
       </p>
       {tarea.asignados.length > 0 && (
-        <p className="mt-1 text-sm text-text-subtle">
-          {tarea.asignados.map((a) => a.nombre).join(", ")}
-        </p>
+        <div className="mt-1 space-y-2">
+          {tarea.asignados.map((a, i) => (
+            <UsuarioRolCargo key={i} nombre={a.nombre} rol={a.rol} cargo={a.cargo} />
+          ))}
+        </div>
       )}
     </Link>
   );

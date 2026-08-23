@@ -26,7 +26,7 @@ export function TareaForm({
   modo,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
-  usuarios: Pick<User, "id" | "nombre" | "rol">[];
+  usuarios: Pick<User, "id" | "nombre" | "rol" | "cargo">[];
   defaultValues?: TareaFormDefaultValues;
   modo: "crear" | "editar";
 }) {

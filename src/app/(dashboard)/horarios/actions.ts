@@ -40,7 +40,7 @@ export async function crearTurno(
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || profile.rol === "Empleado") {
+  if (!profile || profile.rol === "Empleado" || profile.rol === "Patinador") {
     return { error: "No tenés permiso para crear turnos." };
   }
 
@@ -51,7 +51,8 @@ export async function crearTurno(
   }
 
   const { fecha, hora_inicio, hora_fin, grupo_nivel, profesor_id } = campos;
-  const profesorFinal = profile.rol === "Profesor" ? profile.id : profesor_id;
+  const profesorFinal =
+    profile.rol === "Profesor" || profile.rol === "Head Coach" ? profile.id : profesor_id;
 
   const supabase = await createClient();
   const { data: turno, error } = await supabase
@@ -80,7 +81,7 @@ export async function editarTurno(
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || profile.rol === "Empleado") {
+  if (!profile || profile.rol === "Empleado" || profile.rol === "Patinador") {
     return { error: "No tenés permiso para editar este turno." };
   }
 

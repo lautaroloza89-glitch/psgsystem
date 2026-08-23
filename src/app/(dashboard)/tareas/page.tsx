@@ -5,7 +5,7 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { FiltroEstadoTabs } from "@/components/tareas/FiltroEstadoTabs";
 import { TareaCard, type TareaCardData } from "@/components/tareas/TareaCard";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { EstadoTarea } from "@/types";
+import type { EstadoTarea, Rol } from "@/types";
 
 const MENSAJE_VACIO: Record<EstadoTarea | "Todas", string> = {
   Todas: "No hay tareas para mostrar.",
@@ -34,7 +34,7 @@ export default async function TareasPage({
   let query = supabase
     .from("tareas")
     .select(
-      "id, titulo, estado, fecha_vencimiento, tarea_asignados(usuario_id, users(nombre))"
+      "id, titulo, estado, fecha_vencimiento, tarea_asignados(usuario_id, users(nombre, rol, cargo))"
     )
     .order("fecha_vencimiento", { ascending: true, nullsFirst: false });
 
@@ -50,11 +50,20 @@ export default async function TareasPage({
     estado: tarea.estado as EstadoTarea,
     fecha_vencimiento: tarea.fecha_vencimiento,
     asignados: (tarea.tarea_asignados ?? []).flatMap((a) =>
-      a.users ? [{ nombre: (a.users as unknown as { nombre: string }).nombre }] : []
+      a.users
+        ? [
+            {
+              nombre: (a.users as unknown as { nombre: string }).nombre,
+              rol: (a.users as unknown as { rol: Rol }).rol,
+              cargo: (a.users as unknown as { cargo: string | null }).cargo,
+            },
+          ]
+        : []
     ),
   }));
 
-  const puedeCrear = profile?.rol === "Admin" || profile?.rol === "Profesor";
+  const puedeCrear =
+    profile?.rol === "Admin" || profile?.rol === "Profesor" || profile?.rol === "Head Coach";
 
   return (
     <div className="space-y-6">

@@ -11,14 +11,14 @@ export const metadata: Metadata = { title: "Nueva tarea" };
 export default async function NuevaTareaPage() {
   const profile = await getCurrentUserProfile();
 
-  if (!profile || profile.rol === "Empleado") {
+  if (!profile || profile.rol === "Empleado" || profile.rol === "Patinador") {
     redirect("/tareas");
   }
 
   const supabase = await createClient();
   const { data: usuarios } = await supabase
     .from("users")
-    .select("id, nombre, rol")
+    .select("id, nombre, rol, cargo")
     .order("nombre");
 
   return (

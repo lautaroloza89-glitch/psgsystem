@@ -57,7 +57,8 @@ export default async function HorariosPage({
       : null,
   }));
 
-  const puedeCrear = profile?.rol === "Admin" || profile?.rol === "Profesor";
+  const puedeCrear =
+    profile?.rol === "Admin" || profile?.rol === "Profesor" || profile?.rol === "Head Coach";
 
   return (
     <div className="space-y-6">

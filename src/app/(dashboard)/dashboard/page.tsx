@@ -6,7 +6,7 @@ import { TareaCard, type TareaCardData } from "@/components/tareas/TareaCard";
 import { TurnoCard, type TurnoCardData } from "@/components/horarios/TurnoCard";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { EstadoTarea, EstadoTurno } from "@/types";
+import type { EstadoTarea, EstadoTurno, Rol } from "@/types";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   const { data: tareasData } = await supabase
     .from("tareas")
     .select(
-      "id, titulo, estado, fecha_vencimiento, tarea_asignados(usuario_id, users(nombre))"
+      "id, titulo, estado, fecha_vencimiento, tarea_asignados(usuario_id, users(nombre, rol, cargo))"
     )
     .neq("estado", "Completada")
     .order("fecha_vencimiento", { ascending: true, nullsFirst: false })
@@ -38,7 +38,15 @@ export default async function DashboardPage() {
     estado: tarea.estado as EstadoTarea,
     fecha_vencimiento: tarea.fecha_vencimiento,
     asignados: (tarea.tarea_asignados ?? []).flatMap((a) =>
-      a.users ? [{ nombre: (a.users as unknown as { nombre: string }).nombre }] : []
+      a.users
+        ? [
+            {
+              nombre: (a.users as unknown as { nombre: string }).nombre,
+              rol: (a.users as unknown as { rol: Rol }).rol,
+              cargo: (a.users as unknown as { cargo: string | null }).cargo,
+            },
+          ]
+        : []
     ),
   }));
 

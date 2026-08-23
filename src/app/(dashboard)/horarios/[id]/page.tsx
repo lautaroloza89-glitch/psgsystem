@@ -40,7 +40,8 @@ export default async function TurnoDetallePage({
   const puedeEditar =
     !!profile &&
     (profile.rol === "Admin" ||
-      (profile.rol === "Profesor" && turno.profesor_id === profile.id));
+      ((profile.rol === "Profesor" || profile.rol === "Head Coach") &&
+        turno.profesor_id === profile.id));
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

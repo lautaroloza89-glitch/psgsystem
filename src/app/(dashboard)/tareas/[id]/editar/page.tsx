@@ -35,7 +35,7 @@ export default async function EditarTareaPage({
   const puedeEditar =
     !!profile &&
     (profile.rol === "Admin" ||
-      (profile.rol === "Profesor" &&
+      ((profile.rol === "Profesor" || profile.rol === "Head Coach") &&
         (tarea.created_by === profile.id || estaAsignado)));
 
   if (!puedeEditar) {
@@ -44,7 +44,7 @@ export default async function EditarTareaPage({
 
   const { data: usuarios } = await supabase
     .from("users")
-    .select("id, nombre, rol")
+    .select("id, nombre, rol, cargo")
     .order("nombre");
 
   const editarTareaConId = editarTarea.bind(null, id);
