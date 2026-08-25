@@ -4,6 +4,7 @@
 > Extendido en el Módulo 5 (`supabase/migrations/20260818150000_users_dicta_clases.sql`) con la columna `dicta_clases` en `users`, necesaria para el formulario de turnos.
 > Extendido en la corrección mobile del 2026-08-19 (`supabase/migrations/20260819120000_turnos_capacidad_opcional.sql`): `turnos.capacidad` deja de ser `not null` — se sacó del formulario de "Nueva Clase / Turno" y "Editar turno", la columna se mantiene por si se vuelve a usar más adelante.
 > Extendido el 2026-08-22 (`supabase/migrations/20260822120000_roles_head_coach_patinador.sql`): nuevos roles de permiso `Head Coach` y `Patinador`, y columna `cargo` (descriptiva, sin efecto en permisos) en `users`. Detalle en `docs/roles-actualizacion.md`.
+> Extendido el 2026-08-25 (`supabase/migrations/20260825150000_notificaciones.sql`, Módulo 7 — Sesión 1): tabla nueva `notificaciones` con trigger de "tarea asignada" sobre `tarea_asignados`.
 
 ## Decisiones tomadas
 
@@ -85,6 +86,22 @@ Horarios/turnos de la escuela. Cada fila es una ocurrencia puntual (fecha concre
 | `estado` | `text` | `not null`, default `'Activo'`, check: `'Activo' \| 'Cancelado'` |
 | `created_at` | `timestamptz` | default `now()` |
 | `updated_at` | `timestamptz` | default `now()`, se actualiza solo con trigger |
+
+### `notificaciones`
+
+Notificaciones en tiempo real por usuario (Módulo 7, primera sesión: solo el disparador de "tarea asignada"; comentarios/vencimientos/push se agregan en sesiones futuras del mismo módulo).
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `usuario_id` | `uuid` | FK a `users(id)`, `on delete cascade` — a quién le llega |
+| `tipo` | `text` | `not null`, texto libre (ej. `'tarea_asignada'`), no enum, para poder sumar tipos nuevos sin migrar el esquema |
+| `mensaje` | `text` | `not null`, texto corto ya armado (ej. "Te asignaron: Físico de las 20hs") |
+| `tarea_id` | `uuid` | FK a `tareas(id)`, `on delete cascade`, opcional — para navegar a la tarea al tocar la notificación |
+| `leida` | `boolean` | `not null`, default `false` |
+| `creado_en` | `timestamptz` | `not null`, default `now()` |
+
+Las filas las crea únicamente el trigger `notificar_tarea_asignada` (security definer, dispara en cada `insert` real sobre `tarea_asignados`) — no hay política RLS de `insert` para la aplicación, mismo patrón que `handle_new_user` sobre `users`. Cada usuario solo puede `select`/`update` (marcar como leída) sus propias notificaciones. Tabla agregada a la publicación `supabase_realtime` para la suscripción en vivo del ícono de campana.
 
 ## Relaciones
 

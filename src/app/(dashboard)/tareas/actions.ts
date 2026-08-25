@@ -102,19 +102,40 @@ export async function editarTarea(
     return { error: "No se pudo actualizar la tarea." };
   }
 
-  const { error: deleteError } = await supabase
+  // Diff contra los responsables actuales en vez de borrar todo y reinsertar
+  // todo: así el trigger de notificaciones (Módulo 7) solo ve un INSERT real
+  // para los responsables nuevos, y no reenvía notificación a quien ya
+  // estaba asignado desde antes de esta edición.
+  const { data: actuales, error: actualesError } = await supabase
     .from("tarea_asignados")
-    .delete()
+    .select("usuario_id")
     .eq("tarea_id", tareaId);
 
-  if (deleteError) {
+  if (actualesError) {
     return { error: "No se pudieron actualizar los responsables." };
   }
 
-  if (asignados.length > 0) {
+  const idsActuales = new Set((actuales ?? []).map((a) => a.usuario_id));
+  const idsNuevos = new Set(asignados);
+  const aQuitar = [...idsActuales].filter((id) => !idsNuevos.has(id));
+  const aAgregar = [...idsNuevos].filter((id) => !idsActuales.has(id));
+
+  if (aQuitar.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("tarea_asignados")
+      .delete()
+      .eq("tarea_id", tareaId)
+      .in("usuario_id", aQuitar);
+
+    if (deleteError) {
+      return { error: "No se pudieron actualizar los responsables." };
+    }
+  }
+
+  if (aAgregar.length > 0) {
     const { error: insertError } = await supabase
       .from("tarea_asignados")
-      .insert(asignados.map((usuario_id) => ({ tarea_id: tareaId, usuario_id })));
+      .insert(aAgregar.map((usuario_id) => ({ tarea_id: tareaId, usuario_id })));
 
     if (insertError) {
       return { error: "No se pudieron actualizar los responsables." };

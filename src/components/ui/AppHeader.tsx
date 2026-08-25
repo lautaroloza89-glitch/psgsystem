@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LogoutButton } from "@/components/ui/logout-button";
 import { UsuarioRolCargo } from "@/components/ui/UsuarioRolCargo";
+import { NotificacionesBell } from "@/components/notificaciones/NotificacionesBell";
 import type { User } from "@/types";
 
 const ENLACES = [
@@ -46,7 +47,7 @@ export function AppHeader({ profile }: { profile: User }) {
   return (
     <>
       <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-5xl items-center px-4 py-3 sm:px-8">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-8">
           <button
             ref={botonRef}
             type="button"
@@ -58,6 +59,7 @@ export function AppHeader({ profile }: { profile: User }) {
           >
             <span aria-hidden="true">☰</span>
           </button>
+          <NotificacionesBell usuarioId={profile.id} />
         </div>
       </header>
 
