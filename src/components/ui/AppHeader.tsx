@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LogoutButton } from "@/components/ui/logout-button";
+import { UsuarioRolCargo } from "@/components/ui/UsuarioRolCargo";
+import type { User } from "@/types";
 
 const ENLACES = [
   { href: "/dashboard", label: "Dashboard" },
@@ -12,7 +14,7 @@ const ENLACES = [
   { href: "/miembros", label: "Miembros del equipo" },
 ];
 
-export function AppHeader() {
+export function AppHeader({ profile }: { profile: User }) {
   const pathname = usePathname();
   const [abierto, setAbierto] = useState(false);
   const primerEnlaceRef = useRef<HTMLAnchorElement>(null);
@@ -108,8 +110,13 @@ export function AppHeader() {
               })}
             </nav>
 
-            <div className="mt-auto border-t border-border pt-4">
-              <LogoutButton className="w-full rounded-md px-3 py-2.5 text-left text-base font-medium text-error-600 transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-error-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface" />
+            <div className="mt-auto">
+              <div className="px-3 pb-4">
+                <UsuarioRolCargo nombre={profile.nombre} rol={profile.rol} cargo={profile.cargo} />
+              </div>
+              <div className="border-t border-border pt-4">
+                <LogoutButton className="w-full rounded-md px-3 py-2.5 text-left text-base font-medium text-error-600 transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-error-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface" />
+              </div>
             </div>
           </div>
         </div>

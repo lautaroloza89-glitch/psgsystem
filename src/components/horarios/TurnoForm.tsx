@@ -87,6 +87,7 @@ export function TurnoForm({
           name="grupo_nivel"
           type="text"
           required
+          autoComplete="off"
           placeholder="Ej. Iniciación, Nivel 2"
           defaultValue={defaultValues?.grupo_nivel}
           className={INPUT_CLASS}

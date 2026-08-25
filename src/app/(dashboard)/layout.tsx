@@ -21,7 +21,7 @@ export default async function DashboardLayout({
       >
         Saltar al contenido principal
       </a>
-      <AppHeader />
+      <AppHeader profile={profile} />
       <main id="main-content" className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
         {children}
       </main>

@@ -43,6 +43,7 @@ export function TareaForm({
           name="titulo"
           type="text"
           required
+          autoComplete="off"
           defaultValue={defaultValues?.titulo}
           className={INPUT_CLASS}
         />
@@ -56,6 +57,7 @@ export function TareaForm({
           id="descripcion"
           name="descripcion"
           rows={3}
+          autoComplete="off"
           defaultValue={defaultValues?.descripcion}
           className={INPUT_CLASS}
         />
