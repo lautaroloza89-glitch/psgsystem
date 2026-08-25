@@ -94,7 +94,7 @@ export function TurnoForm({
         />
       </div>
 
-      {profile.rol === "Admin" ? (
+      {profile.rol === "Admin" || profile.rol === "Head Coach" ? (
         <div className="space-y-1.5">
           <label htmlFor="profesor_id" className="text-label font-medium">
             Profesor

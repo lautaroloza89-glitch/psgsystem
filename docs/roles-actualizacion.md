@@ -70,3 +70,29 @@ ya se hace hoy con la dueña.
 `AsignadosChecklist`, `MiembroCard` y el detalle/tarjetas de tarea muestran
 ahora, para cada usuario: nombre, rol en negrita, y cargo debajo si existe
 (componente compartido `src/components/ui/UsuarioRolCargo.tsx`).
+
+## Ampliación 2026-08-25: Head Coach con control total sobre Turnos
+
+Motivo: en la práctica es Luciana (Head Coach) quien arma la mayor parte de
+las planificaciones de clases, y necesitaba poder asignar/reasignar un turno
+a cualquier profesor, no solo a sí misma. Se decidió explícitamente darle a
+Head Coach el mismo alcance que Admin sobre **turnos** (crear y editar
+cualquiera, incluyendo `profesor_id`), mientras que sobre **tareas** el
+alcance de Head Coach no cambió (sigue igual que Profesor: solo lo propio,
+más la lectura ampliada ya existente). El borrado de turnos sigue siendo
+exclusivo de Admin — no se pidió para Head Coach.
+
+Migración `supabase/migrations/20260825160000_head_coach_asigna_turnos.sql`:
+`turnos_insert` y `turnos_update` pasan de
+`Admin or (Profesor|Head Coach and profesor_id = auth.uid())` a
+`(Admin|Head Coach) or (Profesor and profesor_id = auth.uid())`.
+
+Cambios de aplicación en `src/app/(dashboard)/horarios/`:
+- `TurnoForm.tsx`: el dropdown de "Profesor" (antes solo Admin) se muestra
+  también para Head Coach; Profesor sigue viendo el texto de autoasignación.
+- `actions.ts`: `crearTurno` ya no fuerza `profesor_id = profile.id` para
+  Head Coach (solo para Profesor); `editarTurno` deja tocar `profesor_id`
+  también a Head Coach.
+- `[id]/page.tsx` y `[id]/editar/page.tsx`: `puedeEditar` pasa a Head Coach
+  a la misma rama que Admin (cualquier turno), separada de la rama de
+  Profesor (solo el propio).

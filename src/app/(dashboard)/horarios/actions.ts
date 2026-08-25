@@ -51,8 +51,7 @@ export async function crearTurno(
   }
 
   const { fecha, hora_inicio, hora_fin, grupo_nivel, profesor_id } = campos;
-  const profesorFinal =
-    profile.rol === "Profesor" || profile.rol === "Head Coach" ? profile.id : profesor_id;
+  const profesorFinal = profile.rol === "Profesor" ? profile.id : profesor_id;
 
   const supabase = await createClient();
   const { data: turno, error } = await supabase
@@ -100,8 +99,8 @@ export async function editarTurno(
     grupo_nivel,
   };
   // Un Profesor no puede reasignar el turno a otro profesor (RLS lo rechazaría
-  // de todos modos); solo Admin puede tocar profesor_id.
-  if (profile.rol === "Admin") {
+  // de todos modos); Admin y Head Coach sí pueden tocar profesor_id.
+  if (profile.rol === "Admin" || profile.rol === "Head Coach") {
     update.profesor_id = profesor_id;
   }
 

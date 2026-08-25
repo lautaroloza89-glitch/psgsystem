@@ -30,8 +30,8 @@ export default async function EditarTurnoPage({
   const puedeEditar =
     !!profile &&
     (profile.rol === "Admin" ||
-      ((profile.rol === "Profesor" || profile.rol === "Head Coach") &&
-        turno.profesor_id === profile.id));
+      profile.rol === "Head Coach" ||
+      (profile.rol === "Profesor" && turno.profesor_id === profile.id));
 
   if (!puedeEditar) {
     redirect(`/horarios/${id}`);
