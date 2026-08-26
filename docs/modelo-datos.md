@@ -6,6 +6,7 @@
 > Extendido el 2026-08-22 (`supabase/migrations/20260822120000_roles_head_coach_patinador.sql`): nuevos roles de permiso `Head Coach` y `Patinador`, y columna `cargo` (descriptiva, sin efecto en permisos) en `users`. Detalle en `docs/roles-actualizacion.md`.
 > Extendido el 2026-08-25 (`supabase/migrations/20260825150000_notificaciones.sql`, Módulo 7 — Sesión 1): tabla nueva `notificaciones` con trigger de "tarea asignada" sobre `tarea_asignados`.
 > Extendido el 2026-08-26 (`supabase/migrations/20260826120000_notificaciones_comentario_nuevo.sql`, Módulo 7 — Sesión 2): trigger de "comentario nuevo" sobre `tarea_comentarios`, misma tabla `notificaciones`.
+> Extendido el 2026-08-26 (`supabase/migrations/20260826130000_notificaciones_vencimiento.sql`, Módulo 7 — Sesión 3): chequeo periódico (pg_cron) de tareas por vencer/vencidas, misma tabla `notificaciones`.
 
 ## Decisiones tomadas
 
@@ -105,6 +106,18 @@ Notificaciones en tiempo real por usuario (Módulo 7, primera sesión: solo el d
 Las filas las crea únicamente el trigger `notificar_tarea_asignada` (security definer, dispara en cada `insert` real sobre `tarea_asignados`) — no hay política RLS de `insert` para la aplicación, mismo patrón que `handle_new_user` sobre `users`. Cada usuario solo puede `select`/`update` (marcar como leída) sus propias notificaciones. Tabla agregada a la publicación `supabase_realtime` para la suscripción en vivo del ícono de campana.
 
 Extendida en el Módulo 7 — Sesión 2 con el trigger `notificar_comentario_nuevo` (security definer, dispara en cada `insert` real sobre `tarea_comentarios`, tipo `'comentario_nuevo'`): notifica a la unión de los responsables asignados (`tarea_asignados`) y el creador de la tarea (`tareas.created_by`), sin duplicados, excluyendo al autor del comentario. Mensaje: `"{Nombre} comentó en: {título}"` (sin el texto del comentario). Decidido con el usuario — no había un criterio previo que lo determinara.
+
+Extendida en el Módulo 7 — Sesión 3 con el chequeo de tareas por vencer/vencidas. A diferencia de las sesiones 1 y 2, no hay un `insert`/`update` que dispare el aviso por sí solo (nada cambia en la fila cuando una tarea "se acerca" a su vencimiento), así que se resuelve con un chequeo periódico en vez de un trigger:
+
+- **Mecanismo**: `pg_cron` (extensión habilitada en esta sesión), job `notificar_tareas_vencimiento_diario` corriendo `0 11 * * *` (11:00 UTC = 08:00 Argentina, sin horario de verano), que llama a la función `public.notificar_tareas_vencimiento()` (security definer).
+- **Umbral**: como `fecha_vencimiento` es `date` (sin hora), el cálculo es en días completos, no en horas — `fecha_vencimiento - fecha de hoy`. Genera tipo `'tarea_por_vencer_2d'` cuando faltan 2 días, `'tarea_por_vencer_1d'` cuando falta 1 día, y `'tarea_vencida'` cuando la fecha ya pasó. Solo evalúa tareas con `estado in ('Pendiente', 'En progreso')` (las `'Completada'` quedan excluidas aunque tengan `fecha_vencimiento` pasada).
+- **Destinatarios**: mismo criterio que la Sesión 2 — unión de responsables asignados (`tarea_asignados`) y creador de la tarea (`tareas.created_by`), sin duplicados. A diferencia de las sesiones 1 y 2 no se excluye a nadie (no hay un "autor de la acción" que disparó el aviso, es un chequeo del sistema).
+- **Una sola vez por umbral**: antes de insertar, la función chequea que no exista ya una notificación con el mismo `(tarea_id, usuario_id, tipo)` — así una tarea que sigue pendiente después de avisar "vence en 2 días" no repite ese mismo aviso en los chequeos diarios siguientes, pero sí puede generar después el aviso de "vence mañana" y luego el de "vencida" (son tres `tipo` distintos).
+- Mensajes: `"Vence en 2 días: {título}"`, `"Vence mañana: {título}"`, `"Venció: {título}"`.
+
+Decidido con el usuario (2026-08-26): esquema de días en vez de horas (la propuesta inicial de "48hs/16hs antes" no se podía calcular con precisión porque `fecha_vencimiento` no tiene componente de hora); mecanismo `pg_cron` en vez de chequeo al cargar el dashboard (recomendado por Claude, para que el aviso llegue aunque nadie abra la app ese día); incluir vencidas en esta misma sesión (ya estaba en el alcance del punto 5 de `PROGRESS.md`); destinatarios = asignados + creador, igual que la Sesión 2, para mantener el mismo criterio en todo el módulo.
+
+Probado con datos de prueba reales (prefijo `TEST-VENC`, creados y borrados al terminar, 0 restantes confirmado): 5 escenarios — tarea a 2 días (avisa a asignado y creador distintos), tarea a 1 día con creador = asignado (avisa una sola vez, no duplica), tarea vencida (avisa a ambos), tarea completada vencida (no avisa), tarea a 5 días (fuera de umbral, no avisa). Se confirmó además que ejecutar la función dos veces seguidas no duplica ningún aviso (dedup por `tarea_id`/`usuario_id`/`tipo` funcionando).
 
 ## Relaciones
 
