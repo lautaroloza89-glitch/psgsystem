@@ -116,6 +116,11 @@ Estados: ⬜ Pendiente · 🟡 En progreso · ✅ Terminado
 **Módulo activo:** ninguno — los 7 módulos de la tabla del punto 5 están ✅ Terminados.
 **Próximo paso:** no hay uno definido en este documento. Si surge trabajo nuevo (ej. el rol pendiente para Dai, o algo fuera del alcance original), agregarlo a la tabla del punto 5 solo con pedido explícito del usuario (regla 7 del punto 6).
 
+**Pendientes sueltos (no bloquean nada, pero conviene retomarlos):**
+- Revocar/regenerar el Personal Access Token de Supabase (`sbp_...`) usado en toda la sesión del Módulo 7 — ya no hace falta.
+- El push se confirmó llegando a un dispositivo real solo con la cuenta Admin (Lautaro). No se confirmó de forma independiente con la cuenta de Luciana (Head Coach) ni con un flujo real (asignar/comentar/vencer una tarea de verdad) — todas las pruebas de hoy llamaron la Edge Function directo. Si alguien reporta que no le llega, no asumir que es el mismo bug ya resuelto.
+- Notificaciones de turnos/horarios: decisión tomada con el usuario de dejarlo para después (preguntó por confusión, no era un pedido real). No asumir alcance si se retoma — volver a preguntar qué eventos avisar y a quién.
+
 ## 8. Log de sesiones
 
 <!-- Cada sesión agrega una línea acá al terminar -->
