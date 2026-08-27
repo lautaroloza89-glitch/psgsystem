@@ -36,15 +36,19 @@ Deno.serve(async (req: Request) => {
   );
   const subs: PushSubscriptionRow[] = await subsRes.json();
 
-  await Promise.all(
+  const resultados = await Promise.all(
     subs.map(async (sub) => {
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           JSON.stringify({ mensaje, tarea_id })
         );
+        return { endpoint: sub.endpoint, ok: true };
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode;
+        const body = (err as { body?: string }).body;
+        const message = (err as { message?: string }).message;
+
         if (statusCode === 404 || statusCode === 410) {
           await fetch(
             `${SUPABASE_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(sub.endpoint)}`,
@@ -57,9 +61,14 @@ Deno.serve(async (req: Request) => {
             }
           );
         }
+
+        return { endpoint: sub.endpoint, ok: false, statusCode, body, message };
       }
     })
   );
 
-  return new Response("ok", { status: 200 });
+  return new Response(JSON.stringify({ enviados: resultados.length, resultados }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 });
