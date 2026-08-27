@@ -7,6 +7,7 @@
 > Extendido el 2026-08-25 (`supabase/migrations/20260825150000_notificaciones.sql`, Módulo 7 — Sesión 1): tabla nueva `notificaciones` con trigger de "tarea asignada" sobre `tarea_asignados`.
 > Extendido el 2026-08-26 (`supabase/migrations/20260826120000_notificaciones_comentario_nuevo.sql`, Módulo 7 — Sesión 2): trigger de "comentario nuevo" sobre `tarea_comentarios`, misma tabla `notificaciones`.
 > Extendido el 2026-08-26 (`supabase/migrations/20260826130000_notificaciones_vencimiento.sql`, Módulo 7 — Sesión 3): chequeo periódico (pg_cron) de tareas por vencer/vencidas, misma tabla `notificaciones`.
+> Extendido el 2026-08-27 (`supabase/migrations/20260827120000_notificaciones_push.sql`, Módulo 7 — Sesión 4): tabla nueva `push_subscriptions` + trigger `notificaciones_push` que manda un push real por cada fila nueva de `notificaciones`, cubriendo los 3 tipos existentes. Cierra el Módulo 7.
 
 ## Decisiones tomadas
 
@@ -118,6 +119,25 @@ Extendida en el Módulo 7 — Sesión 3 con el chequeo de tareas por vencer/venc
 Decidido con el usuario (2026-08-26): esquema de días en vez de horas (la propuesta inicial de "48hs/16hs antes" no se podía calcular con precisión porque `fecha_vencimiento` no tiene componente de hora); mecanismo `pg_cron` en vez de chequeo al cargar el dashboard (recomendado por Claude, para que el aviso llegue aunque nadie abra la app ese día); incluir vencidas en esta misma sesión (ya estaba en el alcance del punto 5 de `PROGRESS.md`); destinatarios = asignados + creador, igual que la Sesión 2, para mantener el mismo criterio en todo el módulo.
 
 Probado con datos de prueba reales (prefijo `TEST-VENC`, creados y borrados al terminar, 0 restantes confirmado): 5 escenarios — tarea a 2 días (avisa a asignado y creador distintos), tarea a 1 día con creador = asignado (avisa una sola vez, no duplica), tarea vencida (avisa a ambos), tarea completada vencida (no avisa), tarea a 5 días (fuera de umbral, no avisa). Se confirmó además que ejecutar la función dos veces seguidas no duplica ningún aviso (dedup por `tarea_id`/`usuario_id`/`tipo` funcionando).
+
+### `push_subscriptions`
+
+Suscripciones de Web Push por usuario y navegador/dispositivo (Módulo 7, Sesión 4).
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `usuario_id` | `uuid` | FK a `users(id)`, `on delete cascade` |
+| `endpoint` | `text` | `not null`, `unique` — URL del push service del navegador, identifica la suscripción |
+| `p256dh` | `text` | `not null` — clave pública de cifrado de la suscripción |
+| `auth` | `text` | `not null` — secreto de autenticación de la suscripción |
+| `created_at` | `timestamptz` | default `now()` |
+
+RLS: cada usuario ve, crea y borra solo sus propias filas (`select`/`insert`/`delete` con `usuario_id = auth.uid()`). No hay política de `update` — el guardado desde el frontend usa `upsert(..., { onConflict: "endpoint", ignoreDuplicates: true })`, que solo necesita `insert` (si el endpoint ya existe, no hace nada, en vez de reasignar el dueño). Limitación conocida y aceptada: si dos usuarios distintos se loguean en el mismo navegador/dispositivo, el endpoint sigue asociado al primero que se suscribió — caso raro para un equipo de 10 personas con dispositivos propios, no se resolvió para no agregar una política de `update` más permisiva sin necesidad real.
+
+**Mecanismo de envío**: trigger nuevo `notificaciones_push` (`after insert on notificaciones`, security definer) — no reemplaza ni toca los triggers de las sesiones 1-3, se engancha directo a `notificaciones` para cubrir los 3 tipos existentes sin duplicar lógica por tipo. Llama de forma asíncrona (extensión `pg_net`, instalada en esta sesión) a una Edge Function nueva `send-push` (`supabase/functions/send-push/index.ts`, Deno + librería `web-push`), que busca las suscripciones del `usuario_id` y les manda el push; si una suscripción devuelve 404/410 (vencida/inválida), se borra sola. La llamada del trigger a la función va protegida con un secreto compartido (header `x-push-secret`), guardado en `supabase_vault` (extensión ya habilitada, sin uso hasta esta sesión) del lado de la base y como secret de la Edge Function del otro — así la función no queda abierta a cualquiera que descubra su URL pública. Claves VAPID generadas en esta sesión (`NEXT_PUBLIC_VAPID_PUBLIC_KEY` en `.env.local`, privada como secret de la función).
+
+**Frontend**: `public/sw.js` (Service Worker nuevo — el proyecto no tenía ninguno pese a estar pensado como PWA desde el Módulo 1) escucha `push` (muestra la notificación) y `notificationclick` (navega a la tarea o al dashboard). `src/lib/push/subscribe.ts` pide permiso del navegador y se suscribe; se dispara automáticamente al loguearse (`src/app/(auth)/login/page.tsx`), sin bloquear la navegación al dashboard. `src/lib/push/actions.ts` guarda la suscripción.
 
 ## Relaciones
 

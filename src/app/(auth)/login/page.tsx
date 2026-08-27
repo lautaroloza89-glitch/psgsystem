@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Spinner } from "@/components/ui/spinner";
+import { suscribirsePush } from "@/lib/push/subscribe";
 
 const INPUT_CLASS =
   "w-full rounded-md border border-border-strong px-3 py-2.5 text-sm transition-colors duration-[var(--duration-fast)] ease-standard focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-focus-ring";
@@ -32,6 +33,8 @@ export default function LoginPage() {
       setError("Email o contraseña incorrectos.");
       return;
     }
+
+    void suscribirsePush();
 
     router.push("/dashboard");
     router.refresh();
