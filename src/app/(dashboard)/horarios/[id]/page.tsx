@@ -24,7 +24,7 @@ export default async function TurnoDetallePage({
   const { data: turno } = await supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_nivel, capacidad, profesor_id, estado, profesor:users(nombre)"
+      "id, fecha, hora_inicio, hora_fin, grupo_nivel, profesor_id, estado, profesor:users(nombre)"
     )
     .eq("id", id)
     .single();
@@ -59,7 +59,6 @@ export default async function TurnoDetallePage({
             Horario: {turno.hora_inicio.slice(0, 5)}–{turno.hora_fin.slice(0, 5)}
           </p>
           <p>Profesor: {profesorNombre ?? "Sin asignar"}</p>
-          {turno.capacidad != null && <p>Capacidad: {turno.capacidad}</p>}
         </div>
 
         {puedeEditar && (

@@ -33,7 +33,7 @@ export default async function HorariosPage({
   let query = supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_nivel, capacidad, estado, profesor:users(nombre)"
+      "id, fecha, hora_inicio, hora_fin, grupo_nivel, estado, profesor:users(nombre)"
     )
     .order("fecha", { ascending: true })
     .order("hora_inicio", { ascending: true });
@@ -50,7 +50,6 @@ export default async function HorariosPage({
     hora_inicio: turno.hora_inicio,
     hora_fin: turno.hora_fin,
     grupo_nivel: turno.grupo_nivel,
-    capacidad: turno.capacidad,
     estado: turno.estado as EstadoTurno,
     profesorNombre: turno.profesor
       ? (turno.profesor as unknown as { nombre: string }).nombre
