@@ -6,7 +6,7 @@ import { TurnoForm } from "@/components/horarios/TurnoForm";
 import { BackButton } from "@/components/ui/BackButton";
 import { editarTurno } from "../../actions";
 
-export const metadata: Metadata = { title: "Editar turno" };
+export const metadata: Metadata = { title: "Editar Clase/Turno" };
 
 export default async function EditarTurnoPage({
   params,
@@ -49,7 +49,7 @@ export default async function EditarTurnoPage({
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <BackButton href={`/horarios/${id}`} />
-      <h1 className="text-2xl font-bold tracking-tight">Editar turno</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Editar Clase/Turno</h1>
       <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         <TurnoForm
           action={editarTurnoConId}
