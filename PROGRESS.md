@@ -118,8 +118,9 @@ Estados: ⬜ Pendiente · 🟡 En progreso · ✅ Terminado
 
 **Pendientes sueltos (no bloquean nada, pero conviene retomarlos):**
 - Revocar/regenerar el Personal Access Token de Supabase (`sbp_...`) usado en toda la sesión del Módulo 7 — ya no hace falta.
-- El push se confirmó llegando a un dispositivo real solo con la cuenta Admin (Lautaro). No se confirmó de forma independiente con la cuenta de Luciana (Head Coach) ni con un flujo real (asignar/comentar/vencer una tarea de verdad) — todas las pruebas de hoy llamaron la Edge Function directo. Si alguien reporta que no le llega, no asumir que es el mismo bug ya resuelto.
 - Notificaciones de turnos/horarios: decisión tomada con el usuario de dejarlo para después (preguntó por confusión, no era un pedido real). No asumir alcance si se retoma — volver a preguntar qué eventos avisar y a quién.
+
+**Confirmado por el usuario después del audit (2026-08-27):** probó el flujo real (no la llamada directa a la Edge Function) asignándole una tarea a Luciana desde su propia cuenta, y el push le llegó a ella en su dispositivo. Con esto quedan cerrados los dos huecos de verificación que el audit de `/supervisor-proyecto` había dejado abiertos (push a la cuenta de Luciana, y flujo real vía asignación en vez de invocación directa) — el único pendiente real es la revocación del token.
 
 ## 8. Log de sesiones
 
