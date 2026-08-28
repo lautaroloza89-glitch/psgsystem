@@ -5,7 +5,7 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { FiltroEstadoTurnoTabs } from "@/components/horarios/FiltroEstadoTurnoTabs";
 import { TurnoCard, type TurnoCardData } from "@/components/horarios/TurnoCard";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { EstadoTurno } from "@/types";
+import type { EstadoTurno, Rol } from "@/types";
 
 const MENSAJE_VACIO: Record<EstadoTurno | "Todas", string> = {
   Todas: "No hay turnos para mostrar.",
@@ -33,7 +33,7 @@ export default async function HorariosPage({
   let query = supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_nivel, estado, profesor:users(nombre)"
+      "id, fecha, hora_inicio, hora_fin, grupo_nivel, estado, profesor:users(nombre, rol, cargo)"
     )
     .order("fecha", { ascending: true })
     .order("hora_inicio", { ascending: true });
@@ -51,8 +51,8 @@ export default async function HorariosPage({
     hora_fin: turno.hora_fin,
     grupo_nivel: turno.grupo_nivel,
     estado: turno.estado as EstadoTurno,
-    profesorNombre: turno.profesor
-      ? (turno.profesor as unknown as { nombre: string }).nombre
+    profesor: turno.profesor
+      ? (turno.profesor as unknown as { nombre: string; rol: Rol; cargo: string | null })
       : null,
   }));
 

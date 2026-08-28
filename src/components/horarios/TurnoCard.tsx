@@ -1,6 +1,7 @@
 import Link from "next/link";
-import type { EstadoTurno } from "@/types";
+import type { EstadoTurno, Rol } from "@/types";
 import { EstadoTurnoBadge } from "./EstadoTurnoBadge";
+import { UsuarioRolCargo } from "@/components/ui/UsuarioRolCargo";
 import { formatFecha } from "@/lib/utils/date";
 
 export interface TurnoCardData {
@@ -10,7 +11,7 @@ export interface TurnoCardData {
   hora_fin: string;
   grupo_nivel: string;
   estado: EstadoTurno;
-  profesorNombre: string | null;
+  profesor: { nombre: string; rol: Rol; cargo: string | null } | null;
 }
 
 export function TurnoCard({
@@ -34,9 +35,17 @@ export function TurnoCard({
       <p className="mt-2 text-sm text-text-subtle">
         {formatFecha(turno.fecha)} · {turno.hora_inicio.slice(0, 5)}–{turno.hora_fin.slice(0, 5)}
       </p>
-      <p className="mt-1 text-sm text-text-subtle">
-        {turno.profesorNombre ?? "Sin profesor asignado"}
-      </p>
+      {turno.profesor ? (
+        <div className="mt-1">
+          <UsuarioRolCargo
+            nombre={turno.profesor.nombre}
+            rol={turno.profesor.rol}
+            cargo={turno.profesor.cargo}
+          />
+        </div>
+      ) : (
+        <p className="mt-1 text-sm text-text-subtle">Sin profesor asignado</p>
+      )}
     </Link>
   );
 }

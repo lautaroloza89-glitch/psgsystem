@@ -37,7 +37,7 @@ export default async function TareaDetallePage({
 
   const { data: comentariosData } = await supabase
     .from("tarea_comentarios")
-    .select("id, comentario, created_at, users(nombre)")
+    .select("id, comentario, created_at, users(nombre, rol, cargo)")
     .eq("tarea_id", id)
     .order("created_at", { ascending: true });
 
@@ -45,7 +45,9 @@ export default async function TareaDetallePage({
     id: c.id,
     comentario: c.comentario,
     created_at: c.created_at,
-    autor: c.users ? { nombre: (c.users as unknown as { nombre: string }).nombre } : null,
+    autor: c.users
+      ? (c.users as unknown as { nombre: string; rol: Rol; cargo: string | null })
+      : null,
   }));
 
   const asignados = (tarea.tarea_asignados ?? []).flatMap((a) =>

@@ -1,3 +1,6 @@
+import type { Rol } from "@/types";
+import { UsuarioRolCargo } from "@/components/ui/UsuarioRolCargo";
+
 function formatFechaHora(fecha: string): string {
   return new Date(fecha).toLocaleString("es-AR", {
     day: "2-digit",
@@ -12,7 +15,7 @@ export interface ComentarioData {
   id: string;
   comentario: string;
   created_at: string;
-  autor: { nombre: string } | null;
+  autor: { nombre: string; rol: Rol; cargo: string | null } | null;
 }
 
 export function ComentariosList({ comentarios }: { comentarios: ComentarioData[] }) {
@@ -24,10 +27,16 @@ export function ComentariosList({ comentarios }: { comentarios: ComentarioData[]
     <ul className="space-y-3">
       {comentarios.map((comentario) => (
         <li key={comentario.id} className="rounded-md border border-border bg-surface-muted p-4 text-sm">
-          <div className="flex items-center justify-between text-text-subtle">
-            <span className="font-medium text-text-muted">
-              {comentario.autor?.nombre ?? "Usuario eliminado"}
-            </span>
+          <div className="flex items-start justify-between gap-2 text-text-subtle">
+            {comentario.autor ? (
+              <UsuarioRolCargo
+                nombre={comentario.autor.nombre}
+                rol={comentario.autor.rol}
+                cargo={comentario.autor.cargo}
+              />
+            ) : (
+              <span className="font-medium text-text-muted">Usuario eliminado</span>
+            )}
             <span>{formatFechaHora(comentario.created_at)}</span>
           </div>
           <p className="mt-1 text-base">{comentario.comentario}</p>
