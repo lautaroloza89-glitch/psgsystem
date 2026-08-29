@@ -8,7 +8,7 @@
 > Extendido el 2026-08-26 (`supabase/migrations/20260826120000_notificaciones_comentario_nuevo.sql`, Módulo 7 — Sesión 2): trigger de "comentario nuevo" sobre `tarea_comentarios`, misma tabla `notificaciones`.
 > Extendido el 2026-08-26 (`supabase/migrations/20260826130000_notificaciones_vencimiento.sql`, Módulo 7 — Sesión 3): chequeo periódico (pg_cron) de tareas por vencer/vencidas, misma tabla `notificaciones`.
 > Extendido el 2026-08-27 (`supabase/migrations/20260827120000_notificaciones_push.sql`, Módulo 7 — Sesión 4): tabla nueva `push_subscriptions` + trigger `notificaciones_push` que manda un push real por cada fila nueva de `notificaciones`, cubriendo los 3 tipos existentes. Cierra el Módulo 7.
-> Extendido el 2026-08-29 (auditoría Fase B, sesión 2/3 — `docs/auditoria-fase-b-2-db-aditivo.md`): `supabase/migrations/20260829120000_indices_alto_uso.sql` agrega índices sobre columnas de alto uso (ver sección "Índices" más abajo).
+> Extendido el 2026-08-29 (auditoría Fase B, sesión 2/3 — `docs/auditoria-fase-b-2-db-aditivo.md`): `supabase/migrations/20260829120000_indices_alto_uso.sql` agrega índices sobre columnas de alto uso (ver sección "Índices" más abajo); `20260829130000_notificaciones_delete_admin.sql` agrega policy de `delete` a `notificaciones`; `20260829140000_dicta_clases_default_profesor.sql` corrige `handle_new_user` para que setee `dicta_clases = true` en el alta cuando el rol es `'Profesor'` (antes solo lo hacía un `update` puntual en la migración original de la columna, así que los Profesores dados de alta después quedaban en `false`).
 
 ## Decisiones tomadas
 
@@ -30,7 +30,7 @@ Perfil de cada usuario de la app, ligado 1 a 1 con `auth.users` (Supabase Auth, 
 | `email` | `text` | `not null`, `unique` |
 | `nombre` | `text` | `not null` |
 | `rol` | `text` | `not null`, check: `'Admin' \| 'Profesor' \| 'Empleado' \| 'Head Coach' \| 'Patinador'` |
-| `dicta_clases` | `boolean` | `not null`, default `false` (Módulo 5). No es un rol de permisos: distingue, entre los usuarios que pueden figurar como profesor de un turno, a los `Admin` que además dictan clases (ej. la Head Coach) de los que no (ej. la Secretaria). Todo `rol = 'Profesor'` lo tiene en `true`. |
+| `dicta_clases` | `boolean` | `not null`, default `false` (Módulo 5). No es un rol de permisos: distingue, entre los usuarios que pueden figurar como profesor de un turno, a los `Admin` que además dictan clases (ej. la Head Coach) de los que no (ej. la Secretaria). Todo `rol = 'Profesor'` lo tiene en `true`, seteado por `handle_new_user` en el alta (corregido 2026-08-29, ver nota abajo) o, para las cuentas creadas antes de la corrección, por el `update` puntual de la migración correspondiente. |
 | `cargo` | `text` | opcional, texto libre (ej. "Preparadora física", "Ayudante de recepción"). Puramente descriptivo, no afecta permisos — solo se muestra en pantalla junto al rol. |
 | `created_at` | `timestamptz` | default `now()` |
 
