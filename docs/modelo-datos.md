@@ -8,6 +8,7 @@
 > Extendido el 2026-08-26 (`supabase/migrations/20260826120000_notificaciones_comentario_nuevo.sql`, Módulo 7 — Sesión 2): trigger de "comentario nuevo" sobre `tarea_comentarios`, misma tabla `notificaciones`.
 > Extendido el 2026-08-26 (`supabase/migrations/20260826130000_notificaciones_vencimiento.sql`, Módulo 7 — Sesión 3): chequeo periódico (pg_cron) de tareas por vencer/vencidas, misma tabla `notificaciones`.
 > Extendido el 2026-08-27 (`supabase/migrations/20260827120000_notificaciones_push.sql`, Módulo 7 — Sesión 4): tabla nueva `push_subscriptions` + trigger `notificaciones_push` que manda un push real por cada fila nueva de `notificaciones`, cubriendo los 3 tipos existentes. Cierra el Módulo 7.
+> Extendido el 2026-08-29 (auditoría Fase B, sesión 2/3 — `docs/auditoria-fase-b-2-db-aditivo.md`): `supabase/migrations/20260829120000_indices_alto_uso.sql` agrega índices sobre columnas de alto uso (ver sección "Índices" más abajo).
 
 ## Decisiones tomadas
 
@@ -138,6 +139,14 @@ RLS: cada usuario ve, crea y borra solo sus propias filas (`select`/`insert`/`de
 **Mecanismo de envío**: trigger nuevo `notificaciones_push` (`after insert on notificaciones`, security definer) — no reemplaza ni toca los triggers de las sesiones 1-3, se engancha directo a `notificaciones` para cubrir los 3 tipos existentes sin duplicar lógica por tipo. Llama de forma asíncrona (extensión `pg_net`, instalada en esta sesión) a una Edge Function nueva `send-push` (`supabase/functions/send-push/index.ts`, Deno + librería `web-push`), que busca las suscripciones del `usuario_id` y les manda el push; si una suscripción devuelve 404/410 (vencida/inválida), se borra sola. La llamada del trigger a la función va protegida con un secreto compartido (header `x-push-secret`), guardado en `supabase_vault` (extensión ya habilitada, sin uso hasta esta sesión) del lado de la base y como secret de la Edge Function del otro — así la función no queda abierta a cualquiera que descubra su URL pública. Claves VAPID generadas en esta sesión (`NEXT_PUBLIC_VAPID_PUBLIC_KEY` en `.env.local`, privada como secret de la función).
 
 **Frontend**: `public/sw.js` (Service Worker nuevo — el proyecto no tenía ninguno pese a estar pensado como PWA desde el Módulo 1) escucha `push` (muestra la notificación) y `notificationclick` (navega a la tarea o al dashboard). `src/lib/push/subscribe.ts` pide permiso del navegador y se suscribe; se dispara automáticamente al loguearse (`src/app/(auth)/login/page.tsx`), sin bloquear la navegación al dashboard. `src/lib/push/actions.ts` guarda la suscripción.
+
+## Índices
+
+Además de los índices implícitos de las PK/FK y de los 2 explícitos ya existentes (`notificaciones(usuario_id, creado_en)`, `push_subscriptions(usuario_id)`), la auditoría Fase B (sesión 2/3) sumó índices sobre las columnas de mayor uso en filtros/joins de la aplicación (`create index concurrently`, aditivo, no cambia comportamiento):
+
+- `tareas.estado`, `tareas.fecha_vencimiento`, `tareas.created_by`
+- `turnos.profesor_id`, `turnos.fecha`
+- `tarea_comentarios.tarea_id`
 
 ## Relaciones
 
