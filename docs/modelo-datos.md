@@ -10,6 +10,7 @@
 > Extendido el 2026-08-27 (`supabase/migrations/20260827120000_notificaciones_push.sql`, Módulo 7 — Sesión 4): tabla nueva `push_subscriptions` + trigger `notificaciones_push` que manda un push real por cada fila nueva de `notificaciones`, cubriendo los 3 tipos existentes. Cierra el Módulo 7.
 > Extendido el 2026-08-29 (auditoría Fase B, sesión 2/3 — `docs/auditoria-fase-b-2-db-aditivo.md`): `supabase/migrations/20260829120000_indices_alto_uso.sql` agrega índices sobre columnas de alto uso (ver sección "Índices" más abajo); `20260829130000_notificaciones_delete_admin.sql` agrega policy de `delete` a `notificaciones`; `20260829140000_dicta_clases_default_profesor.sql` corrige `handle_new_user` para que setee `dicta_clases = true` en el alta cuando el rol es `'Profesor'` (antes solo lo hacía un `update` puntual en la migración original de la columna, así que los Profesores dados de alta después quedaban en `false`).
 > Extendido el 2026-08-29 (auditoría Fase B, sesión 3/3 — `docs/auditoria-fase-b-3-db-decisiones.md`): `supabase/migrations/20260829150000_notificaciones_tarea_id_set_null.sql` cambia `notificaciones.tarea_id` de `on delete cascade` a `on delete set null` (mismo patrón que `tareas.created_by`/`turnos.profesor_id`) para que borrar una tarea no destruya el historial de notificaciones de otros usuarios; `20260829160000_notificar_tarea_sin_responsables.sql` agrega el trigger `notificar_tarea_sin_responsables` sobre `tarea_asignados` (ver detalle en la sección `notificaciones` más abajo). El hallazgo de `turnos.grupo_nivel` (texto libre sin catálogo) se dejó sin cambios de esquema — decisión del usuario, ver "Decisiones tomadas".
+> Extendido el 2026-08-29 (Fase 1.2, Sesión 1 — extensión de notificaciones a Clases/Turnos): `supabase/migrations/20260829170000_notificaciones_comentario_turno.sql` crea la tabla nueva `turno_comentarios` (Clases/Turnos no tenía ningún feature de comentarios hasta esta sesión), agrega la columna `notificaciones.turno_id`, y suma el trigger `notificar_comentario_turno_nuevo` sobre `turno_comentarios`. Ver detalle en las secciones `turno_comentarios` y `notificaciones` más abajo.
 
 ## Decisiones tomadas
 
@@ -93,6 +94,20 @@ Horarios/turnos de la escuela. Cada fila es una ocurrencia puntual (fecha concre
 | `created_at` | `timestamptz` | default `now()` |
 | `updated_at` | `timestamptz` | default `now()`, se actualiza solo con trigger |
 
+### `turno_comentarios`
+
+Historial de comentarios cortos de un turno (Fase 1.2, Sesión 1 — no existía hasta esta sesión, se creó mirando `tarea_comentarios`).
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `turno_id` | `uuid` | FK a `turnos(id)`, `on delete cascade` |
+| `autor_id` | `uuid` | FK a `users(id)`, `on delete set null` |
+| `comentario` | `text` | `not null` |
+| `created_at` | `timestamptz` | default `now()` |
+
+RLS: como el horario ya es de lectura totalmente abierta a cualquier autenticado (`turnos_select_authenticated`), `turno_comentarios_select` también usa `using (true)`. Cualquier autenticado puede comentar (`turno_comentarios_insert`, con `autor_id = auth.uid()`) — mismo nivel de apertura que la lectura del turno. Solo Admin borra (`turno_comentarios_delete_admin`), igual criterio que `tarea_comentarios_delete_admin`.
+
 ### `notificaciones`
 
 Notificaciones en tiempo real por usuario (Módulo 7, primera sesión: solo el disparador de "tarea asignada"; comentarios/vencimientos/push se agregan en sesiones futuras del mismo módulo).
@@ -104,6 +119,7 @@ Notificaciones en tiempo real por usuario (Módulo 7, primera sesión: solo el d
 | `tipo` | `text` | `not null`, texto libre (ej. `'tarea_asignada'`), no enum, para poder sumar tipos nuevos sin migrar el esquema |
 | `mensaje` | `text` | `not null`, texto corto ya armado (ej. "Te asignaron: Físico de las 20hs") |
 | `tarea_id` | `uuid` | FK a `tareas(id)`, `on delete set null` (hasta el 2026-08-29 era `cascade` — ver más abajo), opcional — para navegar a la tarea al tocar la notificación |
+| `turno_id` | `uuid` | FK a `turnos(id)`, `on delete set null` (Fase 1.2, Sesión 1), opcional — para navegar al turno al tocar la notificación. `NotificacionesBell` prioriza `tarea_id` sobre `turno_id` al navegar, pero una notificación solo trae uno de los dos seteados en la práctica. |
 | `leida` | `boolean` | `not null`, default `false` |
 | `creado_en` | `timestamptz` | `not null`, default `now()` |
 
@@ -129,6 +145,8 @@ Extendida el 2026-08-29 (auditoría Fase B, sesión 3/3, hallazgos #2 y #3 — `
 Decidido con el usuario (2026-08-26): esquema de días en vez de horas (la propuesta inicial de "48hs/16hs antes" no se podía calcular con precisión porque `fecha_vencimiento` no tiene componente de hora); mecanismo `pg_cron` en vez de chequeo al cargar el dashboard (recomendado por Claude, para que el aviso llegue aunque nadie abra la app ese día); incluir vencidas en esta misma sesión (ya estaba en el alcance del punto 5 de `PROGRESS.md`); destinatarios = asignados + creador, igual que la Sesión 2, para mantener el mismo criterio en todo el módulo.
 
 Probado con datos de prueba reales (prefijo `TEST-VENC`, creados y borrados al terminar, 0 restantes confirmado): 5 escenarios — tarea a 2 días (avisa a asignado y creador distintos), tarea a 1 día con creador = asignado (avisa una sola vez, no duplica), tarea vencida (avisa a ambos), tarea completada vencida (no avisa), tarea a 5 días (fuera de umbral, no avisa). Se confirmó además que ejecutar la función dos veces seguidas no duplica ningún aviso (dedup por `tarea_id`/`usuario_id`/`tipo` funcionando).
+
+Extendida el 2026-08-29 (Fase 1.2, Sesión 1) con el trigger `notificar_comentario_turno_nuevo` (security definer, dispara en cada `insert` real sobre `turno_comentarios`, tipo `'comentario_turno_nuevo'`): a diferencia de la Sesión 2 de Tareas (destinatarios = asignados + creador), un turno solo tiene un `profesor_id` (no una relación M:N), así que el único destinatario es el profesor asignado al turno, excluido si es quien comentó; si el turno no tiene profesor asignado, no se genera ninguna notificación. Mensaje: `"{Nombre} comentó en el turno: {grupo_nivel}"`. El trigger de push (`notificaciones_push`, Módulo 7 — Sesión 4) no distingue por `tipo`, así que este tipo nuevo ya queda cubierto sin ningún cambio adicional.
 
 ### `push_subscriptions`
 
@@ -157,6 +175,8 @@ Además de los índices implícitos de las PK/FK y de los 2 explícitos ya exist
 - `turnos.profesor_id`, `turnos.fecha`
 - `tarea_comentarios.tarea_id`
 
+Fase 1.2 (Sesión 1) sumó, ya en la migración que crea la tabla (no como ajuste posterior de auditoría): `turno_comentarios.turno_id`.
+
 ## Relaciones
 
 ```
@@ -170,6 +190,8 @@ users ──┬──< tareas (created_by)
         ├──< tarea_comentarios (autor_id) >── tareas
         │
         └──< turnos (profesor_id)
+                │
+                └──< turno_comentarios (autor_id) >── turnos
 ```
 
 ## Fuera de alcance de este módulo

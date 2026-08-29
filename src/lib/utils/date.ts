@@ -4,6 +4,16 @@ export function formatFecha(fecha: string | null): string {
   return `${day}/${month}/${year}`;
 }
 
+export function formatFechaHora(fechaIso: string): string {
+  return new Date(fechaIso).toLocaleString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function formatTiempoRelativo(fechaIso: string): string {
   const diffSeg = Math.max(0, Math.floor((Date.now() - new Date(fechaIso).getTime()) / 1000));
 

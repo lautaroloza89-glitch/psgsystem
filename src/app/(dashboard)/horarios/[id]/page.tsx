@@ -6,9 +6,11 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { EstadoTurnoBadge } from "@/components/horarios/EstadoTurnoBadge";
 import { ToggleEstadoTurnoButton } from "@/components/horarios/ToggleEstadoTurnoButton";
 import { BorrarTurnoButton } from "@/components/horarios/BorrarTurnoButton";
+import { ComentariosTurnoList, type ComentarioTurnoData } from "@/components/horarios/ComentariosTurnoList";
+import { ComentarioTurnoForm } from "@/components/horarios/ComentarioTurnoForm";
 import { BackButton } from "@/components/ui/BackButton";
 import { formatFecha } from "@/lib/utils/date";
-import type { EstadoTurno } from "@/types";
+import type { EstadoTurno, Rol } from "@/types";
 
 export const metadata: Metadata = { title: "Detalle de turno" };
 
@@ -32,6 +34,21 @@ export default async function TurnoDetallePage({
   if (!turno) {
     notFound();
   }
+
+  const { data: comentariosData } = await supabase
+    .from("turno_comentarios")
+    .select("id, comentario, created_at, users(nombre, rol, cargo)")
+    .eq("turno_id", id)
+    .order("created_at", { ascending: true });
+
+  const comentarios: ComentarioTurnoData[] = (comentariosData ?? []).map((c) => ({
+    id: c.id,
+    comentario: c.comentario,
+    created_at: c.created_at,
+    autor: c.users
+      ? (c.users as unknown as { nombre: string; rol: Rol; cargo: string | null })
+      : null,
+  }));
 
   const profesorNombre = turno.profesor
     ? (turno.profesor as unknown as { nombre: string }).nombre
@@ -77,6 +94,12 @@ export default async function TurnoDetallePage({
         )}
 
         {profile?.rol === "Admin" && <BorrarTurnoButton turnoId={turno.id} />}
+      </div>
+
+      <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
+        <h2 className="text-lg font-semibold">Comentarios</h2>
+        <ComentariosTurnoList comentarios={comentarios} />
+        <ComentarioTurnoForm turnoId={turno.id} />
       </div>
     </div>
   );

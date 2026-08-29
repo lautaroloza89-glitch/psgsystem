@@ -12,3 +12,11 @@ export interface Turno {
   created_at: string;
   updated_at: string;
 }
+
+export interface TurnoComentario {
+  id: string;
+  turno_id: string;
+  autor_id: string | null;
+  comentario: string;
+  created_at: string;
+}

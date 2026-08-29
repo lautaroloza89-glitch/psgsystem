@@ -17,7 +17,7 @@ export function NotificacionesBell({ usuarioId }: { usuarioId: string }) {
 
     supabase
       .from("notificaciones")
-      .select("id, usuario_id, tipo, mensaje, tarea_id, leida, creado_en")
+      .select("id, usuario_id, tipo, mensaje, tarea_id, turno_id, leida, creado_en")
       .order("creado_en", { ascending: false })
       .limit(20)
       .then(({ data }) => {
@@ -55,6 +55,8 @@ export function NotificacionesBell({ usuarioId }: { usuarioId: string }) {
     }
     if (n.tarea_id) {
       router.push(`/tareas/${n.tarea_id}`);
+    } else if (n.turno_id) {
+      router.push(`/horarios/${n.turno_id}`);
     }
   }
 

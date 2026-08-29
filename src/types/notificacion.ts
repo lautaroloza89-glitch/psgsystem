@@ -4,6 +4,7 @@ export interface Notificacion {
   tipo: string;
   mensaje: string;
   tarea_id: string | null;
+  turno_id: string | null;
   leida: boolean;
   creado_en: string;
 }

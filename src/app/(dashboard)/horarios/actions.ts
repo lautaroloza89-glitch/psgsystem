@@ -133,6 +133,37 @@ export async function actualizarEstadoTurno(
   return { error: null };
 }
 
+export async function agregarComentarioTurno(
+  turnoId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!profile) {
+    return { error: "No autenticado." };
+  }
+
+  const comentario = ((formData.get("comentario") as string) ?? "").trim();
+  if (!comentario) {
+    return { error: "El comentario no puede estar vacío." };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("turno_comentarios").insert({
+    turno_id: turnoId,
+    autor_id: profile.id,
+    comentario,
+  });
+
+  if (error) {
+    return { error: "No se pudo guardar el comentario." };
+  }
+
+  revalidatePath(`/horarios/${turnoId}`);
+  return { error: null };
+}
+
 export async function borrarTurno(turnoId: string): Promise<FormState> {
   const profile = await getCurrentUserProfile();
   if (!profile || profile.rol !== "Admin") {
