@@ -10,6 +10,7 @@ import { ComentarioForm } from "@/components/tareas/ComentarioForm";
 import { BorrarTareaButton } from "@/components/tareas/BorrarTareaButton";
 import { BackButton } from "@/components/ui/BackButton";
 import { UsuarioRolCargo } from "@/components/ui/UsuarioRolCargo";
+import { MarkdownText } from "@/components/ui/MarkdownText";
 import { formatFecha } from "@/lib/utils/date";
 import type { EstadoTarea, Rol } from "@/types";
 
@@ -85,7 +86,10 @@ export default async function TareaDetallePage({
         </div>
 
         {tarea.descripcion && (
-          <p className="text-base text-text-muted">{tarea.descripcion}</p>
+          <MarkdownText
+            texto={tarea.descripcion}
+            className="space-y-2 text-base text-text-muted"
+          />
         )}
 
         <div className="flex gap-6 text-sm text-text-subtle">

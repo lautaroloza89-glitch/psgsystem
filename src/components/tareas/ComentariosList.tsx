@@ -1,6 +1,6 @@
 import type { Rol } from "@/types";
 import { UsuarioRolCargo } from "@/components/ui/UsuarioRolCargo";
-import { ComentarioMarkdown } from "@/components/ui/ComentarioMarkdown";
+import { MarkdownText } from "@/components/ui/MarkdownText";
 
 function formatFechaHora(fecha: string): string {
   return new Date(fecha).toLocaleString("es-AR", {
@@ -40,7 +40,7 @@ export function ComentariosList({ comentarios }: { comentarios: ComentarioData[]
             )}
             <span>{formatFechaHora(comentario.created_at)}</span>
           </div>
-          <ComentarioMarkdown texto={comentario.comentario} />
+          <MarkdownText texto={comentario.comentario} />
         </li>
       ))}
     </ul>

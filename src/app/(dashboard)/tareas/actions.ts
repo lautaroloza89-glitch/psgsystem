@@ -26,6 +26,13 @@ function leerCamposTarea(formData: FormData) {
   };
 }
 
+function validarFechas(fecha_inicio: string | null, fecha_vencimiento: string | null) {
+  if (fecha_inicio && fecha_vencimiento && fecha_vencimiento < fecha_inicio) {
+    return "La fecha de vencimiento no puede ser anterior a la fecha de inicio.";
+  }
+  return null;
+}
+
 export async function crearTarea(
   _prevState: FormState,
   formData: FormData
@@ -40,6 +47,11 @@ export async function crearTarea(
 
   if (!titulo) {
     return { error: "El título es obligatorio." };
+  }
+
+  const errorFechas = validarFechas(fecha_inicio, fecha_vencimiento);
+  if (errorFechas) {
+    return { error: errorFechas };
   }
 
   const supabase = await createClient();
@@ -89,6 +101,11 @@ export async function editarTarea(
 
   if (!titulo) {
     return { error: "El título es obligatorio." };
+  }
+
+  const errorFechas = validarFechas(fecha_inicio, fecha_vencimiento);
+  if (errorFechas) {
+    return { error: errorFechas };
   }
 
   const supabase = await createClient();

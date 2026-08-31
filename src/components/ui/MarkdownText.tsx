@@ -30,9 +30,15 @@ const COMPONENTS: Components = {
   td: (props) => <td className="border border-border px-2 py-1" {...props} />,
 };
 
-export function ComentarioMarkdown({ texto }: { texto: string }) {
+export function MarkdownText({
+  texto,
+  className,
+}: {
+  texto: string;
+  className?: string;
+}) {
   return (
-    <div className="mt-1 space-y-2 text-base">
+    <div className={className ?? "mt-1 space-y-2 text-base"}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={COMPONENTS}>
         {texto}
       </ReactMarkdown>

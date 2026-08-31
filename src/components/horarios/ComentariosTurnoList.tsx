@@ -1,6 +1,6 @@
 import type { Rol } from "@/types";
 import { UsuarioRolCargo } from "@/components/ui/UsuarioRolCargo";
-import { ComentarioMarkdown } from "@/components/ui/ComentarioMarkdown";
+import { MarkdownText } from "@/components/ui/MarkdownText";
 import { formatFechaHora } from "@/lib/utils/date";
 
 export interface ComentarioTurnoData {
@@ -31,7 +31,7 @@ export function ComentariosTurnoList({ comentarios }: { comentarios: ComentarioT
             )}
             <span>{formatFechaHora(comentario.created_at)}</span>
           </div>
-          <ComentarioMarkdown texto={comentario.comentario} />
+          <MarkdownText texto={comentario.comentario} />
         </li>
       ))}
     </ul>
