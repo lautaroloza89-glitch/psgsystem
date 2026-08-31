@@ -14,9 +14,9 @@ function leerCamposTurno(formData: FormData) {
   const fecha = (formData.get("fecha") as string) ?? "";
   const grupo_id = (formData.get("grupo_id") as string) || "";
   const grupo_horario_id = (formData.get("grupo_horario_id") as string) || "";
-  const profesor_id = (formData.get("profesor_id") as string) || null;
+  const profesores = formData.getAll("profesores") as string[];
 
-  return { fecha, grupo_id, grupo_horario_id, profesor_id };
+  return { fecha, grupo_id, grupo_horario_id, profesores };
 }
 
 function validarCamposTurno({
@@ -61,7 +61,7 @@ export async function crearTurno(
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
   if (!profile || profile.rol === "Empleado" || profile.rol === "Patinador") {
-    return { error: "No tenés permiso para crear turnos." };
+    return { error: "No tenés permiso para crear clases." };
   }
 
   const campos = leerCamposTurno(formData);
@@ -70,8 +70,10 @@ export async function crearTurno(
     return { error: errorValidacion };
   }
 
-  const { fecha, grupo_id, grupo_horario_id, profesor_id } = campos;
-  const profesorFinal = profile.rol === "Profesor" ? profile.id : profesor_id;
+  const { fecha, grupo_id, grupo_horario_id, profesores } = campos;
+  // Un Profesor no elige el checklist (no lo ve en el form): siempre queda
+  // autoasignado. Admin/Head Coach eligen libremente quién dicta la clase.
+  const profesoresFinal = profile.rol === "Profesor" ? [profile.id] : profesores;
 
   const supabase = await createClient();
 
@@ -87,13 +89,22 @@ export async function crearTurno(
       hora_inicio: horario.hora_inicio,
       hora_fin: horario.hora_fin,
       grupo_id,
-      profesor_id: profesorFinal,
     })
     .select("id")
     .single();
 
   if (error || !turno) {
-    return { error: "No se pudo crear el turno." };
+    return { error: "No se pudo crear la clase." };
+  }
+
+  if (profesoresFinal.length > 0) {
+    const { error: profesoresError } = await supabase
+      .from("turno_profesores")
+      .insert(profesoresFinal.map((profesor_id) => ({ turno_id: turno.id, profesor_id })));
+
+    if (profesoresError) {
+      return { error: "La clase se creó, pero no se pudieron asignar los profesores." };
+    }
   }
 
   revalidatePath("/horarios");
@@ -107,7 +118,7 @@ export async function editarTurno(
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
   if (!profile || profile.rol === "Empleado" || profile.rol === "Patinador") {
-    return { error: "No tenés permiso para editar este turno." };
+    return { error: "No tenés permiso para editar esta clase." };
   }
 
   const campos = leerCamposTurno(formData);
@@ -116,7 +127,7 @@ export async function editarTurno(
     return { error: errorValidacion };
   }
 
-  const { fecha, grupo_id, grupo_horario_id, profesor_id } = campos;
+  const { fecha, grupo_id, grupo_horario_id, profesores } = campos;
 
   const supabase = await createClient();
 
@@ -125,22 +136,63 @@ export async function editarTurno(
     return { error: "El horario elegido no corresponde al grupo seleccionado." };
   }
 
-  const update: Record<string, unknown> = {
-    fecha,
-    hora_inicio: horario.hora_inicio,
-    hora_fin: horario.hora_fin,
-    grupo_id,
-  };
-  // Un Profesor no puede reasignar el turno a otro profesor (RLS lo rechazaría
-  // de todos modos); Admin y Head Coach sí pueden tocar profesor_id.
-  if (profile.rol === "Admin" || profile.rol === "Head Coach") {
-    update.profesor_id = profesor_id;
-  }
-
-  const { error } = await supabase.from("turnos").update(update).eq("id", turnoId);
+  const { error } = await supabase
+    .from("turnos")
+    .update({
+      fecha,
+      hora_inicio: horario.hora_inicio,
+      hora_fin: horario.hora_fin,
+      grupo_id,
+    })
+    .eq("id", turnoId);
 
   if (error) {
-    return { error: "No se pudo actualizar el turno." };
+    return { error: "No se pudo actualizar la clase." };
+  }
+
+  // Un Profesor no puede reasignar los profesores de la clase (RLS lo
+  // rechazaría de todos modos, y el form no le muestra el checklist);
+  // solo Admin y Head Coach tocan la lista de profesores asignados.
+  if (profile.rol === "Admin" || profile.rol === "Head Coach") {
+    // Diff contra los profesores actuales en vez de borrar todo y
+    // reinsertar todo: así el trigger de notificaciones solo ve un INSERT
+    // real para los profesores nuevos, y no reenvía notificación a quien
+    // ya estaba asignado desde antes de esta edición.
+    const { data: actuales, error: actualesError } = await supabase
+      .from("turno_profesores")
+      .select("profesor_id")
+      .eq("turno_id", turnoId);
+
+    if (actualesError) {
+      return { error: "No se pudieron actualizar los profesores." };
+    }
+
+    const idsActuales = new Set((actuales ?? []).map((a) => a.profesor_id));
+    const idsNuevos = new Set(profesores);
+    const aQuitar = [...idsActuales].filter((id) => !idsNuevos.has(id));
+    const aAgregar = [...idsNuevos].filter((id) => !idsActuales.has(id));
+
+    if (aQuitar.length > 0) {
+      const { error: deleteError } = await supabase
+        .from("turno_profesores")
+        .delete()
+        .eq("turno_id", turnoId)
+        .in("profesor_id", aQuitar);
+
+      if (deleteError) {
+        return { error: "No se pudieron actualizar los profesores." };
+      }
+    }
+
+    if (aAgregar.length > 0) {
+      const { error: insertError } = await supabase
+        .from("turno_profesores")
+        .insert(aAgregar.map((profesor_id) => ({ turno_id: turnoId, profesor_id })));
+
+      if (insertError) {
+        return { error: "No se pudieron actualizar los profesores." };
+      }
+    }
   }
 
   revalidatePath(`/horarios/${turnoId}`);
@@ -157,7 +209,7 @@ export async function actualizarEstadoTurno(
   const { error } = await supabase.from("turnos").update({ estado }).eq("id", turnoId);
 
   if (error) {
-    return { error: "No se pudo actualizar el estado del turno." };
+    return { error: "No se pudo actualizar el estado de la clase." };
   }
 
   revalidatePath(`/horarios/${turnoId}`);
@@ -199,14 +251,14 @@ export async function agregarComentarioTurno(
 export async function borrarTurno(turnoId: string): Promise<FormState> {
   const profile = await getCurrentUserProfile();
   if (!profile || profile.rol !== "Admin") {
-    return { error: "Solo un Admin puede borrar turnos." };
+    return { error: "Solo un Admin puede borrar clases." };
   }
 
   const supabase = await createClient();
   const { error } = await supabase.from("turnos").delete().eq("id", turnoId);
 
   if (error) {
-    return { error: "No se pudo borrar el turno." };
+    return { error: "No se pudo borrar la clase." };
   }
 
   revalidatePath("/horarios");

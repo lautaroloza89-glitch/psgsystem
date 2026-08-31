@@ -98,10 +98,24 @@ Horarios/turnos de la escuela. Cada fila es una ocurrencia puntual (fecha concre
 | `grupo_legacy` | `text` | opcional (desde el 2026-08-31, antes `grupo_nivel not null`). Texto libre viejo, anterior a la FK `grupo_id` — se conserva sin borrar hasta que Lauti remapee a mano las filas cargadas antes de esa sesión; recién ahí se dropea. |
 | `grupo_id` | `uuid` | FK a `grupos(id)`, `on delete set null`, opcional. Reemplaza a `grupo_legacy` para los turnos nuevos (Fase 1.2, Sesión 2, 2026-08-31) — el formulario ahora es un select contra los 5 grupos reales en vez de texto libre. |
 | `capacidad` | `integer` | opcional (ver nota arriba), check: `capacidad > 0` cuando no es null |
-| `profesor_id` | `uuid` | FK a `users(id)`, `on delete set null`, opcional |
 | `estado` | `text` | `not null`, default `'Activo'`, check: `'Activo' \| 'Cancelado'` |
 | `created_at` | `timestamptz` | default `now()` |
 | `updated_at` | `timestamptz` | default `now()`, se actualiza solo con trigger |
+
+**`profesor_id` (columna eliminada, Groundwork 3, 2026-08-31)**: la relación 1:1 con `users` se reemplazó por la tabla `turno_profesores` (M:N) — hay clases con dos profesoras a la vez (Caro/Dai entre semana, Male/Estefi los sábados), confirmado por Lauti. Los datos existentes se migraron antes de dropear la columna. Mismo criterio ya usado para `tareas`/`tarea_asignados`: sin campo redundante en la tabla principal.
+
+### `turno_profesores`
+
+Relación M:N entre `turnos` y `users` (Groundwork 3, 2026-08-31) — reemplaza `turnos.profesor_id`. Mismo patrón que `tarea_asignados`.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `turno_id` | `uuid` | FK a `turnos(id)`, `on delete cascade`, parte de la PK compuesta |
+| `profesor_id` | `uuid` | FK a `users(id)`, `on delete cascade`, parte de la PK compuesta |
+
+RLS: lectura abierta a cualquier autenticado (`turno_profesores_select`, mismo criterio que `turnos_select_authenticated`). Insert/delete: Admin y Head Coach pueden asignar/quitar cualquier profesor; un Profesor solo puede autoasignarse/quitarse a sí mismo (`profesor_id = auth.uid()`) — mismo alcance que tenía antes sobre `turnos.profesor_id`. `turnos_insert`/`turnos_update` ya no pueden condicionar por `profesor_id` (columna eliminada): el criterio de "Profesor solo edita lo suyo" pasa a evaluarse con un `exists` contra `turno_profesores`; para el insert de la fila `turnos` en sí no hay restricción adicional por rol (Admin/Head Coach/Profesor pueden crear), la autoasignación real ocurre en el insert siguiente sobre `turno_profesores`.
+
+**Nota de alcance**: un Profesor puede en teoría autoasignarse (`insert` en `turno_profesores` con `profesor_id = auth.uid()`) a una clase ajena sin pasar por el flujo normal de edición, ya que esa policy no valida contra la fila `turnos`. La UI no ofrece ese camino (el checklist de profesores solo se muestra a Admin/Head Coach), y no rompe nada de negocio — asimetría documentada, no un hueco de seguridad crítico (mismo nivel de rigor que la asimetría ya documentada en `borrarTarea`).
 
 ### `turno_comentarios`
 
@@ -158,6 +172,11 @@ Probado con datos de prueba reales (prefijo `TEST-VENC`, creados y borrados al t
 Extendida el 2026-08-29 (Fase 1.2, Sesión 1) con el trigger `notificar_comentario_turno_nuevo` (security definer, dispara en cada `insert` real sobre `turno_comentarios`, tipo `'comentario_turno_nuevo'`): a diferencia de la Sesión 2 de Tareas (destinatarios = asignados + creador), un turno solo tiene un `profesor_id` (no una relación M:N), así que el único destinatario es el profesor asignado al turno, excluido si es quien comentó; si el turno no tiene profesor asignado, no se genera ninguna notificación. Mensaje: `"{Nombre} comentó en el turno: {grupo}"`. El trigger de push (`notificaciones_push`, Módulo 7 — Sesión 4) no distingue por `tipo`, así que este tipo nuevo ya queda cubierto sin ningún cambio adicional.
 
 Actualizada el 2026-08-31 (Fase 1.2, Sesión 2, `supabase/migrations/20260831130000_turnos_grupo_id_fk.sql`): la función leía la columna `grupo_nivel`, que en esta misma migración se renombró a `grupo_legacy` — se actualizó para armar el nombre del grupo como `coalesce(grupos.nombre, turnos.grupo_legacy)` (el nombre real una vez que el turno está mapeado a un `grupo_id`, con fallback al texto legacy mientras no lo está). Verificado dentro de una transacción con `rollback` contra la base real con ambos escenarios (turno con `grupo_id` mapeado → usa `grupos.nombre`; turno legacy sin mapear → usa `grupo_legacy`), 0 filas de prueba restantes confirmado.
+
+Actualizada de nuevo el 2026-08-31 (Groundwork 3, `supabase/migrations/20260831140000_f2_groundwork3_multiprofesor_notif_asignacion.sql`), junto con el resto de la migración que pasa `turnos.profesor_id` a `turno_profesores` (M:N, ver sección `turno_profesores`):
+
+- **`notificar_comentario_turno_nuevo` deja de asumir un único destinatario**: en vez de leer `turnos.profesor_id` (columna eliminada), notifica a todos los profesores en `turno_profesores` para ese turno, excluyendo al autor del comentario — mismo cambio de cardinalidad 1:1 → M:N que el resto de esta sesión. Mensaje sin cambios de fondo: `"{Nombre} comentó en la clase: {grupo}"`.
+- **Trigger nuevo `notificar_turno_asignado`** (security definer, `after insert on turno_profesores`, tipo `'turno_asignado'`): cubre el hueco detectado al probar la UI de Fase 1.2 — hasta esta sesión no le llegaba nada al profesor cuando se le asignaba una clase (el único disparador scopeado en Fase 1.2 fue "comentario nuevo"). No notifica autoasignación (`auth.uid() = profesor_id`). Al ser M:N, dispara por cada fila nueva en `turno_profesores`, igual que `notificar_tarea_asignada` sobre `tarea_asignados`; `horarios/actions.ts` (`editarTurno`) hace diff de altas/bajas al reasignar (mismo patrón que `editarTarea`, Módulo 7 — Sesión 1), así que no reenvía a quien ya estaba asignado. Mensaje: `"Te asignaron la clase: {grupo} (DD/MM)"`. Si la clase tiene varios profesores asignados, cada inserción en `turno_profesores` genera su propia notificación — todos los asignados se enteran. El trigger de push no distingue por `tipo`, así que este tipo nuevo ya queda cubierto sin cambios adicionales.
 
 ### `push_subscriptions`
 
@@ -255,12 +274,14 @@ Relación uno a varios con `alumnas` — cubre familias con uno, dos responsable
 Además de los índices implícitos de las PK/FK y de los 2 explícitos ya existentes (`notificaciones(usuario_id, creado_en)`, `push_subscriptions(usuario_id)`), la auditoría Fase B (sesión 2/3) sumó índices sobre las columnas de mayor uso en filtros/joins de la aplicación (`create index concurrently`, aditivo, no cambia comportamiento):
 
 - `tareas.estado`, `tareas.fecha_vencimiento`, `tareas.created_by`
-- `turnos.profesor_id`, `turnos.fecha`
+- `turnos.profesor_id` (índice eliminado en cascada junto con la columna, Groundwork 3, ver más abajo), `turnos.fecha`
 - `tarea_comentarios.tarea_id`
 
 Fase 1.2 (Sesión 1) sumó, ya en la migración que crea la tabla (no como ajuste posterior de auditoría): `turno_comentarios.turno_id`.
 
 Fase 2 (Sesión 1) sumó, ya en la migración que crea cada tabla: `grupo_horarios.grupo_id`, `grupo_horarios.dias` (GIN), `alumnas.apellido`, `alumnas.grupo_id`, `contactos.alumna_id`.
+
+Groundwork 3 (2026-08-31) sumó, ya en la migración que crea la tabla: `turno_profesores.profesor_id` (la PK compuesta `(turno_id, profesor_id)` ya cubre las búsquedas por `turno_id`).
 
 ## Relaciones
 
@@ -274,9 +295,9 @@ users ──┬──< tareas (created_by)
         │
         ├──< tarea_comentarios (autor_id) >── tareas
         │
-        └──< turnos (profesor_id)
-                │
-                └──< turno_comentarios (autor_id) >── turnos
+        ├──< turno_profesores >── turnos
+        │
+        └──< turno_comentarios (autor_id) >── turnos
 
 grupos ──┬──< grupo_horarios
          ├──< alumnas ──< contactos

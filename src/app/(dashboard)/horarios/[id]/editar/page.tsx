@@ -6,7 +6,7 @@ import { TurnoForm } from "@/components/horarios/TurnoForm";
 import { BackButton } from "@/components/ui/BackButton";
 import { editarTurno } from "../../actions";
 
-export const metadata: Metadata = { title: "Editar Clase/Turno" };
+export const metadata: Metadata = { title: "Editar clase" };
 
 export default async function EditarTurnoPage({
   params,
@@ -19,7 +19,9 @@ export default async function EditarTurnoPage({
 
   const { data: turno } = await supabase
     .from("turnos")
-    .select("id, fecha, hora_inicio, hora_fin, grupo_id, grupo_legacy, profesor_id")
+    .select(
+      "id, fecha, hora_inicio, hora_fin, grupo_id, grupo_legacy, profesores:turno_profesores(profesor_id)"
+    )
     .eq("id", id)
     .single();
 
@@ -27,11 +29,15 @@ export default async function EditarTurnoPage({
     notFound();
   }
 
+  const profesoresIdsActuales = (
+    turno.profesores as unknown as { profesor_id: string }[]
+  ).map((p) => p.profesor_id);
+
   const puedeEditar =
     !!profile &&
     (profile.rol === "Admin" ||
       profile.rol === "Head Coach" ||
-      (profile.rol === "Profesor" && turno.profesor_id === profile.id));
+      (profile.rol === "Profesor" && profesoresIdsActuales.includes(profile.id)));
 
   if (!puedeEditar) {
     redirect(`/horarios/${id}`);
@@ -39,7 +45,7 @@ export default async function EditarTurnoPage({
 
   const { data: usuarios } = await supabase
     .from("users")
-    .select("id, nombre, rol, dicta_clases")
+    .select("id, nombre, rol, cargo, dicta_clases")
     .order("nombre");
 
   const profesores = (usuarios ?? []).filter((u) => u.rol === "Profesor" || u.dicta_clases);
@@ -71,7 +77,7 @@ export default async function EditarTurnoPage({
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <BackButton href={`/horarios/${id}`} />
-      <h1 className="text-2xl font-bold tracking-tight">Editar Clase/Turno</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Editar clase</h1>
       <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         <TurnoForm
           action={editarTurnoConId}
@@ -84,7 +90,7 @@ export default async function EditarTurnoPage({
             grupo_id: turno.grupo_id ?? "",
             grupo_horario_id: grupoHorarioIdDefault,
             grupo_legacy: turno.grupo_legacy,
-            profesor_id: turno.profesor_id ?? "",
+            profesoresIds: profesoresIdsActuales,
           }}
         />
       </div>

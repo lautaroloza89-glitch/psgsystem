@@ -55,7 +55,7 @@ export default async function DashboardPage() {
   const { data: turnosData } = await supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), estado, profesor:users(nombre, rol, cargo)"
+      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), estado, profesores:turno_profesores(profesor:users(nombre, rol, cargo))"
     )
     .eq("estado", "Activo")
     .gte("fecha", hoyStr)
@@ -73,9 +73,9 @@ export default async function DashboardPage() {
       turno.grupo_legacy ??
       "Sin grupo",
     estado: turno.estado as EstadoTurno,
-    profesor: turno.profesor
-      ? (turno.profesor as unknown as { nombre: string; rol: Rol; cargo: string | null })
-      : null,
+    profesores: (
+      turno.profesores as unknown as { profesor: { nombre: string; rol: Rol; cargo: string | null } }[]
+    ).map((p) => p.profesor),
   }));
 
   // Contadores agregados: solo para Admin (panorama general del equipo).
@@ -130,8 +130,8 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Tareas pendientes" value={contadores.pendientes} />
           <StatCard label="Tareas en progreso" value={contadores.enProgreso} />
-          <StatCard label="Turnos hoy" value={contadores.turnosHoy} />
-          <StatCard label="Turnos esta semana" value={contadores.turnosSemana} />
+          <StatCard label="Clases hoy" value={contadores.turnosHoy} />
+          <StatCard label="Clases esta semana" value={contadores.turnosSemana} />
         </div>
       )}
 
@@ -158,16 +158,16 @@ export default async function DashboardPage() {
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Próximos turnos</h2>
+          <h2 className="text-lg font-semibold">Próximas clases</h2>
           <Link
             href="/horarios"
             className="rounded text-sm text-text-subtle transition-colors duration-[var(--duration-fast)] ease-standard hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           >
-            Ver todos
+            Ver todas
           </Link>
         </div>
         {turnosProximos.length === 0 ? (
-          <EmptyState mensaje="No hay turnos próximos." />
+          <EmptyState mensaje="No hay clases próximas." />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {turnosProximos.map((turno) => (

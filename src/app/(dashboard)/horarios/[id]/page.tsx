@@ -12,7 +12,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { formatFecha } from "@/lib/utils/date";
 import type { EstadoTurno, Rol } from "@/types";
 
-export const metadata: Metadata = { title: "Detalle de turno" };
+export const metadata: Metadata = { title: "Detalle de clase" };
 
 export default async function TurnoDetallePage({
   params,
@@ -26,7 +26,7 @@ export default async function TurnoDetallePage({
   const { data: turno } = await supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), profesor_id, estado, profesor:users(nombre)"
+      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), estado, profesores:turno_profesores(profesor_id, profesor:users(nombre))"
     )
     .eq("id", id)
     .single();
@@ -50,9 +50,12 @@ export default async function TurnoDetallePage({
       : null,
   }));
 
-  const profesorNombre = turno.profesor
-    ? (turno.profesor as unknown as { nombre: string }).nombre
-    : null;
+  const profesoresAsignados = turno.profesores as unknown as {
+    profesor_id: string;
+    profesor: { nombre: string };
+  }[];
+
+  const profesoresNombres = profesoresAsignados.map((p) => p.profesor.nombre);
 
   const grupoNombre =
     (turno.grupo as unknown as { nombre: string } | null)?.nombre ??
@@ -63,7 +66,8 @@ export default async function TurnoDetallePage({
     !!profile &&
     (profile.rol === "Admin" ||
       profile.rol === "Head Coach" ||
-      (profile.rol === "Profesor" && turno.profesor_id === profile.id));
+      (profile.rol === "Profesor" &&
+        profesoresAsignados.some((p) => p.profesor_id === profile.id)));
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -80,7 +84,10 @@ export default async function TurnoDetallePage({
           <p>
             Horario: {turno.hora_inicio.slice(0, 5)}–{turno.hora_fin.slice(0, 5)}
           </p>
-          <p>Profesor: {profesorNombre ?? "Sin asignar"}</p>
+          <p>
+            {profesoresNombres.length > 1 ? "Profesores" : "Profesor"}:{" "}
+            {profesoresNombres.length > 0 ? profesoresNombres.join(", ") : "Sin asignar"}
+          </p>
         </div>
 
         {puedeEditar && (
@@ -89,7 +96,7 @@ export default async function TurnoDetallePage({
               href={`/horarios/${turno.id}/editar`}
               className="inline-block rounded-md border border-border-strong px-4 py-2 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard hover:border-neutral-400 hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             >
-              Editar turno
+              Editar clase
             </Link>
             <ToggleEstadoTurnoButton
               turnoId={turno.id}

@@ -12,7 +12,7 @@ export interface TurnoCardData {
   /** Nombre del grupo ya resuelto (grupos.nombre si está mapeado, si no el texto legacy). */
   grupoNombre: string;
   estado: EstadoTurno;
-  profesor: { nombre: string; rol: Rol; cargo: string | null } | null;
+  profesores: { nombre: string; rol: Rol; cargo: string | null }[];
 }
 
 export function TurnoCard({
@@ -36,13 +36,16 @@ export function TurnoCard({
       <p className="mt-2 text-sm text-text-subtle">
         {formatFecha(turno.fecha)} · {turno.hora_inicio.slice(0, 5)}–{turno.hora_fin.slice(0, 5)}
       </p>
-      {turno.profesor ? (
-        <div className="mt-1">
-          <UsuarioRolCargo
-            nombre={turno.profesor.nombre}
-            rol={turno.profesor.rol}
-            cargo={turno.profesor.cargo}
-          />
+      {turno.profesores.length > 0 ? (
+        <div className="mt-1 space-y-0.5">
+          {turno.profesores.map((profesor) => (
+            <UsuarioRolCargo
+              key={profesor.nombre}
+              nombre={profesor.nombre}
+              rol={profesor.rol}
+              cargo={profesor.cargo}
+            />
+          ))}
         </div>
       ) : (
         <p className="mt-1 text-sm text-text-subtle">Sin profesor asignado</p>

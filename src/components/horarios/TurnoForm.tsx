@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import type { FormState } from "@/app/(dashboard)/horarios/actions";
 import type { Rol, User } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
+import { AsignadosChecklist } from "@/components/ui/AsignadosChecklist";
 
 const INPUT_CLASS =
   "w-full rounded-md border border-border-strong px-3 py-2.5 text-sm transition-colors duration-[var(--duration-fast)] ease-standard focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-focus-ring";
@@ -48,7 +49,7 @@ export interface TurnoFormDefaultValues {
   grupo_horario_id: string;
   /** Solo para mostrar el texto libre viejo como ayuda mientras no se eligió un grupo real. */
   grupo_legacy: string | null;
-  profesor_id: string;
+  profesoresIds: string[];
 }
 
 const initialState: FormState = { error: null };
@@ -63,7 +64,7 @@ export function TurnoForm({
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   profile: { id: string; rol: Rol };
-  profesores: Pick<User, "id" | "nombre">[];
+  profesores: Pick<User, "id" | "nombre" | "rol" | "cargo">[];
   grupos: GrupoOption[];
   defaultValues?: TurnoFormDefaultValues;
   modo: "crear" | "editar";
@@ -169,26 +170,16 @@ export function TurnoForm({
 
       {profile.rol === "Admin" || profile.rol === "Head Coach" ? (
         <div className="space-y-1.5">
-          <label htmlFor="profesor_id" className="text-label font-medium">
-            Profesor
-          </label>
-          <select
-            id="profesor_id"
-            name="profesor_id"
-            defaultValue={defaultValues?.profesor_id ?? ""}
-            className={INPUT_CLASS}
-          >
-            <option value="">Sin asignar</option>
-            {profesores.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre}
-              </option>
-            ))}
-          </select>
+          <span className="text-label font-medium">Profesores</span>
+          <AsignadosChecklist
+            usuarios={profesores}
+            seleccionados={defaultValues?.profesoresIds}
+            name="profesores"
+          />
         </div>
       ) : (
         <p className="text-sm text-text-subtle">
-          Este turno queda asignado a vos como profesor.
+          Esta clase queda asignada a vos como profesor.
         </p>
       )}
 
@@ -204,7 +195,7 @@ export function TurnoForm({
         className="flex w-full items-center justify-center gap-2 rounded-md bg-primary-500 py-2.5 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       >
         {pending && <Spinner />}
-        {pending ? "Guardando..." : modo === "crear" ? "Crear turno" : "Guardar cambios"}
+        {pending ? "Guardando..." : modo === "crear" ? "Crear clase" : "Guardar cambios"}
       </button>
     </form>
   );

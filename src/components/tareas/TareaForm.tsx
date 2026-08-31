@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import type { User } from "@/types";
 import type { FormState } from "@/app/(dashboard)/tareas/actions";
-import { AsignadosChecklist } from "./AsignadosChecklist";
+import { AsignadosChecklist } from "@/components/ui/AsignadosChecklist";
 import { Spinner } from "@/components/ui/spinner";
 
 const INPUT_CLASS =

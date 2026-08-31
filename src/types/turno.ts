@@ -9,10 +9,15 @@ export interface Turno {
   grupo_legacy: string | null;
   grupo_id: string | null;
   capacidad: number | null;
-  profesor_id: string | null;
   estado: EstadoTurno;
   created_at: string;
   updated_at: string;
+}
+
+/** Fila de la tabla puente turno_profesores (relación M:N, Groundwork 3). */
+export interface TurnoProfesor {
+  turno_id: string;
+  profesor_id: string;
 }
 
 export interface TurnoComentario {

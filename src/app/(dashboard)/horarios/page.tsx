@@ -8,12 +8,12 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import type { EstadoTurno, Rol } from "@/types";
 
 const MENSAJE_VACIO: Record<EstadoTurno | "Todas", string> = {
-  Todas: "No hay turnos para mostrar.",
-  Activo: "No hay turnos activos.",
-  Cancelado: "No hay turnos cancelados.",
+  Todas: "No hay clases para mostrar.",
+  Activo: "No hay clases activas.",
+  Cancelado: "No hay clases canceladas.",
 };
 
-export const metadata: Metadata = { title: "Clases / Turnos" };
+export const metadata: Metadata = { title: "Clases" };
 
 const ESTADOS_VALIDOS: EstadoTurno[] = ["Activo", "Cancelado"];
 
@@ -33,7 +33,7 @@ export default async function HorariosPage({
   let query = supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), estado, profesor:users(nombre, rol, cargo)"
+      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), estado, profesores:turno_profesores(profesor:users(nombre, rol, cargo))"
     )
     .order("fecha", { ascending: true })
     .order("hora_inicio", { ascending: true });
@@ -54,9 +54,9 @@ export default async function HorariosPage({
       turno.grupo_legacy ??
       "Sin grupo",
     estado: turno.estado as EstadoTurno,
-    profesor: turno.profesor
-      ? (turno.profesor as unknown as { nombre: string; rol: Rol; cargo: string | null })
-      : null,
+    profesores: (
+      turno.profesores as unknown as { profesor: { nombre: string; rol: Rol; cargo: string | null } }[]
+    ).map((p) => p.profesor),
   }));
 
   const puedeCrear =
@@ -65,13 +65,13 @@ export default async function HorariosPage({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Clases / Turnos</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Clases</h1>
         {puedeCrear && (
           <Link
             href="/horarios/nuevo"
             className="flex w-full items-center justify-center rounded-md bg-primary-500 px-5 py-2.5 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg sm:w-auto"
           >
-            Nueva Clase/Turno
+            Nueva clase
           </Link>
         )}
       </div>

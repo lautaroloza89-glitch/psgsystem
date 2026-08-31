@@ -4,9 +4,12 @@ import { UsuarioRolCargo } from "@/components/ui/UsuarioRolCargo";
 export function AsignadosChecklist({
   usuarios,
   seleccionados,
+  name = "asignados",
 }: {
   usuarios: Pick<User, "id" | "nombre" | "rol" | "cargo">[];
   seleccionados?: string[];
+  /** Nombre del campo en el FormData. Default "asignados" (Tareas); Horarios usa "profesores". */
+  name?: string;
 }) {
   return (
     <div className="space-y-1 rounded-md border border-border p-3">
@@ -17,7 +20,7 @@ export function AsignadosChecklist({
         >
           <input
             type="checkbox"
-            name="asignados"
+            name={name}
             value={usuario.id}
             defaultChecked={seleccionados?.includes(usuario.id)}
             className="mt-1 h-4 w-4 shrink-0 rounded accent-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
