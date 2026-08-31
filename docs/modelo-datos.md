@@ -11,6 +11,7 @@
 > Extendido el 2026-08-29 (auditoría Fase B, sesión 2/3 — `docs/auditoria-fase-b-2-db-aditivo.md`): `supabase/migrations/20260829120000_indices_alto_uso.sql` agrega índices sobre columnas de alto uso (ver sección "Índices" más abajo); `20260829130000_notificaciones_delete_admin.sql` agrega policy de `delete` a `notificaciones`; `20260829140000_dicta_clases_default_profesor.sql` corrige `handle_new_user` para que setee `dicta_clases = true` en el alta cuando el rol es `'Profesor'` (antes solo lo hacía un `update` puntual en la migración original de la columna, así que los Profesores dados de alta después quedaban en `false`).
 > Extendido el 2026-08-29 (auditoría Fase B, sesión 3/3 — `docs/auditoria-fase-b-3-db-decisiones.md`): `supabase/migrations/20260829150000_notificaciones_tarea_id_set_null.sql` cambia `notificaciones.tarea_id` de `on delete cascade` a `on delete set null` (mismo patrón que `tareas.created_by`/`turnos.profesor_id`) para que borrar una tarea no destruya el historial de notificaciones de otros usuarios; `20260829160000_notificar_tarea_sin_responsables.sql` agrega el trigger `notificar_tarea_sin_responsables` sobre `tarea_asignados` (ver detalle en la sección `notificaciones` más abajo). El hallazgo de `turnos.grupo_nivel` (texto libre sin catálogo) se dejó sin cambios de esquema — decisión del usuario, ver "Decisiones tomadas".
 > Extendido el 2026-08-29 (Fase 1.2, Sesión 1 — extensión de notificaciones a Clases/Turnos): `supabase/migrations/20260829170000_notificaciones_comentario_turno.sql` crea la tabla nueva `turno_comentarios` (Clases/Turnos no tenía ningún feature de comentarios hasta esta sesión), agrega la columna `notificaciones.turno_id`, y suma el trigger `notificar_comentario_turno_nuevo` sobre `turno_comentarios`. Ver detalle en las secciones `turno_comentarios` y `notificaciones` más abajo.
+> Extendido el 2026-08-31 (Sistema PSG, Fase 2 — Sesión 1: modelo de datos base): `supabase/migrations/20260831120000_f2_grupos_alumnas_contactos.sql` crea 4 tablas nuevas — `grupos`, `grupo_horarios`, `alumnas`, `contactos` — groundwork de Fase 2 (Planificación, gestión de alumnas, cuotas/pagos, asistencia). Sin UI en esta sesión. Ver detalle en las secciones correspondientes más abajo.
 
 ## Decisiones tomadas
 
@@ -20,6 +21,9 @@
 - **Los turnos son por fecha puntual, no por día de la semana recurrente**: cada fila de `turnos` es una ocurrencia concreta con su propia `fecha`, para poder cancelar un día puntual (lluvia, feriado) sin afectar el resto del horario.
 - **RLS (Row Level Security) está habilitada en las 5 tablas, con políticas por rol definidas en el Módulo 3** (`supabase/migrations/20260817140000_auth_roles_rls.sql`): Admin ve/edita todo; Profesor gestiona las tareas que creó o donde está asignado, y sus propios turnos; Empleado ve solo lo asignado a él, puede cambiar el estado de su tarea (bloqueado a nivel trigger para el resto de las columnas) y comentar; todos los usuarios autenticados pueden ver la tabla `users` completa y todos los `turnos` (horario compartido de la escuela). `service_role` sigue teniendo acceso completo. Extendido el 2026-08-22 (`supabase/migrations/20260822120000_roles_head_coach_patinador.sql`): Head Coach tiene los mismos permisos que Profesor sobre lo propio, más lectura de las tareas/turnos de Profesor, Empleado y Patinador; Patinador tiene los mismos permisos que Empleado.
 - **`turnos.grupo_nivel` sigue siendo texto libre, sin tabla de catálogo** (decisión del usuario, auditoría Fase B sesión 3/3, 2026-08-29): con solo 4 valores distintos hoy, sin duplicados, no se justifica la complejidad de una tabla `grupos_nivel` nueva. Si el volumen de valores crece y aparece fragmentación real (variantes tipográficas del mismo nivel), revisar esta decisión.
+- **Fase 2 sí tiene una tabla `grupos` real** (Sesión 1, 2026-08-31), a diferencia del punto anterior — son conceptos distintos: `turnos.grupo_nivel` es del dominio de Tareas/Horarios de Fase 1 (4 valores de texto libre, sin cambios); `grupos` es el catálogo fijo de 5 grupos de la escuela para el dominio nuevo de alumnas/cuotas de Fase 2. No se unificaron ambos conceptos en esta sesión — retocar `turnos` para usar `grupos` por FK es la sesión siguiente (Fase 1.2, Sesión 2, ver `PROGRESS.md`).
+- **`alumnas` son datos puros, sin relación con el rol "Patinador/a" de Fase 1**: entidades separadas a propósito, sin FK ni deduplicación entre ambas. Si una patinadora con login también aparece como alumna, es intencional y lo controla Lauti manualmente.
+- **`grupo_horarios.dias` es `smallint[]` con la convención ISO de `extract(isodow from ...)`** (1=lunes … 7=domingo), no una tabla de días ni texto libre — elegido para que sea consultable directamente contra fechas reales (F2 MOD 1 necesita calcular qué fechas del mes caen en cada día de semana; F2 MOD 4 necesita filtrar asistencia por día).
 
 ## Tablas
 
@@ -167,6 +171,78 @@ RLS: cada usuario ve, crea y borra solo sus propias filas (`select`/`insert`/`de
 
 **Frontend**: `public/sw.js` (Service Worker nuevo — el proyecto no tenía ninguno pese a estar pensado como PWA desde el Módulo 1) escucha `push` (muestra la notificación) y `notificationclick` (navega a la tarea o al dashboard). `src/lib/push/subscribe.ts` pide permiso del navegador y se suscribe; se dispara automáticamente al loguearse (`src/app/(auth)/login/page.tsx`), sin bloquear la navegación al dashboard. `src/lib/push/actions.ts` guarda la suscripción.
 
+### `grupos`
+
+Catálogo fijo de los 5 grupos/niveles de la escuela (Fase 2, Sesión 1). Reemplaza el texto libre que hoy se escribe a mano en `turnos.grupo_nivel` — no todavía, esa migración es la sesión siguiente (Fase 1.2, Sesión 2).
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `nombre` | `text` | `not null`, `unique` |
+| `cuota_mensual` | `numeric(10,2)` | `not null`, check `> 0`. Guarda solo el valor vigente, sin historial — el historial de lo efectivamente cobrado vive en los pagos de cada familia (F2 MOD 3). |
+| `created_at` | `timestamptz` | default `now()` |
+| `updated_at` | `timestamptz` | default `now()`, se actualiza solo con trigger |
+
+RLS: lectura para cualquier autenticado (`grupos_select_authenticated`); alta/edición/borrado solo Admin y Head Coach.
+
+Datos semilla (cuotas vigentes desde septiembre 2026, comunicado oficial del club): Nivel inicial ($45.000), Equipo de competencia infantil ($60.000), Equipo de competencia — Jungla ($85.000), Equipo avanzado ($90.000), Recreativo adultas ($50.000).
+
+### `grupo_horarios`
+
+Uno o más bloques horarios por grupo — tabla aparte (no columnas en `grupos`) porque Jungla tiene dos bloques distintos, único caso hoy pero que obliga a la estructura 1 a varios.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `grupo_id` | `uuid` | FK a `grupos(id)`, `on delete cascade` |
+| `dias` | `smallint[]` | `not null`, check no vacío (`cardinality(dias) > 0`) y valores dentro de `[1,7]` (convención ISO de `extract(isodow from fecha)`: 1=lunes … 7=domingo) |
+| `hora_inicio` | `time` | `not null` |
+| `hora_fin` | `time` | `not null`, check `hora_fin > hora_inicio` |
+| `created_at` | `timestamptz` | default `now()` |
+
+Índices: `grupo_id` (join con `grupos`), `dias` (GIN, para filtrar por día). RLS igual que `grupos` (lectura abierta, escritura Admin/Head Coach).
+
+**Nota técnica**: el CHECK original de "no vacío" usaba `array_length(dias, 1) > 0`, que en Postgres devuelve `NULL` (no `0`) para un array vacío — un CHECK que evalúa `NULL` se considera satisfecho, así que el constraint no bloqueaba `dias = '{}'`. Detectado con una prueba automatizada dentro de una transacción con `rollback` antes de cerrar la sesión; corregido a `cardinality(dias) > 0`, que sí devuelve `0` para un array vacío. Verificado con los 8 escenarios de constraint (incluido este) más 9 escenarios de RLS simulados con los IDs reales de Admin/Head Coach/Profesor/Empleado — todos dentro de transacciones con `rollback`, 0 filas de prueba restantes confirmado.
+
+### `alumnas`
+
+Datos puros de las alumnas de la escuela (~150 registros, a cargar por import aparte). **No son usuarios del sistema**: sin login, sin cuenta de Auth, sin relación con el rol "Patinador/a" de Fase 1 (entidades separadas a propósito, sin FK ni deduplicación entre ambas).
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `apellido` | `text` | `not null` — se busca y ordena por este campo, no por DNI |
+| `nombre` | `text` | `not null` |
+| `dni` | `text` | `not null`, `unique` |
+| `fecha_inscripcion` | `date` | `not null` |
+| `estado` | `text` | `not null`, default `'activa'`, check: `'activa' \| 'baja'` |
+| `grupo_id` | `uuid` | FK a `grupos(id)`, `not null`, `on delete restrict` — una alumna pertenece a un solo grupo a la vez; se eligió `restrict` (no `set null`/`cascade`) para que borrar un grupo con alumnas asignadas falle explícitamente en vez de dejarlas huérfanas sin nivel |
+| `created_at` | `timestamptz` | default `now()` |
+| `updated_at` | `timestamptz` | default `now()`, se actualiza solo con trigger |
+
+Descartado a propósito (decisión de producto, no un olvido): fecha de nacimiento (los grupos se organizan por nivel/destreza, no por edad), email, datos médicos/alergias, motivo de baja.
+
+Índices: `apellido` (orden/búsqueda), `grupo_id` (filtrar por grupo). RLS: lectura y escritura para Admin, Head Coach y Secretaria — ningún otro rol tiene acceso, ni siquiera lectura (política única `for all`). **`'Secretaria'` todavía no es un valor posible de `users.rol`** — Dai sigue con rol `'Admin'` como parche temporal (ver `PROGRESS.md`) y esta sesión no tocó esa columna ni reasignó a nadie (fuera de alcance, "el parche se resuelve aparte" según el pedido de la sesión). La policy ya quedó escrita contra `'Secretaria'` para que funcione sola en cuanto ese parche se resuelva, sin necesitar otra migración; mientras tanto el acceso real de Dai pasa por la rama `'Admin'`.
+
+Tabla vacía al cierre de esta sesión. La carga de las ~150 alumnas es una sesión aparte, cuando Luciana entregue el listado.
+
+### `contactos`
+
+Relación uno a varios con `alumnas` — cubre familias con uno, dos responsables, o tutores. Reemplaza campos fijos tipo "madre/padre".
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `alumna_id` | `uuid` | FK a `alumnas(id)`, `on delete cascade` |
+| `nombre` | `text` | `not null` |
+| `telefono` | `text` | `not null` |
+| `relacion` | `text` | `not null`, texto libre (ej. "Madre", "Padre", "Tutor") |
+| `es_pagador_principal` | `boolean` | `not null`, default `false` — sin restricción de unicidad ni validación, solo precarga por default a esa persona al registrar un pago en F2 MOD 3; la secretaria puede elegir otro contacto si ese pago lo hizo alguien más |
+| `created_at` | `timestamptz` | default `now()` |
+| `updated_at` | `timestamptz` | default `now()`, se actualiza solo con trigger |
+
+Índice: `alumna_id`. RLS igual que `alumnas` (Admin, Head Coach, Secretaria — política única `for all`).
+
 ## Índices
 
 Además de los índices implícitos de las PK/FK y de los 2 explícitos ya existentes (`notificaciones(usuario_id, creado_en)`, `push_subscriptions(usuario_id)`), la auditoría Fase B (sesión 2/3) sumó índices sobre las columnas de mayor uso en filtros/joins de la aplicación (`create index concurrently`, aditivo, no cambia comportamiento):
@@ -176,6 +252,8 @@ Además de los índices implícitos de las PK/FK y de los 2 explícitos ya exist
 - `tarea_comentarios.tarea_id`
 
 Fase 1.2 (Sesión 1) sumó, ya en la migración que crea la tabla (no como ajuste posterior de auditoría): `turno_comentarios.turno_id`.
+
+Fase 2 (Sesión 1) sumó, ya en la migración que crea cada tabla: `grupo_horarios.grupo_id`, `grupo_horarios.dias` (GIN), `alumnas.apellido`, `alumnas.grupo_id`, `contactos.alumna_id`.
 
 ## Relaciones
 
@@ -192,9 +270,21 @@ users ──┬──< tareas (created_by)
         └──< turnos (profesor_id)
                 │
                 └──< turno_comentarios (autor_id) >── turnos
+
+grupos ──┬──< grupo_horarios
+         │
+         └──< alumnas ──< contactos
 ```
 
-## Fuera de alcance de este módulo
+Nota: `grupos`/`alumnas`/`contactos` (Fase 2) son un árbol de relaciones separado, sin FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito.
 
-- No hay tabla de alumnos/inscriptos: `capacidad` en `turnos` es solo un número, no hay roster de estudiantes (fuera del alcance del proyecto según el resumen general).
+## Fuera de alcance de este módulo (Módulo 2, Fase 1)
+
 - No hay lógica de aplicación de negocio (queries de Tareas/Horarios, hooks) — eso es de los Módulos 4 y 5.
+
+## Fuera de alcance de esta sesión (Fase 2, Sesión 1)
+
+- UI de gestión de grupos (editar nombre/horario/cuota desde la app) — los 5 grupos entran por datos semilla, la pantalla de edición va después en Administración.
+- UI de alumnas y contactos — es F2 MOD 2.
+- Import del listado real de alumnas — sesión aparte, cuando llegue el archivo de Luciana.
+- Retoque de `turnos.grupo_nivel` (texto libre) para usar `grupos` por FK — sesión siguiente (Fase 1.2, Sesión 2).
