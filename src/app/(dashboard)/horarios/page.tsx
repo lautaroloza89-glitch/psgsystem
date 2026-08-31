@@ -13,7 +13,7 @@ const MENSAJE_VACIO: Record<EstadoTurno | "Todas", string> = {
   Cancelado: "No hay clases canceladas.",
 };
 
-export const metadata: Metadata = { title: "Clases" };
+export const metadata: Metadata = { title: "Planificaciones" };
 
 const ESTADOS_VALIDOS: EstadoTurno[] = ["Activo", "Cancelado"];
 
@@ -33,7 +33,7 @@ export default async function HorariosPage({
   let query = supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), estado, profesores:turno_profesores(profesor:users(nombre, rol, cargo))"
+      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), estado, tipo, profesores:turno_profesores(profesor:users(nombre, rol, cargo))"
     )
     .order("fecha", { ascending: true })
     .order("hora_inicio", { ascending: true });
@@ -54,6 +54,7 @@ export default async function HorariosPage({
       turno.grupo_legacy ??
       "Sin grupo",
     estado: turno.estado as EstadoTurno,
+    tipo: turno.tipo,
     profesores: (
       turno.profesores as unknown as { profesor: { nombre: string; rol: Rol; cargo: string | null } }[]
     ).map((p) => p.profesor),
@@ -65,7 +66,7 @@ export default async function HorariosPage({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Clases</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Planificaciones</h1>
         {puedeCrear && (
           <Link
             href="/horarios/nuevo"
@@ -75,6 +76,13 @@ export default async function HorariosPage({
           </Link>
         )}
       </div>
+
+      <Link
+        href="/horarios/grupos"
+        className="block rounded-lg border border-border bg-surface px-4 py-3 text-sm font-medium text-primary-600 shadow-xs hover:border-border-strong hover:text-primary-700"
+      >
+        Ver por grupo y mes →
+      </Link>
 
       <FiltroEstadoTurnoTabs actual={filtroEstado ?? "Todas"} />
 

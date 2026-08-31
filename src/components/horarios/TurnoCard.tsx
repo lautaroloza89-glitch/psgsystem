@@ -13,6 +13,8 @@ export interface TurnoCardData {
   grupoNombre: string;
   estado: EstadoTurno;
   profesores: { nombre: string; rol: Rol; cargo: string | null }[];
+  /** Solo se muestra cuando es "Preparación física" (la excepción a distinguir). */
+  tipo?: "Patín" | "Preparación física";
 }
 
 export function TurnoCard({
@@ -30,7 +32,14 @@ export function TurnoCard({
       className="block rounded-lg border border-border bg-surface p-5 shadow-xs transition duration-[var(--duration-base)] ease-standard hover:border-border-strong hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
     >
       <div className="flex items-start justify-between gap-2">
-        <Titulo className="text-lg font-semibold">{turno.grupoNombre}</Titulo>
+        <Titulo className="text-lg font-semibold">
+          {turno.grupoNombre}
+          {turno.tipo === "Preparación física" && (
+            <span className="ml-1.5 text-sm font-normal text-text-subtle">
+              (Preparación física)
+            </span>
+          )}
+        </Titulo>
         <EstadoTurnoBadge estado={turno.estado} />
       </div>
       <p className="mt-2 text-sm text-text-subtle">

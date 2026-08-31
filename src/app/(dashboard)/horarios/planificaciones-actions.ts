@@ -1,0 +1,227 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { diaIsoDeFecha } from "@/lib/utils/date";
+import type { TipoTurno } from "@/types";
+import type { FormState } from "./actions";
+
+const TIPOS_VALIDOS: TipoTurno[] = ["Patín", "Preparación física"];
+
+// 'Secretaria' todavía no es un valor posible de users.rol (Dai sigue en
+// 'Admin' como parche temporal, ver PROGRESS.md) — por eso no aparece acá
+// aunque la RLS de grupo_objetivos_mes ya la contempla; en cuanto se
+// agregue al tipo `Rol`, sumarla también a este chequeo de aplicación.
+function puedeCargarPlanificaciones(rol: string | undefined): boolean {
+  return rol === "Admin" || rol === "Head Coach" || rol === "Profesor";
+}
+
+/**
+ * Busca, dentro de los bloques horarios de un grupo, el que cubre un día
+ * ISO puntual (1=lunes ... 7=domingo). Si el mismo día aparece en más de
+ * un bloque (no debería pasar hoy) se queda con el primero.
+ */
+async function resolverHorarioPorDia(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  grupo_id: string,
+  diaIso: number
+): Promise<{ hora_inicio: string; hora_fin: string } | null> {
+  const { data: bloques } = await supabase
+    .from("grupo_horarios")
+    .select("dias, hora_inicio, hora_fin")
+    .eq("grupo_id", grupo_id);
+
+  const bloque = (bloques ?? []).find((b) => (b.dias as number[]).includes(diaIso));
+  if (!bloque) return null;
+
+  return { hora_inicio: bloque.hora_inicio, hora_fin: bloque.hora_fin };
+}
+
+/**
+ * Crea o actualiza la fila de `turnos` de una fecha puntual con el
+ * contenido de la planificación. Si ya existe una clase para ese
+ * grupo+fecha, solo se tocan `tipo`/`planificacion` (no el horario ni los
+ * profesores ya asignados). Si no existe, se crea derivando el horario de
+ * `grupo_horarios` según el día de la semana.
+ */
+async function upsertPlanificacionFecha(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  params: { grupo_id: string; fecha: string; tipo: TipoTurno; planificacion: string }
+): Promise<{ error: string | null }> {
+  const { grupo_id, fecha, tipo, planificacion } = params;
+
+  const { data: existente } = await supabase
+    .from("turnos")
+    .select("id")
+    .eq("grupo_id", grupo_id)
+    .eq("fecha", fecha)
+    .maybeSingle();
+
+  if (existente) {
+    const { error } = await supabase
+      .from("turnos")
+      .update({ tipo, planificacion })
+      .eq("id", existente.id);
+    return { error: error ? "No se pudo actualizar la planificación." : null };
+  }
+
+  const horario = await resolverHorarioPorDia(supabase, grupo_id, diaIsoDeFecha(fecha));
+  if (!horario) {
+    return { error: `El grupo no tiene horario configurado para el ${fecha}.` };
+  }
+
+  const { error } = await supabase.from("turnos").insert({
+    fecha,
+    grupo_id,
+    hora_inicio: horario.hora_inicio,
+    hora_fin: horario.hora_fin,
+    tipo,
+    planificacion,
+  });
+
+  return { error: error ? "No se pudo crear la clase para esa fecha." : null };
+}
+
+/**
+ * Carga de planificación con selección de fechas (F2 MOD 1, punto 4): el
+ * mismo contenido se aplica a todas las fechas tildadas del mes que caen
+ * en el día de semana elegido.
+ */
+export async function guardarPlanificacion(
+  grupoId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!profile || !puedeCargarPlanificaciones(profile.rol)) {
+    return { error: "No tenés permiso para cargar planificaciones." };
+  }
+
+  const fechas = formData.getAll("fechas") as string[];
+  const tipoRaw = (formData.get("tipo") as string) || "Patín";
+  const tipo: TipoTurno = TIPOS_VALIDOS.includes(tipoRaw as TipoTurno)
+    ? (tipoRaw as TipoTurno)
+    : "Patín";
+  const planificacion = ((formData.get("planificacion") as string) ?? "").trim();
+  const mes = (formData.get("mes") as string) || "";
+
+  if (fechas.length === 0) {
+    return { error: "Elegí al menos una fecha." };
+  }
+  if (!planificacion) {
+    return { error: "La planificación no puede estar vacía." };
+  }
+
+  const supabase = await createClient();
+
+  for (const fecha of fechas) {
+    const { error } = await upsertPlanificacionFecha(supabase, {
+      grupo_id: grupoId,
+      fecha,
+      tipo,
+      planificacion,
+    });
+    if (error) {
+      return { error };
+    }
+  }
+
+  revalidatePath(`/horarios/grupos/${grupoId}`);
+  revalidatePath("/horarios");
+  redirect(`/horarios/grupos/${grupoId}${mes ? `?mes=${mes}` : ""}`);
+}
+
+/** Duplicar planificación (F2 MOD 1, punto 7): mismo contenido, otra fecha. */
+export async function duplicarPlanificacion(
+  turnoIdOrigen: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!profile || !puedeCargarPlanificaciones(profile.rol)) {
+    return { error: "No tenés permiso para duplicar planificaciones." };
+  }
+
+  const fecha = (formData.get("fecha") as string) ?? "";
+  const tipoRaw = (formData.get("tipo") as string) || "Patín";
+  const tipo: TipoTurno = TIPOS_VALIDOS.includes(tipoRaw as TipoTurno)
+    ? (tipoRaw as TipoTurno)
+    : "Patín";
+  const planificacion = ((formData.get("planificacion") as string) ?? "").trim();
+
+  if (!fecha) {
+    return { error: "Elegí una fecha." };
+  }
+  if (!planificacion) {
+    return { error: "La planificación no puede estar vacía." };
+  }
+
+  const supabase = await createClient();
+
+  const { data: origen } = await supabase
+    .from("turnos")
+    .select("grupo_id")
+    .eq("id", turnoIdOrigen)
+    .single();
+
+  if (!origen?.grupo_id) {
+    return { error: "No se encontró el grupo de la clase original." };
+  }
+
+  const { error } = await upsertPlanificacionFecha(supabase, {
+    grupo_id: origen.grupo_id,
+    fecha,
+    tipo,
+    planificacion,
+  });
+  if (error) {
+    return { error };
+  }
+
+  const { data: destino } = await supabase
+    .from("turnos")
+    .select("id")
+    .eq("grupo_id", origen.grupo_id)
+    .eq("fecha", fecha)
+    .single();
+
+  revalidatePath(`/horarios/grupos/${origen.grupo_id}`);
+  revalidatePath("/horarios");
+  redirect(destino ? `/horarios/${destino.id}` : "/horarios");
+}
+
+/** "Objetivo del mes" por grupo (F2 MOD 1, punto 6). Upsert por grupo+mes. */
+export async function guardarObjetivoMes(
+  grupoId: string,
+  mes: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!profile || !puedeCargarPlanificaciones(profile.rol)) {
+    return { error: "No tenés permiso para editar el objetivo del mes." };
+  }
+
+  const objetivo = ((formData.get("objetivo") as string) ?? "").trim();
+  if (!objetivo) {
+    return { error: "El objetivo no puede estar vacío." };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("grupo_objetivos_mes")
+    .upsert(
+      { grupo_id: grupoId, mes, objetivo },
+      { onConflict: "grupo_id,mes" }
+    );
+
+  if (error) {
+    return { error: "No se pudo guardar el objetivo del mes." };
+  }
+
+  revalidatePath(`/horarios/grupos/${grupoId}`);
+  return { error: null };
+}

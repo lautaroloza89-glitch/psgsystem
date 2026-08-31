@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
-import type { EstadoTurno } from "@/types";
+import type { EstadoTurno, TipoTurno } from "@/types";
+
+const TIPOS_VALIDOS: TipoTurno[] = ["Patín", "Preparación física"];
 
 export interface FormState {
   error: string | null;
@@ -15,8 +17,14 @@ function leerCamposTurno(formData: FormData) {
   const grupo_id = (formData.get("grupo_id") as string) || "";
   const grupo_horario_id = (formData.get("grupo_horario_id") as string) || "";
   const profesores = formData.getAll("profesores") as string[];
+  const tipoRaw = (formData.get("tipo") as string) || "Patín";
+  const tipo: TipoTurno = TIPOS_VALIDOS.includes(tipoRaw as TipoTurno)
+    ? (tipoRaw as TipoTurno)
+    : "Patín";
+  const planificacionRaw = ((formData.get("planificacion") as string) ?? "").trim();
+  const planificacion = planificacionRaw.length > 0 ? planificacionRaw : null;
 
-  return { fecha, grupo_id, grupo_horario_id, profesores };
+  return { fecha, grupo_id, grupo_horario_id, profesores, tipo, planificacion };
 }
 
 function validarCamposTurno({
@@ -70,7 +78,7 @@ export async function crearTurno(
     return { error: errorValidacion };
   }
 
-  const { fecha, grupo_id, grupo_horario_id, profesores } = campos;
+  const { fecha, grupo_id, grupo_horario_id, profesores, tipo, planificacion } = campos;
   // Un Profesor no elige el checklist (no lo ve en el form): siempre queda
   // autoasignado. Admin/Head Coach eligen libremente quién dicta la clase.
   const profesoresFinal = profile.rol === "Profesor" ? [profile.id] : profesores;
@@ -89,6 +97,8 @@ export async function crearTurno(
       hora_inicio: horario.hora_inicio,
       hora_fin: horario.hora_fin,
       grupo_id,
+      tipo,
+      planificacion,
     })
     .select("id")
     .single();
@@ -127,7 +137,7 @@ export async function editarTurno(
     return { error: errorValidacion };
   }
 
-  const { fecha, grupo_id, grupo_horario_id, profesores } = campos;
+  const { fecha, grupo_id, grupo_horario_id, profesores, tipo, planificacion } = campos;
 
   const supabase = await createClient();
 
@@ -143,6 +153,8 @@ export async function editarTurno(
       hora_inicio: horario.hora_inicio,
       hora_fin: horario.hora_fin,
       grupo_id,
+      tipo,
+      planificacion,
     })
     .eq("id", turnoId);
 

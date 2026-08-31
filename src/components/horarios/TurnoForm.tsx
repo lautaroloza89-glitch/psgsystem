@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useActionState } from "react";
 import type { FormState } from "@/app/(dashboard)/horarios/actions";
-import type { Rol, User } from "@/types";
+import type { Rol, TipoTurno, User } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
 import { AsignadosChecklist } from "@/components/ui/AsignadosChecklist";
 
@@ -50,6 +50,8 @@ export interface TurnoFormDefaultValues {
   /** Solo para mostrar el texto libre viejo como ayuda mientras no se eligió un grupo real. */
   grupo_legacy: string | null;
   profesoresIds: string[];
+  tipo: TipoTurno;
+  planificacion: string | null;
 }
 
 const initialState: FormState = { error: null };
@@ -182,6 +184,35 @@ export function TurnoForm({
           Esta clase queda asignada a vos como profesor.
         </p>
       )}
+
+      <div className="space-y-1.5">
+        <label htmlFor="tipo" className="text-label font-medium">
+          Tipo de clase
+        </label>
+        <select
+          id="tipo"
+          name="tipo"
+          defaultValue={defaultValues?.tipo ?? "Patín"}
+          className={INPUT_CLASS}
+        >
+          <option value="Patín">Patín</option>
+          <option value="Preparación física">Preparación física</option>
+        </select>
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="planificacion" className="text-label font-medium">
+          Planificación
+        </label>
+        <textarea
+          id="planificacion"
+          name="planificacion"
+          rows={8}
+          defaultValue={defaultValues?.planificacion ?? ""}
+          placeholder="Pegá acá la planificación (admite markdown: títulos, negritas, listas, tablas)."
+          className={INPUT_CLASS}
+        />
+      </div>
 
       {state.error && (
         <p role="alert" aria-live="assertive" className="text-sm text-error-600">

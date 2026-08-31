@@ -1,5 +1,7 @@
 export type EstadoTurno = "Activo" | "Cancelado";
 
+export type TipoTurno = "Patín" | "Preparación física";
+
 export interface Turno {
   id: string;
   fecha: string;
@@ -10,6 +12,10 @@ export interface Turno {
   grupo_id: string | null;
   capacidad: number | null;
   estado: EstadoTurno;
+  /** Contenido de la clase (markdown), F2 MOD 1. Null hasta que alguien la carga. */
+  planificacion: string | null;
+  /** Patín (default) o Preparación física — F2 MOD 1. */
+  tipo: TipoTurno;
   created_at: string;
   updated_at: string;
 }

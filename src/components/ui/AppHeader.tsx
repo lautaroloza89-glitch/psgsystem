@@ -11,7 +11,7 @@ import type { User } from "@/types";
 const ENLACES = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/tareas", label: "Tareas" },
-  { href: "/horarios", label: "Clases" },
+  { href: "/horarios", label: "Planificaciones" },
   { href: "/miembros", label: "Miembros del equipo" },
 ];
 

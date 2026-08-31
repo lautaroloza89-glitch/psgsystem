@@ -20,7 +20,7 @@ export default async function EditarTurnoPage({
   const { data: turno } = await supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_id, grupo_legacy, profesores:turno_profesores(profesor_id)"
+      "id, fecha, hora_inicio, hora_fin, grupo_id, grupo_legacy, tipo, planificacion, profesores:turno_profesores(profesor_id)"
     )
     .eq("id", id)
     .single();
@@ -91,6 +91,8 @@ export default async function EditarTurnoPage({
             grupo_horario_id: grupoHorarioIdDefault,
             grupo_legacy: turno.grupo_legacy,
             profesoresIds: profesoresIdsActuales,
+            tipo: turno.tipo,
+            planificacion: turno.planificacion,
           }}
         />
       </div>

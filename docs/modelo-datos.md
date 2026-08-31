@@ -87,7 +87,7 @@ Historial de comentarios cortos de una tarea (ej. el que deja el Empleado al cam
 
 ### `turnos`
 
-Horarios/turnos de la escuela. Cada fila es una ocurrencia puntual (fecha concreta), no un patrón recurrente.
+Horarios/turnos de la escuela. Cada fila es una ocurrencia puntual (fecha concreta), no un patrón recurrente. Desde F2 MOD 1 (2026-08-31) también es la fila donde vive la planificación de esa clase — no se creó una tabla aparte, ver más abajo.
 
 | Columna | Tipo | Notas |
 |---|---|---|
@@ -99,8 +99,14 @@ Horarios/turnos de la escuela. Cada fila es una ocurrencia puntual (fecha concre
 | `grupo_id` | `uuid` | FK a `grupos(id)`, `on delete set null`, opcional. Reemplaza a `grupo_legacy` para los turnos nuevos (Fase 1.2, Sesión 2, 2026-08-31) — el formulario ahora es un select contra los 5 grupos reales en vez de texto libre. |
 | `capacidad` | `integer` | opcional (ver nota arriba), check: `capacidad > 0` cuando no es null |
 | `estado` | `text` | `not null`, default `'Activo'`, check: `'Activo' \| 'Cancelado'` |
+| `planificacion` | `text` | opcional (F2 MOD 1, 2026-08-31). Contenido de la clase en markdown, pegado por Luciana desde ChatGPT. Renderizado con `MarkdownText` (títulos, negritas, listas, tablas). |
+| `tipo` | `text` | `not null`, default `'Patín'`, check: `'Patín' \| 'Preparación física'` (F2 MOD 1). Separa las planificaciones de patín y de preparación física del mismo grupo en la navegación grupo → mes → planificaciones. |
 | `created_at` | `timestamptz` | default `now()` |
 | `updated_at` | `timestamptz` | default `now()`, se actualiza solo con trigger |
+
+Índice `turnos_grupo_id_fecha_idx` (`grupo_id`, `fecha`) agregado en F2 MOD 1 para la navegación grupo → mes.
+
+**Modelo de datos de F2 MOD 1 (decisión confirmada con el usuario antes de migrar):** la planificación no es una tabla separada — `turnos` ya era una fila por fecha puntual desde el Módulo 2 (Fase 1), así que agregar `planificacion`/`tipo` ahí reutiliza esa propiedad en vez de duplicarla. La carga con selección de fechas (varios lunes del mes con el mismo contenido) hace un upsert por `grupo_id`+`fecha`: si ya existe un turno para esa fecha, solo actualiza `planificacion`/`tipo` (no toca horario ni profesores); si no existe, lo crea derivando `hora_inicio`/`hora_fin` del bloque de `grupo_horarios` que cubre el día de la semana de esa fecha. Sin cambios de RLS: `turnos_insert`/`turnos_update` (Groundwork 3) ya permiten Admin/Head Coach/Profesor, que es el mismo criterio de "quién carga planificaciones".
 
 **`profesor_id` (columna eliminada, Groundwork 3, 2026-08-31)**: la relación 1:1 con `users` se reemplazó por la tabla `turno_profesores` (M:N) — hay clases con dos profesoras a la vez (Caro/Dai entre semana, Male/Estefi los sábados), confirmado por Lauti. Los datos existentes se migraron antes de dropear la columna. Mismo criterio ya usado para `tareas`/`tarea_asignados`: sin campo redundante en la tabla principal.
 
@@ -230,6 +236,21 @@ Uno o más bloques horarios por grupo — tabla aparte (no columnas en `grupos`)
 
 **Nota técnica**: el CHECK original de "no vacío" usaba `array_length(dias, 1) > 0`, que en Postgres devuelve `NULL` (no `0`) para un array vacío — un CHECK que evalúa `NULL` se considera satisfecho, así que el constraint no bloqueaba `dias = '{}'`. Detectado con una prueba automatizada dentro de una transacción con `rollback` antes de cerrar la sesión; corregido a `cardinality(dias) > 0`, que sí devuelve `0` para un array vacío. Verificado con los 8 escenarios de constraint (incluido este) más 9 escenarios de RLS simulados con los IDs reales de Admin/Head Coach/Profesor/Empleado — todos dentro de transacciones con `rollback`, 0 filas de prueba restantes confirmado.
 
+### `grupo_objetivos_mes`
+
+"Objetivo del mes" por grupo (F2 MOD 1, 2026-08-31). Luciana escribe objetivos en varios niveles (trimestre, mes, semana/día, clase puntual) y hoy los mete todos aplastados en el mismo texto; este campo separa el nivel "mes" (el que usa constantemente) del resto. El nivel trimestre no se construyó — apareció una sola vez en todo lo relevado, sigue escribiéndose dentro del texto hasta que se justifique.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `grupo_id` | `uuid` | FK a `grupos(id)`, `on delete cascade` |
+| `mes` | `date` | `not null`, siempre el día 1 del mes (check `extract(day from mes) = 1`), `unique(grupo_id, mes)` |
+| `objetivo` | `text` | `not null`, markdown, mismo render que `turnos.planificacion` |
+| `created_at` | `timestamptz` | default `now()` |
+| `updated_at` | `timestamptz` | default `now()`, se actualiza solo con trigger |
+
+RLS: lectura abierta a cualquier autenticado, mismo criterio que `grupos`/`turnos`. Escritura: Admin, Head Coach, Profesor y Secretaria (`grupo_objetivos_mes_write`, política única `for all`) — mismo criterio de "quién carga planificaciones" del módulo. `'Secretaria'` todavía no es un valor posible de `users.rol` (ver nota de `alumnas`/`contactos` más arriba); la policy queda escrita contra el rol correcto para que funcione sola cuando ese parche se resuelva, sin otra migración — mientras tanto el chequeo de aplicación (`planificaciones-actions.ts`) tampoco la incluye porque el tipo `Rol` de TypeScript no la contempla todavía.
+
 ### `alumnas`
 
 Datos puros de las alumnas de la escuela (~150 registros, a cargar por import aparte). **No son usuarios del sistema**: sin login, sin cuenta de Auth, sin relación con el rol "Patinador/a" de Fase 1 (entidades separadas a propósito, sin FK ni deduplicación entre ambas).
@@ -301,10 +322,11 @@ users ──┬──< tareas (created_by)
 
 grupos ──┬──< grupo_horarios
          ├──< alumnas ──< contactos
-         └──< turnos (grupo_id, desde Fase 1.2 Sesión 2)
+         ├──< turnos (grupo_id, desde Fase 1.2 Sesión 2)
+         └──< grupo_objetivos_mes (F2 MOD 1)
 ```
 
-Nota: `alumnas`/`contactos` (Fase 2) no tienen FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito. `grupos` sí conecta ahora con `turnos` vía `grupo_id` (Fase 1.2, Sesión 2, 2026-08-31), además de con `alumnas`/`grupo_horarios` (Fase 2).
+Nota: `alumnas`/`contactos` (Fase 2) no tienen FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito. `grupos` sí conecta ahora con `turnos` vía `grupo_id` (Fase 1.2, Sesión 2, 2026-08-31), además de con `alumnas`/`grupo_horarios` (Fase 2) y `grupo_objetivos_mes` (F2 MOD 1).
 
 ## Fuera de alcance de este módulo (Módulo 2, Fase 1)
 

@@ -9,6 +9,7 @@ import { BorrarTurnoButton } from "@/components/horarios/BorrarTurnoButton";
 import { ComentariosTurnoList, type ComentarioTurnoData } from "@/components/horarios/ComentariosTurnoList";
 import { ComentarioTurnoForm } from "@/components/horarios/ComentarioTurnoForm";
 import { BackButton } from "@/components/ui/BackButton";
+import { MarkdownText } from "@/components/ui/MarkdownText";
 import { formatFecha } from "@/lib/utils/date";
 import type { EstadoTurno, Rol } from "@/types";
 
@@ -26,7 +27,7 @@ export default async function TurnoDetallePage({
   const { data: turno } = await supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), estado, profesores:turno_profesores(profesor_id, profesor:users(nombre))"
+      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), estado, tipo, planificacion, profesores:turno_profesores(profesor_id, profesor:users(nombre))"
     )
     .eq("id", id)
     .single();
@@ -75,7 +76,14 @@ export default async function TurnoDetallePage({
 
       <div className="space-y-6 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         <div className="flex items-start justify-between gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">{grupoNombre}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {grupoNombre}
+            {turno.tipo === "Preparación física" && (
+              <span className="ml-2 text-base font-normal text-text-subtle">
+                (Preparación física)
+              </span>
+            )}
+          </h1>
           <EstadoTurnoBadge estado={turno.estado as EstadoTurno} />
         </div>
 
@@ -106,6 +114,25 @@ export default async function TurnoDetallePage({
         )}
 
         {profile?.rol === "Admin" && <BorrarTurnoButton turnoId={turno.id} />}
+      </div>
+
+      <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-lg font-semibold">Planificación</h2>
+          {puedeEditar && (
+            <Link
+              href={`/horarios/${turno.id}/duplicar`}
+              className="text-sm font-medium text-primary-600 hover:text-primary-700"
+            >
+              Duplicar a otra fecha
+            </Link>
+          )}
+        </div>
+        {turno.planificacion ? (
+          <MarkdownText texto={turno.planificacion} />
+        ) : (
+          <p className="text-sm text-text-subtle">Todavía no se cargó una planificación.</p>
+        )}
       </div>
 
       <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
