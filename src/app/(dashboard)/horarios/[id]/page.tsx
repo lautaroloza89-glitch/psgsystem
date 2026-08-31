@@ -26,7 +26,7 @@ export default async function TurnoDetallePage({
   const { data: turno } = await supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_nivel, profesor_id, estado, profesor:users(nombre)"
+      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), profesor_id, estado, profesor:users(nombre)"
     )
     .eq("id", id)
     .single();
@@ -54,6 +54,11 @@ export default async function TurnoDetallePage({
     ? (turno.profesor as unknown as { nombre: string }).nombre
     : null;
 
+  const grupoNombre =
+    (turno.grupo as unknown as { nombre: string } | null)?.nombre ??
+    turno.grupo_legacy ??
+    "Sin grupo";
+
   const puedeEditar =
     !!profile &&
     (profile.rol === "Admin" ||
@@ -66,7 +71,7 @@ export default async function TurnoDetallePage({
 
       <div className="space-y-6 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         <div className="flex items-start justify-between gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">{turno.grupo_nivel}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{grupoNombre}</h1>
           <EstadoTurnoBadge estado={turno.estado as EstadoTurno} />
         </div>
 

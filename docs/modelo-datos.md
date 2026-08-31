@@ -12,6 +12,7 @@
 > Extendido el 2026-08-29 (auditoría Fase B, sesión 3/3 — `docs/auditoria-fase-b-3-db-decisiones.md`): `supabase/migrations/20260829150000_notificaciones_tarea_id_set_null.sql` cambia `notificaciones.tarea_id` de `on delete cascade` a `on delete set null` (mismo patrón que `tareas.created_by`/`turnos.profesor_id`) para que borrar una tarea no destruya el historial de notificaciones de otros usuarios; `20260829160000_notificar_tarea_sin_responsables.sql` agrega el trigger `notificar_tarea_sin_responsables` sobre `tarea_asignados` (ver detalle en la sección `notificaciones` más abajo). El hallazgo de `turnos.grupo_nivel` (texto libre sin catálogo) se dejó sin cambios de esquema — decisión del usuario, ver "Decisiones tomadas".
 > Extendido el 2026-08-29 (Fase 1.2, Sesión 1 — extensión de notificaciones a Clases/Turnos): `supabase/migrations/20260829170000_notificaciones_comentario_turno.sql` crea la tabla nueva `turno_comentarios` (Clases/Turnos no tenía ningún feature de comentarios hasta esta sesión), agrega la columna `notificaciones.turno_id`, y suma el trigger `notificar_comentario_turno_nuevo` sobre `turno_comentarios`. Ver detalle en las secciones `turno_comentarios` y `notificaciones` más abajo.
 > Extendido el 2026-08-31 (Sistema PSG, Fase 2 — Sesión 1: modelo de datos base): `supabase/migrations/20260831120000_f2_grupos_alumnas_contactos.sql` crea 4 tablas nuevas — `grupos`, `grupo_horarios`, `alumnas`, `contactos` — groundwork de Fase 2 (Planificación, gestión de alumnas, cuotas/pagos, asistencia). Sin UI en esta sesión. Ver detalle en las secciones correspondientes más abajo.
+> Extendido el 2026-08-31 (Sistema PSG, Fase 2 — Sesión 2: Clases/Turnos por FK real): `supabase/migrations/20260831130000_turnos_grupo_id_fk.sql` renombra `turnos.grupo_nivel` a `grupo_legacy` (deja de ser `not null`) y agrega `turnos.grupo_id` (FK nullable a `grupos`). También actualiza la función del trigger `notificar_comentario_turno_nuevo` (Fase 1.2, Sesión 1) para armar el mensaje con `grupos.nombre` cuando el turno ya está mapeado, con fallback a `grupo_legacy`. Ver detalle en la sección `turnos` más abajo.
 
 ## Decisiones tomadas
 
@@ -21,9 +22,12 @@
 - **Los turnos son por fecha puntual, no por día de la semana recurrente**: cada fila de `turnos` es una ocurrencia concreta con su propia `fecha`, para poder cancelar un día puntual (lluvia, feriado) sin afectar el resto del horario.
 - **RLS (Row Level Security) está habilitada en las 5 tablas, con políticas por rol definidas en el Módulo 3** (`supabase/migrations/20260817140000_auth_roles_rls.sql`): Admin ve/edita todo; Profesor gestiona las tareas que creó o donde está asignado, y sus propios turnos; Empleado ve solo lo asignado a él, puede cambiar el estado de su tarea (bloqueado a nivel trigger para el resto de las columnas) y comentar; todos los usuarios autenticados pueden ver la tabla `users` completa y todos los `turnos` (horario compartido de la escuela). `service_role` sigue teniendo acceso completo. Extendido el 2026-08-22 (`supabase/migrations/20260822120000_roles_head_coach_patinador.sql`): Head Coach tiene los mismos permisos que Profesor sobre lo propio, más lectura de las tareas/turnos de Profesor, Empleado y Patinador; Patinador tiene los mismos permisos que Empleado.
 - **`turnos.grupo_nivel` sigue siendo texto libre, sin tabla de catálogo** (decisión del usuario, auditoría Fase B sesión 3/3, 2026-08-29): con solo 4 valores distintos hoy, sin duplicados, no se justifica la complejidad de una tabla `grupos_nivel` nueva. Si el volumen de valores crece y aparece fragmentación real (variantes tipográficas del mismo nivel), revisar esta decisión.
-- **Fase 2 sí tiene una tabla `grupos` real** (Sesión 1, 2026-08-31), a diferencia del punto anterior — son conceptos distintos: `turnos.grupo_nivel` es del dominio de Tareas/Horarios de Fase 1 (4 valores de texto libre, sin cambios); `grupos` es el catálogo fijo de 5 grupos de la escuela para el dominio nuevo de alumnas/cuotas de Fase 2. No se unificaron ambos conceptos en esta sesión — retocar `turnos` para usar `grupos` por FK es la sesión siguiente (Fase 1.2, Sesión 2, ver `PROGRESS.md`).
+- **Fase 2 sí tiene una tabla `grupos` real** (Sesión 1, 2026-08-31), a diferencia del punto anterior — son conceptos distintos: `turnos.grupo_nivel` es del dominio de Tareas/Horarios de Fase 1 (4 valores de texto libre, sin cambios); `grupos` es el catálogo fijo de 5 grupos de la escuela para el dominio nuevo de alumnas/cuotas de Fase 2.
+- **`turnos.grupo_nivel` se unificó con `grupos` (Fase 1.2, Sesión 2, 2026-08-31)**: la columna se renombró a `grupo_legacy` (texto libre viejo, ahora nullable) y se agregó `turnos.grupo_id` (FK nullable a `grupos`). No se migraron los datos existentes automáticamente — son pocas filas (4 al cierre de esta sesión), Lauti las mapea a mano abriendo cada turno y eligiendo el grupo real en el formulario; recién cuando estén todas mapeadas se dropea `grupo_legacy`. Los turnos nuevos ya se crean solo con `grupo_id` (el formulario no pide más texto libre).
+- **El horario de un turno se deriva de `grupo_horarios`, no se tipea a mano**: el formulario ya no tiene campos de hora; al elegir el grupo (y, si tiene más de un bloque como Jungla, el bloque específico) se copian `hora_inicio`/`hora_fin` del bloque elegido al turno en el momento de crear/editar. `turnos.hora_inicio`/`hora_fin` siguen existiendo como columnas propias (no una FK al bloque) porque un turno es una ocurrencia puntual — si el horario de un grupo cambia más adelante, los turnos ya creados no se actualizan retroactivamente, a propósito.
 - **`alumnas` son datos puros, sin relación con el rol "Patinador/a" de Fase 1**: entidades separadas a propósito, sin FK ni deduplicación entre ambas. Si una patinadora con login también aparece como alumna, es intencional y lo controla Lauti manualmente.
 - **`grupo_horarios.dias` es `smallint[]` con la convención ISO de `extract(isodow from ...)`** (1=lunes … 7=domingo), no una tabla de días ni texto libre — elegido para que sea consultable directamente contra fechas reales (F2 MOD 1 necesita calcular qué fechas del mes caen en cada día de semana; F2 MOD 4 necesita filtrar asistencia por día).
+- **Borrar una tarea (Fase 1.2, Sesión 2, 2026-08-31) quedó gateado a Admin solamente a nivel aplicación**, mismo criterio que ya regía para borrar un turno — sin cambios de RLS: la política `tareas_delete` (desde el 2026-08-22) ya permitía también a Profesor/Head Coach borrar lo que ellos mismos crearon, más permisiva que lo que expone la UI. No es un hueco de seguridad (la única vía de borrado de la app es el server action nuevo, que corta en Admin antes de llegar a la base), solo una asimetría entre lo que la RLS permitiría y lo que el botón ofrece — documentado acá por si una sesión futura necesita ampliar el botón a Profesor/Head Coach sobre lo propio, en cuyo caso la RLS ya lo soporta sin otra migración.
 
 ## Tablas
 
@@ -91,7 +95,8 @@ Horarios/turnos de la escuela. Cada fila es una ocurrencia puntual (fecha concre
 | `fecha` | `date` | `not null` |
 | `hora_inicio` | `time` | `not null` |
 | `hora_fin` | `time` | `not null`, check: `hora_fin > hora_inicio` |
-| `grupo_nivel` | `text` | `not null`, texto libre (ej. "Iniciación", "Nivel 2") |
+| `grupo_legacy` | `text` | opcional (desde el 2026-08-31, antes `grupo_nivel not null`). Texto libre viejo, anterior a la FK `grupo_id` — se conserva sin borrar hasta que Lauti remapee a mano las filas cargadas antes de esa sesión; recién ahí se dropea. |
+| `grupo_id` | `uuid` | FK a `grupos(id)`, `on delete set null`, opcional. Reemplaza a `grupo_legacy` para los turnos nuevos (Fase 1.2, Sesión 2, 2026-08-31) — el formulario ahora es un select contra los 5 grupos reales en vez de texto libre. |
 | `capacidad` | `integer` | opcional (ver nota arriba), check: `capacidad > 0` cuando no es null |
 | `profesor_id` | `uuid` | FK a `users(id)`, `on delete set null`, opcional |
 | `estado` | `text` | `not null`, default `'Activo'`, check: `'Activo' \| 'Cancelado'` |
@@ -150,7 +155,9 @@ Decidido con el usuario (2026-08-26): esquema de días en vez de horas (la propu
 
 Probado con datos de prueba reales (prefijo `TEST-VENC`, creados y borrados al terminar, 0 restantes confirmado): 5 escenarios — tarea a 2 días (avisa a asignado y creador distintos), tarea a 1 día con creador = asignado (avisa una sola vez, no duplica), tarea vencida (avisa a ambos), tarea completada vencida (no avisa), tarea a 5 días (fuera de umbral, no avisa). Se confirmó además que ejecutar la función dos veces seguidas no duplica ningún aviso (dedup por `tarea_id`/`usuario_id`/`tipo` funcionando).
 
-Extendida el 2026-08-29 (Fase 1.2, Sesión 1) con el trigger `notificar_comentario_turno_nuevo` (security definer, dispara en cada `insert` real sobre `turno_comentarios`, tipo `'comentario_turno_nuevo'`): a diferencia de la Sesión 2 de Tareas (destinatarios = asignados + creador), un turno solo tiene un `profesor_id` (no una relación M:N), así que el único destinatario es el profesor asignado al turno, excluido si es quien comentó; si el turno no tiene profesor asignado, no se genera ninguna notificación. Mensaje: `"{Nombre} comentó en el turno: {grupo_nivel}"`. El trigger de push (`notificaciones_push`, Módulo 7 — Sesión 4) no distingue por `tipo`, así que este tipo nuevo ya queda cubierto sin ningún cambio adicional.
+Extendida el 2026-08-29 (Fase 1.2, Sesión 1) con el trigger `notificar_comentario_turno_nuevo` (security definer, dispara en cada `insert` real sobre `turno_comentarios`, tipo `'comentario_turno_nuevo'`): a diferencia de la Sesión 2 de Tareas (destinatarios = asignados + creador), un turno solo tiene un `profesor_id` (no una relación M:N), así que el único destinatario es el profesor asignado al turno, excluido si es quien comentó; si el turno no tiene profesor asignado, no se genera ninguna notificación. Mensaje: `"{Nombre} comentó en el turno: {grupo}"`. El trigger de push (`notificaciones_push`, Módulo 7 — Sesión 4) no distingue por `tipo`, así que este tipo nuevo ya queda cubierto sin ningún cambio adicional.
+
+Actualizada el 2026-08-31 (Fase 1.2, Sesión 2, `supabase/migrations/20260831130000_turnos_grupo_id_fk.sql`): la función leía la columna `grupo_nivel`, que en esta misma migración se renombró a `grupo_legacy` — se actualizó para armar el nombre del grupo como `coalesce(grupos.nombre, turnos.grupo_legacy)` (el nombre real una vez que el turno está mapeado a un `grupo_id`, con fallback al texto legacy mientras no lo está). Verificado dentro de una transacción con `rollback` contra la base real con ambos escenarios (turno con `grupo_id` mapeado → usa `grupos.nombre`; turno legacy sin mapear → usa `grupo_legacy`), 0 filas de prueba restantes confirmado.
 
 ### `push_subscriptions`
 
@@ -173,7 +180,7 @@ RLS: cada usuario ve, crea y borra solo sus propias filas (`select`/`insert`/`de
 
 ### `grupos`
 
-Catálogo fijo de los 5 grupos/niveles de la escuela (Fase 2, Sesión 1). Reemplaza el texto libre que hoy se escribe a mano en `turnos.grupo_nivel` — no todavía, esa migración es la sesión siguiente (Fase 1.2, Sesión 2).
+Catálogo fijo de los 5 grupos/niveles de la escuela (Fase 2, Sesión 1). Reemplaza el texto libre que antes se escribía a mano en `turnos.grupo_nivel` — unificado en Fase 1.2, Sesión 2 (2026-08-31, `turnos.grupo_id`), ver sección `turnos`.
 
 | Columna | Tipo | Notas |
 |---|---|---|
@@ -272,11 +279,11 @@ users ──┬──< tareas (created_by)
                 └──< turno_comentarios (autor_id) >── turnos
 
 grupos ──┬──< grupo_horarios
-         │
-         └──< alumnas ──< contactos
+         ├──< alumnas ──< contactos
+         └──< turnos (grupo_id, desde Fase 1.2 Sesión 2)
 ```
 
-Nota: `grupos`/`alumnas`/`contactos` (Fase 2) son un árbol de relaciones separado, sin FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito.
+Nota: `alumnas`/`contactos` (Fase 2) no tienen FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito. `grupos` sí conecta ahora con `turnos` vía `grupo_id` (Fase 1.2, Sesión 2, 2026-08-31), además de con `alumnas`/`grupo_horarios` (Fase 2).
 
 ## Fuera de alcance de este módulo (Módulo 2, Fase 1)
 
@@ -287,4 +294,4 @@ Nota: `grupos`/`alumnas`/`contactos` (Fase 2) son un árbol de relaciones separa
 - UI de gestión de grupos (editar nombre/horario/cuota desde la app) — los 5 grupos entran por datos semilla, la pantalla de edición va después en Administración.
 - UI de alumnas y contactos — es F2 MOD 2.
 - Import del listado real de alumnas — sesión aparte, cuando llegue el archivo de Luciana.
-- Retoque de `turnos.grupo_nivel` (texto libre) para usar `grupos` por FK — sesión siguiente (Fase 1.2, Sesión 2).
+- Retoque de `turnos.grupo_nivel` (texto libre) para usar `grupos` por FK — hecho en Fase 1.2, Sesión 2 (2026-08-31), ver sección `turnos` más arriba.

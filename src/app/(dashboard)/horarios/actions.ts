@@ -12,27 +12,47 @@ export interface FormState {
 
 function leerCamposTurno(formData: FormData) {
   const fecha = (formData.get("fecha") as string) ?? "";
-  const hora_inicio = (formData.get("hora_inicio") as string) ?? "";
-  const hora_fin = (formData.get("hora_fin") as string) ?? "";
-  const grupo_nivel = ((formData.get("grupo_nivel") as string) ?? "").trim();
+  const grupo_id = (formData.get("grupo_id") as string) || "";
+  const grupo_horario_id = (formData.get("grupo_horario_id") as string) || "";
   const profesor_id = (formData.get("profesor_id") as string) || null;
 
-  return { fecha, hora_inicio, hora_fin, grupo_nivel, profesor_id };
+  return { fecha, grupo_id, grupo_horario_id, profesor_id };
 }
 
 function validarCamposTurno({
   fecha,
-  hora_inicio,
-  hora_fin,
-  grupo_nivel,
+  grupo_id,
+  grupo_horario_id,
 }: ReturnType<typeof leerCamposTurno>): string | null {
-  if (!fecha || !hora_inicio || !hora_fin || !grupo_nivel) {
-    return "Completá fecha, horario y grupo/nivel.";
-  }
-  if (hora_fin <= hora_inicio) {
-    return "La hora de fin tiene que ser posterior a la de inicio.";
+  if (!fecha || !grupo_id || !grupo_horario_id) {
+    return "Completá fecha, grupo y horario.";
   }
   return null;
+}
+
+/**
+ * El horario ya no se tipea a mano: se deriva del bloque elegido en
+ * `grupo_horarios`. Se re-consulta acá (no se confía en lo que mandó el
+ * formulario) para no depender de que el cliente no haya manipulado el
+ * horario, y para chequear que el bloque realmente pertenezca al grupo
+ * elegido.
+ */
+async function resolverHorarioDeGrupo(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  grupo_id: string,
+  grupo_horario_id: string
+): Promise<{ hora_inicio: string; hora_fin: string } | null> {
+  const { data: bloque } = await supabase
+    .from("grupo_horarios")
+    .select("hora_inicio, hora_fin, grupo_id")
+    .eq("id", grupo_horario_id)
+    .single();
+
+  if (!bloque || bloque.grupo_id !== grupo_id) {
+    return null;
+  }
+
+  return { hora_inicio: bloque.hora_inicio, hora_fin: bloque.hora_fin };
 }
 
 export async function crearTurno(
@@ -50,17 +70,23 @@ export async function crearTurno(
     return { error: errorValidacion };
   }
 
-  const { fecha, hora_inicio, hora_fin, grupo_nivel, profesor_id } = campos;
+  const { fecha, grupo_id, grupo_horario_id, profesor_id } = campos;
   const profesorFinal = profile.rol === "Profesor" ? profile.id : profesor_id;
 
   const supabase = await createClient();
+
+  const horario = await resolverHorarioDeGrupo(supabase, grupo_id, grupo_horario_id);
+  if (!horario) {
+    return { error: "El horario elegido no corresponde al grupo seleccionado." };
+  }
+
   const { data: turno, error } = await supabase
     .from("turnos")
     .insert({
       fecha,
-      hora_inicio,
-      hora_fin,
-      grupo_nivel,
+      hora_inicio: horario.hora_inicio,
+      hora_fin: horario.hora_fin,
+      grupo_id,
       profesor_id: profesorFinal,
     })
     .select("id")
@@ -90,13 +116,20 @@ export async function editarTurno(
     return { error: errorValidacion };
   }
 
-  const { fecha, hora_inicio, hora_fin, grupo_nivel, profesor_id } = campos;
+  const { fecha, grupo_id, grupo_horario_id, profesor_id } = campos;
+
+  const supabase = await createClient();
+
+  const horario = await resolverHorarioDeGrupo(supabase, grupo_id, grupo_horario_id);
+  if (!horario) {
+    return { error: "El horario elegido no corresponde al grupo seleccionado." };
+  }
 
   const update: Record<string, unknown> = {
     fecha,
-    hora_inicio,
-    hora_fin,
-    grupo_nivel,
+    hora_inicio: horario.hora_inicio,
+    hora_fin: horario.hora_fin,
+    grupo_id,
   };
   // Un Profesor no puede reasignar el turno a otro profesor (RLS lo rechazaría
   // de todos modos); Admin y Head Coach sí pueden tocar profesor_id.
@@ -104,7 +137,6 @@ export async function editarTurno(
     update.profesor_id = profesor_id;
   }
 
-  const supabase = await createClient();
   const { error } = await supabase.from("turnos").update(update).eq("id", turnoId);
 
   if (error) {

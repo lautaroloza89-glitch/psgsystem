@@ -19,7 +19,7 @@ export default async function EditarTurnoPage({
 
   const { data: turno } = await supabase
     .from("turnos")
-    .select("id, fecha, hora_inicio, hora_fin, grupo_nivel, profesor_id")
+    .select("id, fecha, hora_inicio, hora_fin, grupo_id, grupo_legacy, profesor_id")
     .eq("id", id)
     .single();
 
@@ -44,6 +44,28 @@ export default async function EditarTurnoPage({
 
   const profesores = (usuarios ?? []).filter((u) => u.rol === "Profesor" || u.dicta_clases);
 
+  const { data: gruposData } = await supabase
+    .from("grupos")
+    .select("id, nombre, grupo_horarios(id, dias, hora_inicio, hora_fin)")
+    .order("nombre");
+
+  const grupos = (gruposData ?? []).map((g) => ({
+    id: g.id,
+    nombre: g.nombre,
+    bloques: g.grupo_horarios ?? [],
+  }));
+
+  // El turno guarda hora_inicio/hora_fin como valores propios (no una FK al
+  // bloque), así que para preseleccionar el bloque correcto en el form se
+  // busca, dentro de los bloques del grupo ya asignado, el que matchea el
+  // horario actual del turno.
+  const grupoHorarioIdDefault =
+    grupos
+      .find((g) => g.id === turno.grupo_id)
+      ?.bloques.find(
+        (b) => b.hora_inicio === turno.hora_inicio && b.hora_fin === turno.hora_fin
+      )?.id ?? "";
+
   const editarTurnoConId = editarTurno.bind(null, id);
 
   return (
@@ -55,12 +77,13 @@ export default async function EditarTurnoPage({
           action={editarTurnoConId}
           profile={{ id: profile!.id, rol: profile!.rol }}
           profesores={profesores}
+          grupos={grupos}
           modo="editar"
           defaultValues={{
             fecha: turno.fecha,
-            hora_inicio: turno.hora_inicio.slice(0, 5),
-            hora_fin: turno.hora_fin.slice(0, 5),
-            grupo_nivel: turno.grupo_nivel,
+            grupo_id: turno.grupo_id ?? "",
+            grupo_horario_id: grupoHorarioIdDefault,
+            grupo_legacy: turno.grupo_legacy,
             profesor_id: turno.profesor_id ?? "",
           }}
         />

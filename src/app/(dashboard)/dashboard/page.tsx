@@ -55,7 +55,7 @@ export default async function DashboardPage() {
   const { data: turnosData } = await supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_nivel, estado, profesor:users(nombre, rol, cargo)"
+      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), estado, profesor:users(nombre, rol, cargo)"
     )
     .eq("estado", "Activo")
     .gte("fecha", hoyStr)
@@ -68,7 +68,10 @@ export default async function DashboardPage() {
     fecha: turno.fecha,
     hora_inicio: turno.hora_inicio,
     hora_fin: turno.hora_fin,
-    grupo_nivel: turno.grupo_nivel,
+    grupoNombre:
+      (turno.grupo as unknown as { nombre: string } | null)?.nombre ??
+      turno.grupo_legacy ??
+      "Sin grupo",
     estado: turno.estado as EstadoTurno,
     profesor: turno.profesor
       ? (turno.profesor as unknown as { nombre: string; rol: Rol; cargo: string | null })

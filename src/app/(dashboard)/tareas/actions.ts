@@ -194,3 +194,20 @@ export async function agregarComentario(
   revalidatePath(`/tareas/${tareaId}`);
   return { error: null };
 }
+
+export async function borrarTarea(tareaId: string): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!profile || profile.rol !== "Admin") {
+    return { error: "Solo un Admin puede borrar tareas." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("tareas").delete().eq("id", tareaId);
+
+  if (error) {
+    return { error: "No se pudo borrar la tarea." };
+  }
+
+  revalidatePath("/tareas");
+  redirect("/tareas");
+}

@@ -7,6 +7,7 @@ import { EstadoBadge } from "@/components/tareas/EstadoBadge";
 import { EstadoSelector } from "@/components/tareas/EstadoSelector";
 import { ComentariosList, type ComentarioData } from "@/components/tareas/ComentariosList";
 import { ComentarioForm } from "@/components/tareas/ComentarioForm";
+import { BorrarTareaButton } from "@/components/tareas/BorrarTareaButton";
 import { BackButton } from "@/components/ui/BackButton";
 import { UsuarioRolCargo } from "@/components/ui/UsuarioRolCargo";
 import { formatFecha } from "@/lib/utils/date";
@@ -113,6 +114,8 @@ export default async function TareaDetallePage({
         )}
 
         <EstadoSelector tareaId={tarea.id} estadoActual={tarea.estado as EstadoTarea} />
+
+        {profile?.rol === "Admin" && <BorrarTareaButton tareaId={tarea.id} />}
       </div>
 
       <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">

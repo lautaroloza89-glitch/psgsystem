@@ -23,6 +23,17 @@ export default async function NuevoTurnoPage() {
 
   const profesores = (usuarios ?? []).filter((u) => u.rol === "Profesor" || u.dicta_clases);
 
+  const { data: gruposData } = await supabase
+    .from("grupos")
+    .select("id, nombre, grupo_horarios(id, dias, hora_inicio, hora_fin)")
+    .order("nombre");
+
+  const grupos = (gruposData ?? []).map((g) => ({
+    id: g.id,
+    nombre: g.nombre,
+    bloques: g.grupo_horarios ?? [],
+  }));
+
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <BackButton href="/horarios" />
@@ -32,6 +43,7 @@ export default async function NuevoTurnoPage() {
           action={crearTurno}
           profile={{ id: profile.id, rol: profile.rol }}
           profesores={profesores}
+          grupos={grupos}
           modo="crear"
         />
       </div>
