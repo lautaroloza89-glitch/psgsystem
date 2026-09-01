@@ -163,7 +163,7 @@ export default async function DashboardPage() {
             href="/horarios"
             className="rounded text-sm text-text-subtle transition-colors duration-[var(--duration-fast)] ease-standard hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           >
-            Ver todas
+            Ver por grupo
           </Link>
         </div>
         {turnosProximos.length === 0 ? (

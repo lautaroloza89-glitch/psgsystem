@@ -5,13 +5,23 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { BackButton } from "@/components/ui/BackButton";
 import { ObjetivoMesForm } from "@/components/horarios/ObjetivoMesForm";
+import { FiltroEstadoTurnoTabs } from "@/components/horarios/FiltroEstadoTurnoTabs";
+import { EstadoTurnoBadge } from "@/components/horarios/EstadoTurnoBadge";
 import { MarkdownText } from "@/components/ui/MarkdownText";
 import { formatFecha, nombreMes, primerDiaDeMes } from "@/lib/utils/date";
-import type { TipoTurno } from "@/types";
+import type { EstadoTurno, TipoTurno } from "@/types";
 
 export const metadata: Metadata = { title: "Planificaciones del grupo" };
 
 const TIPOS: TipoTurno[] = ["Patín", "Preparación física"];
+
+const ESTADOS_VALIDOS: EstadoTurno[] = ["Activo", "Cancelado"];
+
+const MENSAJE_VACIO: Record<EstadoTurno | "Todas", string> = {
+  Todas: "Sin planificaciones cargadas este mes.",
+  Activo: "Sin planificaciones activas este mes.",
+  Cancelado: "Sin planificaciones canceladas este mes.",
+};
 
 function previewTexto(texto: string, largo = 140): string {
   const plano = texto.replace(/[#*_`>-]/g, "").replace(/\s+/g, " ").trim();
@@ -24,15 +34,19 @@ function mesAnteriorSiguiente(anio: number, mes: number) {
   return { anterior, siguiente };
 }
 
+function mesQuery(anio: number, mes: number): string {
+  return `${anio}-${String(mes).padStart(2, "0")}`;
+}
+
 export default async function PlanificacionesGrupoPage({
   params,
   searchParams,
 }: {
   params: Promise<{ grupoId: string }>;
-  searchParams: Promise<{ mes?: string }>;
+  searchParams: Promise<{ mes?: string; estado?: string }>;
 }) {
   const { grupoId } = await params;
-  const { mes: mesParam } = await searchParams;
+  const { mes: mesParam, estado } = await searchParams;
 
   const hoy = new Date();
   let anio = hoy.getFullYear();
@@ -42,6 +56,10 @@ export default async function PlanificacionesGrupoPage({
     anio = y;
     mes = m;
   }
+
+  const filtroEstado = ESTADOS_VALIDOS.includes(estado as EstadoTurno)
+    ? (estado as EstadoTurno)
+    : null;
 
   const profile = await getCurrentUserProfile();
   const supabase = await createClient();
@@ -55,6 +73,19 @@ export default async function PlanificacionesGrupoPage({
   const { anterior, siguiente } = mesAnteriorSiguiente(anio, mes);
   const primerDiaSiguiente = primerDiaDeMes(siguiente.anio, siguiente.mes);
 
+  let turnosQuery = supabase
+    .from("turnos")
+    .select("id, fecha, tipo, estado, planificacion")
+    .eq("grupo_id", grupoId)
+    .gte("fecha", mesISO)
+    .lt("fecha", primerDiaSiguiente)
+    .not("planificacion", "is", null)
+    .order("fecha", { ascending: true });
+
+  if (filtroEstado) {
+    turnosQuery = turnosQuery.eq("estado", filtroEstado);
+  }
+
   const [{ data: objetivoData }, { data: turnosData }] = await Promise.all([
     supabase
       .from("grupo_objetivos_mes")
@@ -62,14 +93,7 @@ export default async function PlanificacionesGrupoPage({
       .eq("grupo_id", grupoId)
       .eq("mes", mesISO)
       .maybeSingle(),
-    supabase
-      .from("turnos")
-      .select("id, fecha, tipo, planificacion")
-      .eq("grupo_id", grupoId)
-      .gte("fecha", mesISO)
-      .lt("fecha", primerDiaSiguiente)
-      .not("planificacion", "is", null)
-      .order("fecha", { ascending: true }),
+    turnosQuery,
   ]);
 
   // 'Secretaria' todavía no es un valor posible de users.rol (ver PROGRESS.md).
@@ -82,15 +106,17 @@ export default async function PlanificacionesGrupoPage({
     items: (turnosData ?? []).filter((t) => t.tipo === tipo),
   }));
 
+  const queryEstado = filtroEstado ? `&estado=${encodeURIComponent(filtroEstado)}` : "";
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <BackButton href="/horarios/grupos" />
+      <BackButton href="/horarios" />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">{grupo.nombre}</h1>
         {puedeCargar && (
           <Link
-            href={`/horarios/grupos/${grupoId}/planificar?mes=${anio}-${String(mes).padStart(2, "0")}`}
+            href={`/horarios/grupos/${grupoId}/planificar?mes=${mesQuery(anio, mes)}`}
             className="flex items-center justify-center rounded-md bg-primary-500 px-5 py-2.5 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           >
             Nueva planificación
@@ -100,7 +126,7 @@ export default async function PlanificacionesGrupoPage({
 
       <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-2.5">
         <Link
-          href={`/horarios/grupos/${grupoId}?mes=${anterior.anio}-${String(anterior.mes).padStart(2, "0")}`}
+          href={`/horarios/grupos/${grupoId}?mes=${mesQuery(anterior.anio, anterior.mes)}${queryEstado}`}
           className="text-sm font-medium text-primary-600 hover:text-primary-700"
         >
           ← Anterior
@@ -109,7 +135,7 @@ export default async function PlanificacionesGrupoPage({
           {nombreMes(mes)} {anio}
         </span>
         <Link
-          href={`/horarios/grupos/${grupoId}?mes=${siguiente.anio}-${String(siguiente.mes).padStart(2, "0")}`}
+          href={`/horarios/grupos/${grupoId}?mes=${mesQuery(siguiente.anio, siguiente.mes)}${queryEstado}`}
           className="text-sm font-medium text-primary-600 hover:text-primary-700"
         >
           Siguiente →
@@ -135,11 +161,17 @@ export default async function PlanificacionesGrupoPage({
         />
       </div>
 
+      <FiltroEstadoTurnoTabs
+        actual={filtroEstado ?? "Todas"}
+        basePath={`/horarios/grupos/${grupoId}`}
+        params={{ mes: mesQuery(anio, mes) }}
+      />
+
       {planificacionesPorTipo.map(({ tipo, items }) => (
         <div key={tipo} className="space-y-3">
           <h2 className="text-lg font-semibold">{tipo}</h2>
           {items.length === 0 ? (
-            <p className="text-sm text-text-subtle">Sin planificaciones cargadas este mes.</p>
+            <p className="text-sm text-text-subtle">{MENSAJE_VACIO[filtroEstado ?? "Todas"]}</p>
           ) : (
             <div className="space-y-2">
               {items.map((item) => (
@@ -148,7 +180,10 @@ export default async function PlanificacionesGrupoPage({
                   href={`/horarios/${item.id}`}
                   className="block rounded-lg border border-border bg-surface p-4 shadow-xs transition duration-[var(--duration-base)] ease-standard hover:border-border-strong hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                 >
-                  <p className="text-sm font-semibold">{formatFecha(item.fecha)}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold">{formatFecha(item.fecha)}</p>
+                    {item.estado === "Cancelado" && <EstadoTurnoBadge estado="Cancelado" />}
+                  </div>
                   <p className="mt-1 text-sm text-text-subtle">
                     {item.planificacion ? previewTexto(item.planificacion) : ""}
                   </p>
