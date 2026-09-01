@@ -7,7 +7,27 @@ const OPCIONES: { label: string; value: EstadoTurno | "Todas" }[] = [
   { label: "Cancelado", value: "Cancelado" },
 ];
 
-export function FiltroEstadoTurnoTabs({ actual }: { actual: string }) {
+/**
+ * Filtro de estado de las planificaciones. Vive dentro de la vista de un grupo y mes
+ * (`basePath`), donde filtra sobre una lista acotada; `params` conserva el resto de la
+ * query (el mes elegido) al cambiar de pestaña.
+ */
+export function FiltroEstadoTurnoTabs({
+  actual,
+  basePath,
+  params = {},
+}: {
+  actual: string;
+  basePath: string;
+  params?: Record<string, string>;
+}) {
+  function href(value: EstadoTurno | "Todas"): string {
+    const query = new URLSearchParams(params);
+    if (value !== "Todas") query.set("estado", value);
+    const qs = query.toString();
+    return qs ? `${basePath}?${qs}` : basePath;
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
       {OPCIONES.map((opcion) => {
@@ -15,11 +35,7 @@ export function FiltroEstadoTurnoTabs({ actual }: { actual: string }) {
         return (
           <Link
             key={opcion.value}
-            href={
-              opcion.value === "Todas"
-                ? "/horarios"
-                : `/horarios?estado=${encodeURIComponent(opcion.value)}`
-            }
+            href={href(opcion.value)}
             className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
               activo
                 ? "border-primary-500 bg-primary-500 text-on-primary hover:bg-primary-600"

@@ -27,7 +27,7 @@ export default async function TurnoDetallePage({
   const { data: turno } = await supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), estado, tipo, planificacion, profesores:turno_profesores(profesor_id, profesor:users(nombre))"
+      "id, fecha, hora_inicio, hora_fin, grupo_id, grupo_legacy, grupo:grupos(nombre), estado, tipo, planificacion, profesores:turno_profesores(profesor_id, profesor:users(nombre))"
     )
     .eq("id", id)
     .single();
@@ -70,9 +70,15 @@ export default async function TurnoDetallePage({
       (profile.rol === "Profesor" &&
         profesoresAsignados.some((p) => p.profesor_id === profile.id)));
 
+  // Vuelve al mes del grupo del que viene la planificación; si la clase es de las viejas
+  // (sin grupo_id mapeado), al selector de grupos.
+  const volverA = turno.grupo_id
+    ? `/horarios/grupos/${turno.grupo_id}?mes=${turno.fecha.slice(0, 7)}`
+    : "/horarios";
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <BackButton href="/horarios" />
+      <BackButton href={volverA} />
 
       <div className="space-y-6 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         <div className="flex items-start justify-between gap-2">
