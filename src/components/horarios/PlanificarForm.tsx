@@ -2,7 +2,9 @@
 
 import { useActionState, useMemo, useState } from "react";
 import type { FormState } from "@/app/(dashboard)/horarios/actions";
+import type { Rol, User } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
+import { AsignadosChecklist } from "@/components/ui/AsignadosChecklist";
 import { fechasDelMesPorDia, formatFecha, nombreDia } from "@/lib/utils/date";
 
 const INPUT_CLASS =
@@ -12,12 +14,16 @@ const initialState: FormState = { error: null };
 
 export function PlanificarForm({
   action,
+  profile,
+  profesores,
   diasDisponibles,
   anio,
   mes,
   mesLabel,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
+  profile: { id: string; rol: Rol };
+  profesores: Pick<User, "id" | "nombre" | "rol" | "cargo">[];
   /** Días ISO (1=lunes...7=domingo) en los que el grupo tiene clase, según grupo_horarios. */
   diasDisponibles: number[];
   anio: number;
@@ -72,9 +78,20 @@ export function PlanificarForm({
         </fieldset>
       )}
 
+      {profile.rol === "Admin" || profile.rol === "Head Coach" ? (
+        <div className="space-y-1.5">
+          <span className="text-label font-medium">Profesores</span>
+          <AsignadosChecklist usuarios={profesores} name="profesores" />
+        </div>
+      ) : (
+        <p className="text-sm text-text-subtle">
+          Esta planificación queda asignada a vos como profesor.
+        </p>
+      )}
+
       <div className="space-y-1.5">
         <label htmlFor="tipo" className="text-label font-medium">
-          Tipo de clase
+          Tipo de planificación
         </label>
         <select id="tipo" name="tipo" defaultValue="Patín" className={INPUT_CLASS}>
           <option value="Patín">Patín</option>

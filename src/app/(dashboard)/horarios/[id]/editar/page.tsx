@@ -61,17 +61,6 @@ export default async function EditarTurnoPage({
     bloques: g.grupo_horarios ?? [],
   }));
 
-  // El turno guarda hora_inicio/hora_fin como valores propios (no una FK al
-  // bloque), así que para preseleccionar el bloque correcto en el form se
-  // busca, dentro de los bloques del grupo ya asignado, el que matchea el
-  // horario actual del turno.
-  const grupoHorarioIdDefault =
-    grupos
-      .find((g) => g.id === turno.grupo_id)
-      ?.bloques.find(
-        (b) => b.hora_inicio === turno.hora_inicio && b.hora_fin === turno.hora_fin
-      )?.id ?? "";
-
   const editarTurnoConId = editarTurno.bind(null, id);
 
   return (
@@ -84,11 +73,9 @@ export default async function EditarTurnoPage({
           profile={{ id: profile!.id, rol: profile!.rol }}
           profesores={profesores}
           grupos={grupos}
-          modo="editar"
           defaultValues={{
             fecha: turno.fecha,
             grupo_id: turno.grupo_id ?? "",
-            grupo_horario_id: grupoHorarioIdDefault,
             grupo_legacy: turno.grupo_legacy,
             profesoresIds: profesoresIdsActuales,
             tipo: turno.tipo,

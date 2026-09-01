@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { resolverHorarioPorDia } from "@/lib/horarios/resolver-horario";
+import { sincronizarProfesores } from "@/lib/horarios/sync-profesores";
 import { diaIsoDeFecha } from "@/lib/utils/date";
 import type { TipoTurno } from "@/types";
 import type { FormState } from "./actions";
@@ -19,38 +21,23 @@ function puedeCargarPlanificaciones(rol: string | undefined): boolean {
 }
 
 /**
- * Busca, dentro de los bloques horarios de un grupo, el que cubre un día
- * ISO puntual (1=lunes ... 7=domingo). Si el mismo día aparece en más de
- * un bloque (no debería pasar hoy) se queda con el primero.
- */
-async function resolverHorarioPorDia(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  grupo_id: string,
-  diaIso: number
-): Promise<{ hora_inicio: string; hora_fin: string } | null> {
-  const { data: bloques } = await supabase
-    .from("grupo_horarios")
-    .select("dias, hora_inicio, hora_fin")
-    .eq("grupo_id", grupo_id);
-
-  const bloque = (bloques ?? []).find((b) => (b.dias as number[]).includes(diaIso));
-  if (!bloque) return null;
-
-  return { hora_inicio: bloque.hora_inicio, hora_fin: bloque.hora_fin };
-}
-
-/**
  * Crea o actualiza la fila de `turnos` de una fecha puntual con el
- * contenido de la planificación. Si ya existe una clase para ese
- * grupo+fecha, solo se tocan `tipo`/`planificacion` (no el horario ni los
- * profesores ya asignados). Si no existe, se crea derivando el horario de
- * `grupo_horarios` según el día de la semana.
+ * contenido de la planificación y sincroniza sus profesores asignados. Si
+ * ya existe una clase para ese grupo+fecha, solo se tocan
+ * `tipo`/`planificacion`/profesores (no el horario). Si no existe, se crea
+ * derivando el horario de `grupo_horarios` según el día de la semana.
  */
 async function upsertPlanificacionFecha(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  params: { grupo_id: string; fecha: string; tipo: TipoTurno; planificacion: string }
+  params: {
+    grupo_id: string;
+    fecha: string;
+    tipo: TipoTurno;
+    planificacion: string;
+    profesoresFinal: string[];
+  }
 ): Promise<{ error: string | null }> {
-  const { grupo_id, fecha, tipo, planificacion } = params;
+  const { grupo_id, fecha, tipo, planificacion, profesoresFinal } = params;
 
   const { data: existente } = await supabase
     .from("turnos")
@@ -59,35 +46,55 @@ async function upsertPlanificacionFecha(
     .eq("fecha", fecha)
     .maybeSingle();
 
-  if (existente) {
+  let turnoId = existente?.id as string | undefined;
+
+  if (turnoId) {
     const { error } = await supabase
       .from("turnos")
       .update({ tipo, planificacion })
-      .eq("id", existente.id);
-    return { error: error ? "No se pudo actualizar la planificación." : null };
+      .eq("id", turnoId);
+    if (error) {
+      return { error: "No se pudo actualizar la planificación." };
+    }
+  } else {
+    const horario = await resolverHorarioPorDia(supabase, grupo_id, diaIsoDeFecha(fecha));
+    if (!horario) {
+      return { error: `El grupo no tiene horario configurado para el ${fecha}.` };
+    }
+
+    const { data: nuevo, error } = await supabase
+      .from("turnos")
+      .insert({
+        fecha,
+        grupo_id,
+        hora_inicio: horario.hora_inicio,
+        hora_fin: horario.hora_fin,
+        tipo,
+        planificacion,
+      })
+      .select("id")
+      .single();
+
+    if (error || !nuevo) {
+      return { error: "No se pudo crear la clase para esa fecha." };
+    }
+    turnoId = nuevo.id;
   }
 
-  const horario = await resolverHorarioPorDia(supabase, grupo_id, diaIsoDeFecha(fecha));
-  if (!horario) {
-    return { error: `El grupo no tiene horario configurado para el ${fecha}.` };
-  }
-
-  const { error } = await supabase.from("turnos").insert({
-    fecha,
-    grupo_id,
-    hora_inicio: horario.hora_inicio,
-    hora_fin: horario.hora_fin,
-    tipo,
-    planificacion,
-  });
-
-  return { error: error ? "No se pudo crear la clase para esa fecha." : null };
+  const { error: profesoresError } = await sincronizarProfesores(
+    supabase,
+    turnoId!,
+    profesoresFinal
+  );
+  return { error: profesoresError };
 }
 
 /**
  * Carga de planificación con selección de fechas (F2 MOD 1, punto 4): el
- * mismo contenido se aplica a todas las fechas tildadas del mes que caen
- * en el día de semana elegido.
+ * mismo contenido y los mismos profesores se aplican a todas las fechas
+ * tildadas del mes que caen en el día de semana elegido. Única forma de
+ * crear una planificación (Parche "unificar creación de planificaciones") —
+ * no existe más un formulario de "Nueva clase" aparte.
  */
 export async function guardarPlanificacion(
   grupoId: string,
@@ -106,6 +113,10 @@ export async function guardarPlanificacion(
     : "Patín";
   const planificacion = ((formData.get("planificacion") as string) ?? "").trim();
   const mes = (formData.get("mes") as string) || "";
+  const profesores = formData.getAll("profesores") as string[];
+  // Un Profesor no ve el checklist (no lo elige en el form): siempre queda
+  // autoasignado. Admin/Head Coach eligen libremente quién dicta la clase.
+  const profesoresFinal = profile.rol === "Profesor" ? [profile.id] : profesores;
 
   if (fechas.length === 0) {
     return { error: "Elegí al menos una fecha." };
@@ -122,6 +133,7 @@ export async function guardarPlanificacion(
       fecha,
       tipo,
       planificacion,
+      profesoresFinal,
     });
     if (error) {
       return { error };
@@ -133,7 +145,7 @@ export async function guardarPlanificacion(
   redirect(`/horarios/grupos/${grupoId}${mes ? `?mes=${mes}` : ""}`);
 }
 
-/** Duplicar planificación (F2 MOD 1, punto 7): mismo contenido, otra fecha. */
+/** Duplicar planificación (F2 MOD 1, punto 7): mismo contenido, otra fecha, sin tocar profesores. */
 export async function duplicarPlanificacion(
   turnoIdOrigen: string,
   _prevState: FormState,
@@ -162,7 +174,7 @@ export async function duplicarPlanificacion(
 
   const { data: origen } = await supabase
     .from("turnos")
-    .select("grupo_id")
+    .select("grupo_id, profesores:turno_profesores(profesor_id)")
     .eq("id", turnoIdOrigen)
     .single();
 
@@ -170,11 +182,16 @@ export async function duplicarPlanificacion(
     return { error: "No se encontró el grupo de la clase original." };
   }
 
+  const profesoresOrigen = (origen.profesores as unknown as { profesor_id: string }[]).map(
+    (p) => p.profesor_id
+  );
+
   const { error } = await upsertPlanificacionFecha(supabase, {
     grupo_id: origen.grupo_id,
     fecha,
     tipo,
     planificacion,
+    profesoresFinal: profesoresOrigen,
   });
   if (error) {
     return { error };

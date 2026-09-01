@@ -6,25 +6,10 @@ import type { FormState } from "@/app/(dashboard)/horarios/actions";
 import type { Rol, TipoTurno, User } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
 import { AsignadosChecklist } from "@/components/ui/AsignadosChecklist";
+import { diaIsoDeFecha, nombreDia } from "@/lib/utils/date";
 
 const INPUT_CLASS =
   "w-full rounded-md border border-border-strong px-3 py-2.5 text-sm transition-colors duration-[var(--duration-fast)] ease-standard focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-focus-ring";
-
-const DIAS_NOMBRE: Record<number, string> = {
-  1: "Lunes",
-  2: "Martes",
-  3: "Miércoles",
-  4: "Jueves",
-  5: "Viernes",
-  6: "Sábado",
-  7: "Domingo",
-};
-
-function formatDias(dias: number[]): string {
-  const nombres = dias.map((d) => DIAS_NOMBRE[d] ?? "?");
-  if (nombres.length <= 1) return nombres.join("");
-  return `${nombres.slice(0, -1).join(", ")} y ${nombres[nombres.length - 1]}`;
-}
 
 function formatHora(hora: string): string {
   return hora.slice(0, 5);
@@ -46,7 +31,6 @@ export interface GrupoOption {
 export interface TurnoFormDefaultValues {
   fecha: string;
   grupo_id: string;
-  grupo_horario_id: string;
   /** Solo para mostrar el texto libre viejo como ayuda mientras no se eligió un grupo real. */
   grupo_legacy: string | null;
   profesoresIds: string[];
@@ -56,37 +40,36 @@ export interface TurnoFormDefaultValues {
 
 const initialState: FormState = { error: null };
 
+/** Edición de una clase/planificación ya creada. La creación vive en `/horarios/grupos/[grupoId]/planificar` (PlanificarForm). */
 export function TurnoForm({
   action,
   profile,
   profesores,
   grupos,
   defaultValues,
-  modo,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   profile: { id: string; rol: Rol };
   profesores: Pick<User, "id" | "nombre" | "rol" | "cargo">[];
   grupos: GrupoOption[];
   defaultValues?: TurnoFormDefaultValues;
-  modo: "crear" | "editar";
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const [grupoId, setGrupoId] = useState(defaultValues?.grupo_id ?? "");
-  const [bloqueId, setBloqueId] = useState(defaultValues?.grupo_horario_id ?? "");
+  const [fecha, setFecha] = useState(defaultValues?.fecha ?? "");
 
   const grupoSeleccionado = useMemo(
     () => grupos.find((g) => g.id === grupoId) ?? null,
     [grupos, grupoId]
   );
-  const bloques = grupoSeleccionado?.bloques ?? [];
-  const bloqueSeleccionado = bloques.find((b) => b.id === bloqueId) ?? null;
 
-  function handleGrupoChange(nuevoGrupoId: string) {
-    setGrupoId(nuevoGrupoId);
-    const nuevosBloques = grupos.find((g) => g.id === nuevoGrupoId)?.bloques ?? [];
-    setBloqueId(nuevosBloques.length === 1 ? nuevosBloques[0].id : "");
-  }
+  // El horario ya no se elige a mano: lo determina el día de semana de la
+  // fecha elegida (Parche "unificar creación de planificaciones").
+  const bloqueSeleccionado = useMemo(() => {
+    if (!grupoSeleccionado || !fecha) return null;
+    const diaIso = diaIsoDeFecha(fecha);
+    return grupoSeleccionado.bloques.find((b) => b.dias.includes(diaIso)) ?? null;
+  }, [grupoSeleccionado, fecha]);
 
   const mostrarHintLegacy =
     !defaultValues?.grupo_id && !!defaultValues?.grupo_legacy;
@@ -102,7 +85,8 @@ export function TurnoForm({
           name="fecha"
           type="date"
           required
-          defaultValue={defaultValues?.fecha}
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
           className={INPUT_CLASS}
         />
       </div>
@@ -116,7 +100,7 @@ export function TurnoForm({
           name="grupo_id"
           required
           value={grupoId}
-          onChange={(e) => handleGrupoChange(e.target.value)}
+          onChange={(e) => setGrupoId(e.target.value)}
           className={INPUT_CLASS}
         >
           <option value="" disabled>
@@ -135,39 +119,18 @@ export function TurnoForm({
         )}
       </div>
 
-      {bloques.length > 1 ? (
-        <div className="space-y-1.5">
-          <label htmlFor="grupo_horario_id" className="text-label font-medium">
-            Horario
-          </label>
-          <select
-            id="grupo_horario_id"
-            name="grupo_horario_id"
-            required
-            value={bloqueId}
-            onChange={(e) => setBloqueId(e.target.value)}
-            className={INPUT_CLASS}
-          >
-            <option value="" disabled>
-              Elegí un horario
-            </option>
-            {bloques.map((b) => (
-              <option key={b.id} value={b.id}>
-                {formatDias(b.dias)} {formatHora(b.hora_inicio)}–{formatHora(b.hora_fin)}
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : (
-        <>
-          <input type="hidden" name="grupo_horario_id" value={bloqueId} />
-          {bloqueSeleccionado && (
-            <p className="text-sm text-text-muted">
-              Horario: {formatDias(bloqueSeleccionado.dias)}{" "}
-              {formatHora(bloqueSeleccionado.hora_inicio)}–{formatHora(bloqueSeleccionado.hora_fin)}
-            </p>
-          )}
-        </>
+      {grupoId && fecha && (
+        <p
+          className={
+            bloqueSeleccionado ? "text-sm text-text-muted" : "text-sm text-error-600"
+          }
+        >
+          {bloqueSeleccionado
+            ? `Horario: ${nombreDia(diaIsoDeFecha(fecha))} ${formatHora(
+                bloqueSeleccionado.hora_inicio
+              )}–${formatHora(bloqueSeleccionado.hora_fin)}`
+            : "Ese grupo no tiene clase ese día de la semana."}
+        </p>
       )}
 
       {profile.rol === "Admin" || profile.rol === "Head Coach" ? (
@@ -226,7 +189,7 @@ export function TurnoForm({
         className="flex w-full items-center justify-center gap-2 rounded-md bg-primary-500 py-2.5 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       >
         {pending && <Spinner />}
-        {pending ? "Guardando..." : modo === "crear" ? "Crear clase" : "Guardar cambios"}
+        {pending ? "Guardando..." : "Guardar cambios"}
       </button>
     </form>
   );

@@ -53,6 +53,13 @@ export default async function PlanificarPage({
     ...new Set((grupo.grupo_horarios ?? []).flatMap((b) => b.dias as number[])),
   ].sort((a, b) => a - b);
 
+  const { data: usuarios } = await supabase
+    .from("users")
+    .select("id, nombre, rol, cargo, dicta_clases")
+    .order("nombre");
+
+  const profesores = (usuarios ?? []).filter((u) => u.rol === "Profesor" || u.dicta_clases);
+
   const guardarPlanificacionDeGrupo = guardarPlanificacion.bind(null, grupoId);
 
   return (
@@ -69,6 +76,8 @@ export default async function PlanificarPage({
         ) : (
           <PlanificarForm
             action={guardarPlanificacionDeGrupo}
+            profile={{ id: profile!.id, rol: profile!.rol }}
+            profesores={profesores}
             diasDisponibles={diasDisponibles}
             anio={anio}
             mes={mes}

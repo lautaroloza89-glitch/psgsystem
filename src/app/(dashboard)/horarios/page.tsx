@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { FiltroEstadoTurnoTabs } from "@/components/horarios/FiltroEstadoTurnoTabs";
 import { TurnoCard, type TurnoCardData } from "@/components/horarios/TurnoCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -27,7 +26,6 @@ export default async function HorariosPage({
     ? (estado as EstadoTurno)
     : null;
 
-  const profile = await getCurrentUserProfile();
   const supabase = await createClient();
 
   let query = supabase
@@ -60,22 +58,9 @@ export default async function HorariosPage({
     ).map((p) => p.profesor),
   }));
 
-  const puedeCrear =
-    profile?.rol === "Admin" || profile?.rol === "Profesor" || profile?.rol === "Head Coach";
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Planificaciones</h1>
-        {puedeCrear && (
-          <Link
-            href="/horarios/nuevo"
-            className="flex w-full items-center justify-center rounded-md bg-primary-500 px-5 py-2.5 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg sm:w-auto"
-          >
-            Nueva clase
-          </Link>
-        )}
-      </div>
+      <h1 className="text-2xl font-bold tracking-tight">Planificaciones</h1>
 
       <Link
         href="/horarios/grupos"
