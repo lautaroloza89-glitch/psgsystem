@@ -15,6 +15,11 @@ const ENLACES = [
   { href: "/miembros", label: "Miembros del equipo" },
 ];
 
+// Sección aparte, visible solo para quienes gestionan el dominio
+// administrativo del club. Por ahora un solo ítem (Alumnas); Pagos,
+// Asistencia y Torneos se suman acá en sus propios módulos.
+const ENLACES_ADMINISTRACION = [{ href: "/alumnas", label: "Alumnas" }];
+
 export function AppHeader({ profile }: { profile: User }) {
   const pathname = usePathname();
   const [abierto, setAbierto] = useState(false);
@@ -110,6 +115,34 @@ export function AppHeader({ profile }: { profile: User }) {
                   </Link>
                 );
               })}
+
+              {(profile.rol === "Admin" ||
+                profile.rol === "Head Coach" ||
+                profile.rol === "Secretaria") && (
+                <>
+                  <p className="mt-4 px-3 text-sm font-semibold uppercase tracking-wide text-text-subtle">
+                    Administración
+                  </p>
+                  {ENLACES_ADMINISTRACION.map((enlace) => {
+                    const activo =
+                      pathname === enlace.href || pathname.startsWith(`${enlace.href}/`);
+                    return (
+                      <Link
+                        key={enlace.href}
+                        href={enlace.href}
+                        aria-current={activo ? "page" : undefined}
+                        className={`rounded-md px-3 py-2.5 text-base font-medium transition-colors duration-[var(--duration-fast)] ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
+                          activo
+                            ? "bg-primary-50 text-primary-600"
+                            : "text-text hover:bg-surface-muted"
+                        }`}
+                      >
+                        {enlace.label}
+                      </Link>
+                    );
+                  })}
+                </>
+              )}
             </nav>
 
             <div className="mt-auto">

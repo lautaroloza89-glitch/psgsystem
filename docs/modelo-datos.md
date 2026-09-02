@@ -262,18 +262,22 @@ Datos puros de las alumnas de la escuela (~150 registros, a cargar por import ap
 | `id` | `uuid` | PK, default `gen_random_uuid()` |
 | `apellido` | `text` | `not null` — se busca y ordena por este campo, no por DNI |
 | `nombre` | `text` | `not null` |
-| `dni` | `text` | `not null`, `unique` |
-| `fecha_inscripcion` | `date` | `not null` |
+| `dni` | `text` | nullable, índice único parcial `alumnas_dni_unique_idx` (`where dni is not null`) — ver nota F2 MOD 2 abajo |
+| `fecha_inscripcion` | `date` | `not null`, default `current_date` (agregado en F2 MOD 2) |
 | `estado` | `text` | `not null`, default `'activa'`, check: `'activa' \| 'baja'` |
-| `grupo_id` | `uuid` | FK a `grupos(id)`, `not null`, `on delete restrict` — una alumna pertenece a un solo grupo a la vez; se eligió `restrict` (no `set null`/`cascade`) para que borrar un grupo con alumnas asignadas falle explícitamente en vez de dejarlas huérfanas sin nivel |
+| `grupo_id` | `uuid` | FK a `grupos(id)`, nullable, `on delete restrict` — una alumna pertenece a un solo grupo a la vez; se eligió `restrict` (no `set null`/`cascade`) para que borrar un grupo con alumnas asignadas falle explícitamente en vez de dejarlas huérfanas sin nivel; obligatorio a nivel de formulario en el alta/edición manual (F2 MOD 2), pero no en la base |
 | `created_at` | `timestamptz` | default `now()` |
 | `updated_at` | `timestamptz` | default `now()`, se actualiza solo con trigger |
 
 Descartado a propósito (decisión de producto, no un olvido): fecha de nacimiento (los grupos se organizan por nivel/destreza, no por edad), email, datos médicos/alergias, motivo de baja.
 
-Índices: `apellido` (orden/búsqueda), `grupo_id` (filtrar por grupo). RLS: lectura y escritura para Admin, Head Coach y Secretaria — ningún otro rol tiene acceso, ni siquiera lectura (política única `for all`). **`'Secretaria'` todavía no es un valor posible de `users.rol`** — Dai sigue con rol `'Admin'` como parche temporal (ver `PROGRESS.md`) y esta sesión no tocó esa columna ni reasignó a nadie (fuera de alcance, "el parche se resuelve aparte" según el pedido de la sesión). La policy ya quedó escrita contra `'Secretaria'` para que funcione sola en cuanto ese parche se resuelva, sin necesitar otra migración; mientras tanto el acceso real de Dai pasa por la rama `'Admin'`.
+**F2 MOD 2 (2026-09-02) relajó `dni` y `grupo_id`:** Groundwork 1 los había dejado `not null` (`dni` además `unique` total), probado a propósito en esa sesión. F2 MOD 2 necesitaba lo contrario para tolerar el import futuro del listado real de Luciana (~150 filas, incompletas y con DNI posiblemente repetidos): se preguntó al usuario (pregunta de alto impacto) y se aplicó `supabase/migrations/20260902120000_f2_mod2_alumnas_ajustes_esquema.sql` — `dni` nullable con índice único parcial (permite muchas filas con `dni is null` pero sigue bloqueando un `dni` real repetido), `grupo_id` nullable en base (el formulario de alta/edición lo sigue exigiendo). La tabla seguía en 0 filas al aplicar el ALTER, sin riesgo de datos existentes.
 
-Tabla vacía al cierre de esta sesión. La carga de las ~150 alumnas es una sesión aparte, cuando Luciana entregue el listado.
+Índices: `apellido` (orden/búsqueda), `grupo_id` (filtrar por grupo), `alumnas_dni_unique_idx` (único parcial, ver arriba). RLS: lectura y escritura para Admin, Head Coach y Secretaria — ningún otro rol tiene acceso, ni siquiera lectura (política única `for all`). **`'Secretaria'` todavía no es un valor posible de `users.rol`** — Dai sigue con rol `'Admin'` como parche temporal (ver `PROGRESS.md`); la policy ya quedó escrita contra `'Secretaria'` para que funcione sola en cuanto ese parche se resuelva, sin necesitar otra migración; mientras tanto el acceso real de Dai pasa por la rama `'Admin'`. F2 MOD 2 sumó `'Secretaria'` al tipo TypeScript `Rol` (`src/types/user.ts`) por el mismo motivo, sin tocar el CHECK real de la base.
+
+Tabla vacía al cierre de F2 MOD 2 (datos de prueba creados durante la verificación en el navegador, borrados al terminar). La carga de las ~150 alumnas es una sesión aparte, cuando Luciana entregue el listado — con `dni`/`grupo_id` ya nullable en base, no hace falta otra migración de esquema para ese import.
+
+**UI (F2 MOD 2):** listado en `/alumnas` (buscador + filtro de grupo + tabs de estado, todo client-side sobre las ~150 filas ya traídas del server, sin paginación ni búsqueda server-side), alta/edición en `/alumnas/nueva` y `/alumnas/[id]/editar` (contactos inline como repetidor de filas, único precedente de ese patrón en la app), ficha en `/alumnas/[id]`. Sección "Administración" nueva en la navegación (`AppHeader.tsx`), visible solo para Admin/Head Coach/Secretaria — único ítem por ahora es "Alumnas". Detalle completo en el Log de sesiones de `PROGRESS.md`.
 
 ### `contactos`
 
@@ -285,7 +289,7 @@ Relación uno a varios con `alumnas` — cubre familias con uno, dos responsable
 | `alumna_id` | `uuid` | FK a `alumnas(id)`, `on delete cascade` |
 | `nombre` | `text` | `not null` |
 | `telefono` | `text` | `not null` |
-| `relacion` | `text` | `not null`, texto libre (ej. "Madre", "Padre", "Tutor") |
+| `relacion` | `text` | nullable (F2 MOD 2 relajó el `not null` de Groundwork 1, mismo motivo que `alumnas.dni`/`grupo_id`), texto libre (ej. "Madre", "Padre", "Tutor") |
 | `es_pagador_principal` | `boolean` | `not null`, default `false` — sin restricción de unicidad ni validación, solo precarga por default a esa persona al registrar un pago en F2 MOD 3; la secretaria puede elegir otro contacto si ese pago lo hizo alguien más |
 | `created_at` | `timestamptz` | default `now()` |
 | `updated_at` | `timestamptz` | default `now()`, se actualiza solo con trigger |
@@ -305,6 +309,8 @@ Fase 1.2 (Sesión 1) sumó, ya en la migración que crea la tabla (no como ajust
 Fase 2 (Sesión 1) sumó, ya en la migración que crea cada tabla: `grupo_horarios.grupo_id`, `grupo_horarios.dias` (GIN), `alumnas.apellido`, `alumnas.grupo_id`, `contactos.alumna_id`.
 
 Groundwork 3 (2026-08-31) sumó, ya en la migración que crea la tabla: `turno_profesores.profesor_id` (la PK compuesta `(turno_id, profesor_id)` ya cubre las búsquedas por `turno_id`).
+
+F2 MOD 2 (2026-09-02) reemplazó el `unique` total de `alumnas.dni` por el índice único parcial `alumnas_dni_unique_idx` (`where dni is not null`), ver sección `alumnas` más arriba.
 
 ## Relaciones
 
