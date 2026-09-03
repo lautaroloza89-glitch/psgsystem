@@ -16,11 +16,11 @@ const ENLACES = [
 ];
 
 // Sección aparte, visible solo para quienes gestionan el dominio
-// administrativo del club. Asistencia y Torneos se suman acá en sus
-// propios módulos.
+// administrativo del club. Torneos se suma acá en su propio módulo.
 const ENLACES_ADMINISTRACION = [
   { href: "/alumnas", label: "Alumnas" },
   { href: "/pagos", label: "Pagos" },
+  { href: "/asistencia", label: "Asistencia" },
 ];
 
 export function AppHeader({ profile }: { profile: User }) {

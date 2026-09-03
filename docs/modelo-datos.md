@@ -340,6 +340,30 @@ La suma de estas filas tiene que dar exacto `pagos.monto` — validado en `crear
 
 **UI (F2 MOD 3):** `/pagos` (menú), `/pagos/nuevo` (alta: buscador de alumna por apellido, mes, contacto que paga, métodos como repetidor de filas, checkbox de recargo, saldo pendiente informativo antes de guardar), `/pagos/pendientes` (verificación, filtrable por mes; "Marcar como verificado" genera el recibo en el momento, no antes), `/pagos/recaudacion` (total del mes verificado + desglose por método) y `/pagos/deudoras` (alumnas activas con saldo pendiente de un mes, con banner de recordatorio los días 8-9). Sección "Administración" de `AppHeader.tsx` suma el ítem "Pagos" junto a "Alumnas".
 
+### `asistencia`
+
+F2 MOD 4 (2026-09-03). Una fila por alumna por fecha de clase. El guardado es **en bloque**: al confirmar una fecha se crea (o se pisa) una fila por *cada* alumna activa del grupo — `presente = true` para las tildadas, `presente = false` para el resto. Nunca quedan alumnas "sin registro" en una fecha ya guardada, y eso es justamente lo que le da datos completos al cálculo de la alerta de inasistencias.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `alumna_id` | `uuid` | FK a `alumnas(id)`, `not null`, `on delete restrict` — mismo criterio que `pagos.alumna_id`: borrar una alumna no debe destruir en silencio su historial |
+| `grupo_id` | `uuid` | FK a `grupos(id)`, `not null`, `on delete restrict` — **snapshot** del grupo en el que estaba la alumna ese día, nunca derivado de `alumnas.grupo_id` al leer: si después cambia de grupo, el historial viejo tiene que seguir mostrando el grupo real de esa fecha |
+| `fecha` | `date` | `not null` |
+| `presente` | `boolean` | `not null` — no hay tercer estado: sin justificación de ausencias (fuera de alcance de F2 MOD 4) |
+| `registrado_por` | `uuid` | FK a `users(id)`, `not null`, `on delete restrict` |
+| `created_at` | `timestamptz` | default `now()` |
+
+Constraint `asistencia_alumna_fecha_unica`: `unique (alumna_id, fecha)` — una sola fila por alumna por día. Volver a guardar una fecha ya cargada **actualiza** esas filas (upsert por ese par), no duplica: la asistencia es libremente editable en cualquier fecha pasada, sin restricción, porque a diferencia de Pagos acá no hay paso de verificación que proteger.
+
+Constraint `asistencia_sin_sabados`: `extract(isodow from fecha) <> 6`. **Del bloque de sábado de Jungla no se toma asistencia** (decisión de producto ya cerrada). El filtro vive en tres capas: la UI nunca lista un sábado (`src/lib/asistencia/fechas.ts`), la server action lo rechaza si se arma la URL a mano, y este check es la red de seguridad en base. Es un filtro exclusivo de Asistencia: las planificaciones de sábado de Jungla (F2 MOD 1) siguen funcionando igual.
+
+Índices: `(grupo_id, fecha)` (navegación grupo → mes → fecha) y `(alumna_id, fecha)` (recorrido semanal de la alerta). RLS: lectura y escritura para Admin, Head Coach y Secretaria, política única `for all`, mismo patrón que `alumnas`/`contactos` y `pagos`.
+
+**Alerta de inasistencias** (`src/lib/asistencia/alertas.ts`): **3 semanas calendario consecutivas sin ningún `presente`**, no 3 clases sueltas — contar clases daría un umbral distinto según el grupo, porque cada uno tiene su propia frecuencia semanal (2 o 3 días). La semana va de lunes a domingo y se recorre hacia atrás desde la actual, **sin contar la semana en curso** (para no disparar falsas alarmas a mitad de semana); si además la alumna ya tuvo un presente esta semana, queda fuera de la alerta (volvió). Una semana solo "cuenta" si tiene asistencia ya tomada: las semanas sin clase (feriados) o todavía sin cargar se saltean, no suman ni rompen la racha. Es un reporte que se consulta (`/asistencia/alertas`), **sin notificación ni cron** — mismo criterio que "Deudoras" en Pagos.
+
+**UI (F2 MOD 4):** `/asistencia` (menú: alertas + selector de grupo), `/asistencia/grupos/[grupoId]` (navegación por mes, lista las fechas de clase del mes marcando cuáles ya tienen asistencia cargada y cuáles quedan pendientes), `/asistencia/grupos/[grupoId]/[fecha]` (toma de asistencia: alumnas activas del grupo ordenadas por apellido, arranca sin nadie tildado, un solo submit guarda todo el bloque) y `/asistencia/alertas`. Sección "Administración" de `AppHeader.tsx` suma el ítem "Asistencia" junto a "Alumnas" y "Pagos".
+
 ## Índices
 
 Además de los índices implícitos de las PK/FK y de los 2 explícitos ya existentes (`notificaciones(usuario_id, creado_en)`, `push_subscriptions(usuario_id)`), la auditoría Fase B (sesión 2/3) sumó índices sobre las columnas de mayor uso en filtros/joins de la aplicación (`create index concurrently`, aditivo, no cambia comportamiento):
@@ -357,6 +381,8 @@ Groundwork 3 (2026-08-31) sumó, ya en la migración que crea la tabla: `turno_p
 F2 MOD 2 (2026-09-02) reemplazó el `unique` total de `alumnas.dni` por el índice único parcial `alumnas_dni_unique_idx` (`where dni is not null`), ver sección `alumnas` más arriba.
 
 F2 MOD 3 (2026-09-02) sumó, ya en la migración que crea cada tabla: `pagos.alumna_id`, `pagos.mes_correspondiente`, `pagos.estado`, `pagos_metodos.pago_id`.
+
+F2 MOD 4 (2026-09-03) sumó, ya en la migración que crea la tabla: `asistencia(grupo_id, fecha)` y `asistencia(alumna_id, fecha)` (compuestos: las dos lecturas del módulo filtran siempre por una de esas dos columnas más un rango de fechas).
 
 ## Relaciones
 
@@ -376,15 +402,18 @@ users ──┬──< tareas (created_by)
 
 grupos ──┬──< grupo_horarios
          ├──< alumnas ──┬──< contactos
-         │              └──< pagos (contacto_id, opcional)
+         │              ├──< pagos (contacto_id, opcional)
+         │              └──< asistencia (F2 MOD 4)
          ├──< turnos (grupo_id, desde Fase 1.2 Sesión 2)
-         └──< grupo_objetivos_mes (F2 MOD 1)
+         ├──< grupo_objetivos_mes (F2 MOD 1)
+         └──< asistencia (grupo_id, snapshot — F2 MOD 4)
 
 pagos ──< pagos_metodos
 pagos ──> users (registrado_por, verificado_por)
+asistencia ──> users (registrado_por)
 ```
 
-Nota: `alumnas`/`contactos` (Fase 2) no tienen FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito. `grupos` sí conecta ahora con `turnos` vía `grupo_id` (Fase 1.2, Sesión 2, 2026-08-31), además de con `alumnas`/`grupo_horarios` (Fase 2) y `grupo_objetivos_mes` (F2 MOD 1). `pagos` (F2 MOD 3) es la primera tabla de Fase 2 que conecta con `users` (quién registró/verificó cada pago).
+Nota: `alumnas`/`contactos` (Fase 2) no tienen FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito. `grupos` sí conecta ahora con `turnos` vía `grupo_id` (Fase 1.2, Sesión 2, 2026-08-31), además de con `alumnas`/`grupo_horarios` (Fase 2) y `grupo_objetivos_mes` (F2 MOD 1). `pagos` (F2 MOD 3) es la primera tabla de Fase 2 que conecta con `users` (quién registró/verificó cada pago). `asistencia` (F2 MOD 4) conecta con las tres: `alumnas` (quién), `grupos` (en qué grupo estaba ese día, como snapshot y no como referencia viva) y `users` (quién la registró).
 
 ## Fuera de alcance de este módulo (Módulo 2, Fase 1)
 

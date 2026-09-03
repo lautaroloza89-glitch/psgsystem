@@ -93,3 +93,34 @@ export function formatTiempoRelativo(fechaIso: string): string {
   const diffSemanas = Math.floor(diffDias / 7);
   return `hace ${diffSemanas} sem`;
 }
+
+/**
+ * Fecha de hoy en huso horario Argentina, como `YYYY-MM-DD` — el servidor
+ * (Vercel) puede correr en UTC, y comparar contra el día del mes en UTC corre
+ * la fecha real un día en ciertos horarios. Vivía en `lib/pagos/reglas.ts`
+ * (F2 MOD 3); se subió acá al necesitarla también Asistencia (F2 MOD 4).
+ */
+export function hoyArgentina(): string {
+  return new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
+}
+
+/**
+ * Suma (o resta, con `dias` negativo) días a una fecha `YYYY-MM-DD` y devuelve
+ * otra fecha `YYYY-MM-DD`. En UTC, para no desfasar por huso horario.
+ */
+export function sumarDias(fecha: string, dias: number): string {
+  const [anio, mes, dia] = fecha.split("-").map(Number);
+  const d = new Date(Date.UTC(anio, mes - 1, dia));
+  d.setUTCDate(d.getUTCDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Lunes de la semana que contiene a `fecha` (`YYYY-MM-DD`). La semana va de
+ * lunes a domingo — convención de la alerta de inasistencias (F2 MOD 4).
+ */
+export function lunesDeLaSemana(fecha: string): string {
+  return sumarDias(fecha, -(diaIsoDeFecha(fecha) - 1));
+}

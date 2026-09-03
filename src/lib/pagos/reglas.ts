@@ -1,20 +1,14 @@
 // Reglas de negocio de F2 MOD 3, compartidas entre el formulario de alta
 // (sugerencia de recargo), el reporte de Deudoras y el recibo.
 
+// `hoyArgentina` vivía acá; se movió a lib/utils/date.ts al necesitarla
+// también Asistencia (F2 MOD 4). Misma implementación, sin cambio de
+// comportamiento.
+import { hoyArgentina } from "@/lib/utils/date";
+
 export const RECARGO_MONTO = 10000;
 const DIA_LIMITE_SIN_RECARGO = 10;
 const DIA_REFERENCIA_ATRASO = 15;
-
-/**
- * Fecha de hoy en huso horario Argentina, como `YYYY-MM-DD` — el servidor
- * (Vercel) puede correr en UTC, y comparar contra el día del mes en UTC
- * corre la fecha real un día en ciertos horarios.
- */
-function hoyArgentina(): string {
-  return new Date().toLocaleDateString("en-CA", {
-    timeZone: "America/Argentina/Buenos_Aires",
-  });
-}
 
 /** Primer día del mes actual (Argentina), formato `YYYY-MM-01`. */
 export function mesActualISO(): string {
