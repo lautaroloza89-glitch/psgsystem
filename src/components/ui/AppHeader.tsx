@@ -10,6 +10,10 @@ import type { User } from "@/types";
 
 const ENLACES = [
   { href: "/dashboard", label: "Dashboard" },
+  // Por encima de Tareas a propósito: no es un apartado de gestión interna
+  // (no va en Administración) — es información del calendario del club que
+  // le interesa a todos, incluidas las alumnas con login (rol Patinador/a).
+  { href: "/torneos", label: "Torneos" },
   { href: "/tareas", label: "Tareas" },
   { href: "/horarios", label: "Planificaciones" },
   { href: "/miembros", label: "Miembros del equipo" },
@@ -21,7 +25,6 @@ const ENLACES_ADMINISTRACION = [
   { href: "/alumnas", label: "Alumnas" },
   { href: "/pagos", label: "Pagos" },
   { href: "/asistencia", label: "Asistencia" },
-  { href: "/torneos", label: "Torneos" },
 ];
 
 export function AppHeader({ profile }: { profile: User }) {

@@ -6,6 +6,8 @@ import { TareaCard, type TareaCardData } from "@/components/tareas/TareaCard";
 import { TurnoCard, type TurnoCardData } from "@/components/horarios/TurnoCard";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { TorneoDestacado } from "@/components/torneos/TorneoDestacado";
+import { hoyArgentina } from "@/lib/utils/date";
 import type { EstadoTarea, EstadoTurno, Rol } from "@/types";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -78,6 +80,18 @@ export default async function DashboardPage() {
     ).map((p) => p.profesor),
   }));
 
+  // Próximo torneo: visible para todos los roles (misma RLS de lectura
+  // abierta que el listado de Torneos). Sin bloque si no hay ningún evento
+  // futuro o en curso.
+  const hoyArg = hoyArgentina();
+  const { data: torneoDestacado } = await supabase
+    .from("torneos")
+    .select("id, nombre, tipo, lugar, fecha_inicio, fecha_fin")
+    .gte("fecha_fin", hoyArg)
+    .order("fecha_inicio", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
   // Contadores agregados: solo para Admin (panorama general del equipo).
   let contadores: {
     pendientes: number;
@@ -134,6 +148,8 @@ export default async function DashboardPage() {
           <StatCard label="Clases esta semana" value={contadores.turnosSemana} />
         </div>
       )}
+
+      {torneoDestacado && <TorneoDestacado torneo={torneoDestacado} hoy={hoyArg} />}
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
