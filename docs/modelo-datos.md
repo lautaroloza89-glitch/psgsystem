@@ -364,6 +364,31 @@ Constraint `asistencia_sin_sabados`: `extract(isodow from fecha) <> 6`. **Del bl
 
 **UI (F2 MOD 4):** `/asistencia` (menú: alertas + selector de grupo), `/asistencia/grupos/[grupoId]` (navegación por mes, lista las fechas de clase del mes marcando cuáles ya tienen asistencia cargada y cuáles quedan pendientes), `/asistencia/grupos/[grupoId]/[fecha]` (toma de asistencia: alumnas activas del grupo ordenadas por apellido, arranca sin nadie tildado, un solo submit guarda todo el bloque) y `/asistencia/alertas`. Sección "Administración" de `AppHeader.tsx` suma el ítem "Asistencia" junto a "Alumnas" y "Pagos".
 
+### `torneos`
+
+F2 MOD 5 (2026-09-03). Alcance recortado a **solo el registro**: qué alumnas participan en cada torneo y el control de inscripción paga quedan explícitamente fuera de esta sesión (necesitan su propia definición — la participación es opcional y el pago va a la cuenta NX, no a la MP de las cuotas).
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `nombre` | `text` | `not null`, libre |
+| `tipo` | `text` | `not null`, default `'torneo'`, check: `'torneo' \| 'exhibicion' \| 'evento'` |
+| `lugar` | `text` | opcional — vacío para lo que es en el club |
+| `fecha_inicio` | `date` | `not null` |
+| `fecha_fin` | `date` | `not null` — para eventos de un solo día, igual a `fecha_inicio` (el form la autocompleta) |
+| `notas` | `text` | opcional |
+| `created_at` / `updated_at` | `timestamptz` | default `now()`, `updated_at` mantenido por el mismo trigger `set_updated_at()` que `tareas`/`turnos` |
+
+Constraint `torneos_fecha_fin_valida`: `fecha_fin >= fecha_inicio`, validado también en el formulario y en `crearTorneo`/`editarTorneo`.
+
+**El campo `tipo`:** de las 7 cosas que hoy se cargan a mano, 5 son torneos de competencia pero 2 no (la Exhibición de Cierre no tiene otros clubes ni inscripción, y "último entreno" es solo una marca de calendario); sin este campo esas dos seguirían viviendo como parche en Tareas.
+
+**El estado (Próximo / En curso / Pasado) no es una columna** — se calcula en cada lectura comparando `fecha_inicio`/`fecha_fin` contra hoy (`src/lib/torneos/fechas.ts`), para no depender de un cron o de actualizarlo a mano.
+
+Índice: `fecha_inicio` (orden cronológico del listado y filtro por año). RLS: **primera tabla del proyecto con lectura y escritura diferenciadas** — SELECT para Admin, Head Coach y Secretaria (mismo criterio que `alumnas`/`pagos`/`asistencia`), pero INSERT/UPDATE/DELETE solo para Admin y Head Coach (4 policies separadas en vez de la `for all` única que usan Pagos/Asistencia).
+
+**UI (F2 MOD 5):** `/torneos` (listado en tarjetas cronológicas con ícono por tipo — 🏆 torneo, 💫 exhibición, 📆 evento —, próximo evento destacado arriba con los días que faltan, filtro por año con los pasados atenuados en vez de ocultos), `/torneos/nuevo` y `/torneos/[id]/editar` (solo Admin/Head Coach) y `/torneos/[id]` (detalle, visible también para Secretaria pero sin botones de editar/borrar). Borrado físico, con confirmación — un torneo cargado por error no tiene historial que preservar en esta fase. Sección "Administración" de `AppHeader.tsx` suma el ítem "Torneos" junto a "Alumnas", "Pagos" y "Asistencia".
+
 ## Índices
 
 Además de los índices implícitos de las PK/FK y de los 2 explícitos ya existentes (`notificaciones(usuario_id, creado_en)`, `push_subscriptions(usuario_id)`), la auditoría Fase B (sesión 2/3) sumó índices sobre las columnas de mayor uso en filtros/joins de la aplicación (`create index concurrently`, aditivo, no cambia comportamiento):
@@ -383,6 +408,8 @@ F2 MOD 2 (2026-09-02) reemplazó el `unique` total de `alumnas.dni` por el índi
 F2 MOD 3 (2026-09-02) sumó, ya en la migración que crea cada tabla: `pagos.alumna_id`, `pagos.mes_correspondiente`, `pagos.estado`, `pagos_metodos.pago_id`.
 
 F2 MOD 4 (2026-09-03) sumó, ya en la migración que crea la tabla: `asistencia(grupo_id, fecha)` y `asistencia(alumna_id, fecha)` (compuestos: las dos lecturas del módulo filtran siempre por una de esas dos columnas más un rango de fechas).
+
+F2 MOD 5 (2026-09-03) sumó, ya en la migración que crea la tabla: `torneos.fecha_inicio` (orden cronológico del listado y filtro por año).
 
 ## Relaciones
 
@@ -411,9 +438,11 @@ grupos ──┬──< grupo_horarios
 pagos ──< pagos_metodos
 pagos ──> users (registrado_por, verificado_por)
 asistencia ──> users (registrado_por)
+
+torneos  (sin FK — standalone, F2 MOD 5)
 ```
 
-Nota: `alumnas`/`contactos` (Fase 2) no tienen FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito. `grupos` sí conecta ahora con `turnos` vía `grupo_id` (Fase 1.2, Sesión 2, 2026-08-31), además de con `alumnas`/`grupo_horarios` (Fase 2) y `grupo_objetivos_mes` (F2 MOD 1). `pagos` (F2 MOD 3) es la primera tabla de Fase 2 que conecta con `users` (quién registró/verificó cada pago). `asistencia` (F2 MOD 4) conecta con las tres: `alumnas` (quién), `grupos` (en qué grupo estaba ese día, como snapshot y no como referencia viva) y `users` (quién la registró).
+Nota: `alumnas`/`contactos` (Fase 2) no tienen FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito. `grupos` sí conecta ahora con `turnos` vía `grupo_id` (Fase 1.2, Sesión 2, 2026-08-31), además de con `alumnas`/`grupo_horarios` (Fase 2) y `grupo_objetivos_mes` (F2 MOD 1). `pagos` (F2 MOD 3) es la primera tabla de Fase 2 que conecta con `users` (quién registró/verificó cada pago). `asistencia` (F2 MOD 4) conecta con las tres: `alumnas` (quién), `grupos` (en qué grupo estaba ese día, como snapshot y no como referencia viva) y `users` (quién la registró). `torneos` (F2 MOD 5) es la primera tabla de Fase 2 sin ninguna FK — el alcance de esta sesión es solo el registro del evento, sin alumnas participantes ni quién lo cargó.
 
 ## Fuera de alcance de este módulo (Módulo 2, Fase 1)
 

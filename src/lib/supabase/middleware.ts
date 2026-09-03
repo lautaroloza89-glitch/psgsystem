@@ -9,6 +9,7 @@ const RUTAS_PROTEGIDAS = [
   "/alumnas",
   "/pagos",
   "/asistencia",
+  "/torneos",
 ];
 
 export async function updateSession(request: NextRequest) {

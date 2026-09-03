@@ -6,3 +6,4 @@ export * from "./grupo";
 export * from "./alumna";
 export * from "./pago";
 export * from "./asistencia";
+export * from "./torneo";
