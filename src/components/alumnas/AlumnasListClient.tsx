@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { EstadoAlumna } from "@/types";
 import { AlumnaCard, type AlumnaCardData } from "./AlumnaCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { normalizarTexto } from "@/lib/utils/texto";
 
 const INPUT_CLASS =
   "w-full rounded-md border border-border-strong px-3 py-2.5 text-sm transition-colors duration-[var(--duration-fast)] ease-standard focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-focus-ring";
@@ -13,12 +14,6 @@ const TABS_ESTADO: { label: string; value: EstadoAlumna | "Todas" }[] = [
   { label: "Bajas", value: "baja" },
   { label: "Todas", value: "Todas" },
 ];
-
-const DIACRITICOS = new RegExp("[\\u0300-\\u036f]", "g");
-
-function normalizar(texto: string): string {
-  return texto.toLowerCase().normalize("NFD").replace(DIACRITICOS, "");
-}
 
 export function AlumnasListClient({
   alumnas,
@@ -32,13 +27,13 @@ export function AlumnasListClient({
   const [estado, setEstado] = useState<EstadoAlumna | "Todas">("activa");
 
   const filtradas = useMemo(() => {
-    const busquedaNormalizada = normalizar(busqueda.trim());
+    const busquedaNormalizada = normalizarTexto(busqueda.trim());
     return alumnas
       .filter((a) => estado === "Todas" || a.estado === estado)
       .filter((a) => !grupoId || a.grupoId === grupoId)
       .filter((a) => {
         if (!busquedaNormalizada) return true;
-        const campos = [a.apellido, a.nombre, a.dni ?? ""].map(normalizar);
+        const campos = [a.apellido, a.nombre, a.dni ?? ""].map(normalizarTexto);
         return campos.some((campo) => campo.includes(busquedaNormalizada));
       });
   }, [alumnas, busqueda, grupoId, estado]);

@@ -298,6 +298,48 @@ Relación uno a varios con `alumnas` — cubre familias con uno, dos responsable
 
 Índice: `alumna_id`. RLS igual que `alumnas` (Admin, Head Coach, Secretaria — política única `for all`).
 
+### `pagos`
+
+F2 MOD 3 (2026-09-02). Un pago es un evento de cobro, no un mes cerrado: una alumna puede tener varias filas con el mismo `mes_correspondiente` (ej. mamá paga parte el día 3, papá completa el día 9). "¿Está pagado el mes?" se calcula sumando (`src/lib/pagos/saldo.ts`), no vive en una sola fila.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `alumna_id` | `uuid` | FK a `alumnas(id)`, `not null`, `on delete restrict` — borrar una alumna no debe destruir en silencio su historial de pagos |
+| `contacto_id` | `uuid` | FK a `contactos(id)`, nullable, `on delete set null` — quién pagó; el formulario lo precarga con el pagador principal de la alumna, editable, puede quedar sin especificar |
+| `mes_correspondiente` | `date` | `not null`, siempre el día 1 del mes (check, mismo criterio que `grupo_objetivos_mes.mes`) |
+| `monto_cuota` | `numeric(10,2)` | `not null`, check `> 0` — **snapshot** de `grupos.cuota_mensual` al momento de este pago, no referencia viva (la cuota cambia 1-2 veces al año; sin snapshot, un cambio desordenaría el histórico) |
+| `monto_recargo` | `numeric(10,2)` | `not null`, default `0`, check `>= 0` — cargado explícitamente por la Secretaria (checkbox sugerido, editable), no se aplica fijo porque se perdona a veces |
+| `monto` | `numeric(10,2)` | `not null`, check `> 0` — lo efectivamente pagado en este evento, suma de `pagos_metodos`; puede ser parcial, sin bloqueo |
+| `estado` | `text` | `not null`, default `'pendiente_verificar'`, check: `'pendiente_verificar' \| 'verificado'` |
+| `registrado_por` | `uuid` | FK a `users(id)`, `not null`, `on delete restrict` |
+| `verificado_por` | `uuid` | FK a `users(id)`, nullable, `on delete set null` |
+| `verificado_en` | `timestamptz` | nullable |
+| `created_at` | `timestamptz` | default `now()` |
+
+Constraint adicional `pagos_verificacion_consistente`: `verificado_por`/`verificado_en` van juntos con `estado = 'verificado'` (ambos `null` si está `pendiente_verificar`, ambos no-`null` si está `verificado`) — evita estados a medio verificar si alguien corrige la fila a mano en la base.
+
+Índices: `alumna_id`, `mes_correspondiente`, `estado` (filtro de "Pendientes de verificar"). RLS: lectura y escritura para Admin, Head Coach y Secretaria, mismo patrón que `alumnas`/`contactos` (política única `for all`) — la app solo expone alta (`crearPago`) y la transición de verificación (`marcarPagoVerificado`); no hay edición ni borrado de pagos ya verificados desde la UI (fuera de alcance de F2 MOD 3, corrección manual en base si hace falta).
+
+**Sin campo de comprobante** (decisión de producto, no un olvido): la Secretaria sigue mirando la foto que llega por WhatsApp y corroborando a ojo contra el MP de Luciana; el emparejamiento automático es Fase 3 (API de Mercado Pago) y de todos modos iba a necesitar confirmación manual (pagos combinados y recargos hacen que el monto no siempre calce exacto).
+
+### `pagos_metodos`
+
+Desglose de un pago por método — un pago puede combinar efectivo + transferencia, por ejemplo.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `pago_id` | `uuid` | FK a `pagos(id)`, `not null`, `on delete cascade` |
+| `metodo` | `text` | `not null`, check: `'efectivo' \| 'transferencia' \| 'debito'` |
+| `monto` | `numeric(10,2)` | `not null`, check `> 0` |
+
+La suma de estas filas tiene que dar exacto `pagos.monto` — validado en `crearPago` (`src/app/(dashboard)/pagos/actions.ts`), sin trigger de validación cruzada en base (mismo criterio que el resto de la app). Índice: `pago_id`. RLS igual que `pagos`.
+
+**Reglas de negocio compartidas** (`src/lib/pagos/reglas.ts`, `src/lib/pagos/saldo.ts`): recargo fijo de $10.000, sugerido cuando ya pasó el día 10 del mes correspondiente y la alumna todavía tiene saldo pendiente (checkbox editable, no un campo separado por alumna/mes); "días de atraso" del reporte de Deudoras se cuentan desde el día 15. Las fechas de "hoy" para estas reglas se calculan en huso horario Argentina (`America/Argentina/Buenos_Aires`), no en el huso del servidor, para no correr un día el corte según la hora en que corra Vercel.
+
+**UI (F2 MOD 3):** `/pagos` (menú), `/pagos/nuevo` (alta: buscador de alumna por apellido, mes, contacto que paga, métodos como repetidor de filas, checkbox de recargo, saldo pendiente informativo antes de guardar), `/pagos/pendientes` (verificación, filtrable por mes; "Marcar como verificado" genera el recibo en el momento, no antes), `/pagos/recaudacion` (total del mes verificado + desglose por método) y `/pagos/deudoras` (alumnas activas con saldo pendiente de un mes, con banner de recordatorio los días 8-9). Sección "Administración" de `AppHeader.tsx` suma el ítem "Pagos" junto a "Alumnas".
+
 ## Índices
 
 Además de los índices implícitos de las PK/FK y de los 2 explícitos ya existentes (`notificaciones(usuario_id, creado_en)`, `push_subscriptions(usuario_id)`), la auditoría Fase B (sesión 2/3) sumó índices sobre las columnas de mayor uso en filtros/joins de la aplicación (`create index concurrently`, aditivo, no cambia comportamiento):
@@ -313,6 +355,8 @@ Fase 2 (Sesión 1) sumó, ya en la migración que crea cada tabla: `grupo_horari
 Groundwork 3 (2026-08-31) sumó, ya en la migración que crea la tabla: `turno_profesores.profesor_id` (la PK compuesta `(turno_id, profesor_id)` ya cubre las búsquedas por `turno_id`).
 
 F2 MOD 2 (2026-09-02) reemplazó el `unique` total de `alumnas.dni` por el índice único parcial `alumnas_dni_unique_idx` (`where dni is not null`), ver sección `alumnas` más arriba.
+
+F2 MOD 3 (2026-09-02) sumó, ya en la migración que crea cada tabla: `pagos.alumna_id`, `pagos.mes_correspondiente`, `pagos.estado`, `pagos_metodos.pago_id`.
 
 ## Relaciones
 
@@ -331,12 +375,16 @@ users ──┬──< tareas (created_by)
         └──< turno_comentarios (autor_id) >── turnos
 
 grupos ──┬──< grupo_horarios
-         ├──< alumnas ──< contactos
+         ├──< alumnas ──┬──< contactos
+         │              └──< pagos (contacto_id, opcional)
          ├──< turnos (grupo_id, desde Fase 1.2 Sesión 2)
          └──< grupo_objetivos_mes (F2 MOD 1)
+
+pagos ──< pagos_metodos
+pagos ──> users (registrado_por, verificado_por)
 ```
 
-Nota: `alumnas`/`contactos` (Fase 2) no tienen FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito. `grupos` sí conecta ahora con `turnos` vía `grupo_id` (Fase 1.2, Sesión 2, 2026-08-31), además de con `alumnas`/`grupo_horarios` (Fase 2) y `grupo_objetivos_mes` (F2 MOD 1).
+Nota: `alumnas`/`contactos` (Fase 2) no tienen FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito. `grupos` sí conecta ahora con `turnos` vía `grupo_id` (Fase 1.2, Sesión 2, 2026-08-31), además de con `alumnas`/`grupo_horarios` (Fase 2) y `grupo_objetivos_mes` (F2 MOD 1). `pagos` (F2 MOD 3) es la primera tabla de Fase 2 que conecta con `users` (quién registró/verificó cada pago).
 
 ## Fuera de alcance de este módulo (Módulo 2, Fase 1)
 

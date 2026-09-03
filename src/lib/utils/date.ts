@@ -58,6 +58,18 @@ export function fechasDelMesPorDia(anio: number, mes: number, diaIso: number): s
   return fechas;
 }
 
+/** Mes anterior y siguiente a (anio, mes), cruzando el límite de año. */
+export function mesAnteriorSiguiente(anio: number, mes: number) {
+  const anterior = mes === 1 ? { anio: anio - 1, mes: 12 } : { anio, mes: mes - 1 };
+  const siguiente = mes === 12 ? { anio: anio + 1, mes: 1 } : { anio, mes: mes + 1 };
+  return { anterior, siguiente };
+}
+
+/** Formato `YYYY-MM` para el query param `?mes=`. */
+export function mesQuery(anio: number, mes: number): string {
+  return `${anio}-${String(mes).padStart(2, "0")}`;
+}
+
 export function formatFechaHora(fechaIso: string): string {
   return new Date(fechaIso).toLocaleString("es-AR", {
     day: "2-digit",

@@ -16,9 +16,12 @@ const ENLACES = [
 ];
 
 // Sección aparte, visible solo para quienes gestionan el dominio
-// administrativo del club. Por ahora un solo ítem (Alumnas); Pagos,
-// Asistencia y Torneos se suman acá en sus propios módulos.
-const ENLACES_ADMINISTRACION = [{ href: "/alumnas", label: "Alumnas" }];
+// administrativo del club. Asistencia y Torneos se suman acá en sus
+// propios módulos.
+const ENLACES_ADMINISTRACION = [
+  { href: "/alumnas", label: "Alumnas" },
+  { href: "/pagos", label: "Pagos" },
+];
 
 export function AppHeader({ profile }: { profile: User }) {
   const pathname = usePathname();
