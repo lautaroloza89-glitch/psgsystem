@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeCrearTarea, puedeVerModuloTareas } from "@/lib/permisos";
 import { FiltroEstadoTabs } from "@/components/tareas/FiltroEstadoTabs";
 import { TareaCard, type TareaCardData } from "@/components/tareas/TareaCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -29,6 +31,11 @@ export default async function TareasPage({
     : null;
 
   const profile = await getCurrentUserProfile();
+
+  if (!puedeVerModuloTareas(profile?.rol)) {
+    redirect("/dashboard");
+  }
+
   const supabase = await createClient();
 
   let query = supabase
@@ -62,8 +69,7 @@ export default async function TareasPage({
     ),
   }));
 
-  const puedeCrear =
-    profile?.rol === "Admin" || profile?.rol === "Profesor" || profile?.rol === "Head Coach";
+  const puedeCrear = puedeCrearTarea(profile?.rol);
 
   return (
     <div className="space-y-6">

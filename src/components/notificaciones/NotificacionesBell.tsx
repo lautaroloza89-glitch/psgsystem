@@ -21,6 +21,7 @@ export function NotificacionesBell({ usuarioId }: { usuarioId: string }) {
     supabase
       .from("notificaciones")
       .select("id, usuario_id, tipo, mensaje, tarea_id, turno_id, leida, creado_en")
+      .eq("usuario_id", usuarioId)
       .order("creado_en", { ascending: false })
       .limit(20)
       .then(({ data }) => {
@@ -30,6 +31,7 @@ export function NotificacionesBell({ usuarioId }: { usuarioId: string }) {
     supabase
       .from("notificaciones")
       .select("id", { count: "exact", head: true })
+      .eq("usuario_id", usuarioId)
       .eq("leida", false)
       .then(({ count }) => {
         if (typeof count === "number") setNoLeidas(count);

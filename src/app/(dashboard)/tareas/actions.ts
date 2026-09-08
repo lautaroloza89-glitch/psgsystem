@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeCambiarEstadoTarea, puedeCrearTarea, puedeEditarTarea } from "@/lib/permisos";
 import type { EstadoTarea } from "@/types";
 
 export interface FormState {
@@ -38,7 +39,7 @@ export async function crearTarea(
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || profile.rol === "Empleado" || profile.rol === "Patinador") {
+  if (!profile || !puedeCrearTarea(profile.rol)) {
     return { error: "No tenés permiso para crear tareas." };
   }
 
@@ -92,7 +93,19 @@ export async function editarTarea(
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || profile.rol === "Empleado" || profile.rol === "Patinador") {
+  if (!profile) {
+    return { error: "No tenés permiso para editar esta tarea." };
+  }
+
+  const supabase = await createClient();
+
+  const { data: tareaActual, error: tareaActualError } = await supabase
+    .from("tareas")
+    .select("created_by, tarea_asignados(usuario_id)")
+    .eq("id", tareaId)
+    .single();
+
+  if (tareaActualError || !tareaActual || !puedeEditarTarea(profile, tareaActual)) {
     return { error: "No tenés permiso para editar esta tarea." };
   }
 
@@ -107,8 +120,6 @@ export async function editarTarea(
   if (errorFechas) {
     return { error: errorFechas };
   }
-
-  const supabase = await createClient();
 
   const { error } = await supabase
     .from("tareas")
@@ -168,7 +179,22 @@ export async function actualizarEstadoTarea(
   tareaId: string,
   estado: EstadoTarea
 ): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!profile) {
+    return { error: "No autenticado." };
+  }
+
   const supabase = await createClient();
+
+  const { data: tarea, error: tareaError } = await supabase
+    .from("tareas")
+    .select("created_by, tarea_asignados(usuario_id)")
+    .eq("id", tareaId)
+    .single();
+
+  if (tareaError || !tarea || !puedeCambiarEstadoTarea(profile, tarea)) {
+    return { error: "No tenés permiso para cambiar el estado de esta tarea." };
+  }
 
   const { error } = await supabase.from("tareas").update({ estado }).eq("id", tareaId);
 

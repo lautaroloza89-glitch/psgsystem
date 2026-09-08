@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeCambiarEstadoTarea, puedeEditarTarea, puedeVerModuloTareas } from "@/lib/permisos";
 import { EstadoBadge } from "@/components/tareas/EstadoBadge";
 import { EstadoSelector } from "@/components/tareas/EstadoSelector";
 import { ComentariosList, type ComentarioData } from "@/components/tareas/ComentariosList";
@@ -23,6 +24,11 @@ export default async function TareaDetallePage({
 }) {
   const { id } = await params;
   const profile = await getCurrentUserProfile();
+
+  if (!puedeVerModuloTareas(profile?.rol)) {
+    redirect("/dashboard");
+  }
+
   const supabase = await createClient();
 
   const { data: tarea } = await supabase
@@ -65,15 +71,8 @@ export default async function TareaDetallePage({
       : []
   );
 
-  const estaAsignado = profile
-    ? asignados.some((a) => a.id === profile.id)
-    : false;
-
-  const puedeEditar =
-    !!profile &&
-    (profile.rol === "Admin" ||
-      ((profile.rol === "Profesor" || profile.rol === "Head Coach") &&
-        (tarea.created_by === profile.id || estaAsignado)));
+  const puedeEditar = puedeEditarTarea(profile, tarea);
+  const puedeCambiarEstado = puedeCambiarEstadoTarea(profile, tarea);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -117,7 +116,9 @@ export default async function TareaDetallePage({
           </Link>
         )}
 
-        <EstadoSelector tareaId={tarea.id} estadoActual={tarea.estado as EstadoTarea} />
+        {puedeCambiarEstado && (
+          <EstadoSelector tareaId={tarea.id} estadoActual={tarea.estado as EstadoTarea} />
+        )}
 
         {profile?.rol === "Admin" && <BorrarTareaButton tareaId={tarea.id} />}
       </div>

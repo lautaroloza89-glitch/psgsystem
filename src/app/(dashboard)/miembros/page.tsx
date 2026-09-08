@@ -1,18 +1,29 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeVerEmailsMiembros, puedeVerModuloMiembros } from "@/lib/permisos";
 import { MiembroCard, type MiembroCardData } from "@/components/miembros/MiembroCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export const metadata: Metadata = { title: "Miembros del equipo" };
 
 export default async function MiembrosPage() {
+  const profile = await getCurrentUserProfile();
+
+  if (!puedeVerModuloMiembros(profile?.rol)) {
+    redirect("/dashboard");
+  }
+
+  const conEmail = puedeVerEmailsMiembros(profile?.rol);
+
   const supabase = await createClient();
   const { data } = await supabase
     .from("users")
-    .select("id, nombre, email, rol, cargo")
+    .select(conEmail ? "id, nombre, email, rol, cargo" : "id, nombre, rol, cargo")
     .order("nombre");
 
-  const miembros: MiembroCardData[] = data ?? [];
+  const miembros: MiembroCardData[] = (data ?? []) as unknown as MiembroCardData[];
 
   return (
     <div className="space-y-6">

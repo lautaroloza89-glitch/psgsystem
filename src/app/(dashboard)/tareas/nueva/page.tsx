@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeCrearTarea } from "@/lib/permisos";
 import { TareaForm } from "@/components/tareas/TareaForm";
 import { BackButton } from "@/components/ui/BackButton";
 import { crearTarea } from "../actions";
@@ -11,7 +12,7 @@ export const metadata: Metadata = { title: "Nueva tarea" };
 export default async function NuevaTareaPage() {
   const profile = await getCurrentUserProfile();
 
-  if (!profile || profile.rol === "Empleado" || profile.rol === "Patinador") {
+  if (!puedeCrearTarea(profile?.rol)) {
     redirect("/tareas");
   }
 

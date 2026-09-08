@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeEditarTarea, puedeVerModuloTareas } from "@/lib/permisos";
 import { TareaForm } from "@/components/tareas/TareaForm";
 import { BackButton } from "@/components/ui/BackButton";
 import { editarTarea } from "../../actions";
@@ -15,6 +16,11 @@ export default async function EditarTareaPage({
 }) {
   const { id } = await params;
   const profile = await getCurrentUserProfile();
+
+  if (!puedeVerModuloTareas(profile?.rol)) {
+    redirect("/dashboard");
+  }
+
   const supabase = await createClient();
 
   const { data: tarea } = await supabase
@@ -30,15 +36,8 @@ export default async function EditarTareaPage({
   }
 
   const asignadosIds = (tarea.tarea_asignados ?? []).map((a) => a.usuario_id);
-  const estaAsignado = profile ? asignadosIds.includes(profile.id) : false;
 
-  const puedeEditar =
-    !!profile &&
-    (profile.rol === "Admin" ||
-      ((profile.rol === "Profesor" || profile.rol === "Head Coach") &&
-        (tarea.created_by === profile.id || estaAsignado)));
-
-  if (!puedeEditar) {
+  if (!puedeEditarTarea(profile, tarea)) {
     redirect(`/tareas/${id}`);
   }
 
