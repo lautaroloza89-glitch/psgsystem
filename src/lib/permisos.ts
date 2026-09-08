@@ -56,6 +56,29 @@ export function puedeVerEmailsMiembros<T extends PerfilPermisos>(
   return tieneRol(profile, ["Admin", "Head Coach", "Secretaria"]);
 }
 
+/**
+ * La ficha de una persona del equipo (`/miembros/[id]`): el email, desde
+ * cuándo está en el club y sus tareas asignadas. Profesor y Empleado se quedan
+ * en el listado — para ellos el módulo es una guía de quién es quién, no la
+ * administración del equipo.
+ */
+export function puedeVerFichaMiembro<T extends PerfilPermisos>(
+  profile: T | null | undefined
+): profile is T {
+  return tieneRol(profile, ["Admin", "Head Coach", "Secretaria"]);
+}
+
+/**
+ * Cambiar el rol o el cargo de alguien, marcar quién dicta clases y dar de
+ * baja: **solo Admin**, igual que la policy `users_update_admin`. Head Coach y
+ * Secretaria ven la ficha en lectura.
+ */
+export function puedeGestionarEquipo<T extends PerfilPermisos>(
+  profile: T | null | undefined
+): profile is T {
+  return tieneRol(profile, ["Admin"]);
+}
+
 export function puedeCrearTarea<T extends PerfilPermisos>(
   profile: T | null | undefined
 ): profile is T {
