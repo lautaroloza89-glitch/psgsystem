@@ -8,6 +8,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TorneoDestacado } from "@/components/torneos/TorneoDestacado";
 import { hoyArgentina, sumarDias } from "@/lib/utils/date";
+import { puedeVerContadoresDashboard } from "@/lib/permisos";
 import type { EstadoTarea, EstadoTurno, Rol } from "@/types";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -90,7 +91,9 @@ export default async function DashboardPage() {
     .limit(1)
     .maybeSingle();
 
-  // Contadores agregados: solo para Admin (panorama general del equipo).
+  // Contadores agregados: panorama general del equipo, para los tres roles que
+  // coordinan (Admin, Head Coach y Secretaria). Son de tareas y clases, no de
+  // plata: no chocan con que Secretaria no vea la recaudación.
   let contadores: {
     pendientes: number;
     enProgreso: number;
@@ -98,7 +101,7 @@ export default async function DashboardPage() {
     turnosSemana: number;
   } | null = null;
 
-  if (profile?.rol === "Admin") {
+  if (puedeVerContadoresDashboard(profile?.rol)) {
     const en7DiasStr = sumarDias(hoyStr, 7);
 
     const [pendientesRes, enProgresoRes, turnosHoyRes, turnosSemanaRes] =

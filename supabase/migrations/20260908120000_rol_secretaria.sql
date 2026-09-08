@@ -30,14 +30,21 @@ create policy "grupo_objetivos_mes_write"
   with check (public.current_user_rol() in ('Admin', 'Head Coach', 'Profesor'));
 
 -- =========================================================
--- Tareas: alcance "como Head Coach".
+-- Tareas.
 --
 -- Ninguna policy de tareas nombraba a 'Secretaria' — se habían escrito antes
 -- de que el rol existiera y nadie las revisó al definir el alcance. Sin esto,
 -- al migrar a Dai de Admin a Secretaria perdía el módulo entero en silencio:
 -- pasaba a ver solo las tareas propias o asignadas y no podía crear ninguna.
--- Se la suma en paralelo a 'Head Coach' en cada policy, con la misma
--- condición: mismo criterio que la tabla de alcance del rol.
+--
+-- Lectura: Secretaria ve todas, igual que Admin. "Como Head Coach" y "ve
+-- todas" no son lo mismo (un Head Coach no ve las tareas entre Admin y Head
+-- Coach que no involucran a ninguna Profesora/Empleada/Patinadora) y acá
+-- manda "ve todas": probado con rollback, con el criterio de Head Coach la
+-- única tarea cargada hoy le desaparecía del listado.
+--
+-- Escritura de estructura (crear, asignar, borrar): como Head Coach, o sea
+-- solo sobre las propias o asignadas.
 -- =========================================================
 drop policy "tareas_select" on public.tareas;
 
@@ -45,11 +52,11 @@ create policy "tareas_select"
   on public.tareas for select
   to authenticated
   using (
-    public.current_user_rol() = 'Admin'
+    public.current_user_rol() in ('Admin', 'Secretaria')
     or created_by = auth.uid()
     or public.usuario_asignado_a_tarea(id, auth.uid())
     or (
-      public.current_user_rol() in ('Head Coach', 'Secretaria')
+      public.current_user_rol() = 'Head Coach'
       and public.tarea_visible_para_head_coach(id)
     )
   );
@@ -64,23 +71,49 @@ create policy "tareas_insert"
     and created_by = auth.uid()
   );
 
+-- Head Coach y Secretaria pasan a poder actualizar cualquier tarea que ven, no
+-- solo las propias o asignadas: el punto 1.1 de las correcciones define que
+-- cambian el estado de cualquier tarea, y hasta ahora la RLS lo rechazaba sin
+-- error (la pantalla decía que había andado y no se guardaba nada). Profesor
+-- sigue limitado a las propias o asignadas.
+--
+-- La RLS es por fila, no por columna: a nivel base esto también les permite
+-- editar título/fechas de una tarea ajena. La aplicación se lo sigue
+-- bloqueando en `puedeEditarTarea` (src/lib/permisos.ts) — decisión tomada a
+-- ojos abiertos, club de 10 personas.
 drop policy "tareas_update_admin_profesor_headcoach" on public.tareas;
 
 create policy "tareas_update_admin_profesor_headcoach"
   on public.tareas for update
   to authenticated
   using (
-    public.current_user_rol() = 'Admin'
+    public.current_user_rol() in ('Admin', 'Secretaria')
     or (
-      public.current_user_rol() in ('Profesor', 'Head Coach', 'Secretaria')
+      public.current_user_rol() = 'Profesor'
       and (created_by = auth.uid() or public.usuario_asignado_a_tarea(id, auth.uid()))
+    )
+    or (
+      public.current_user_rol() = 'Head Coach'
+      and (
+        created_by = auth.uid()
+        or public.usuario_asignado_a_tarea(id, auth.uid())
+        or public.tarea_visible_para_head_coach(id)
+      )
     )
   )
   with check (
-    public.current_user_rol() = 'Admin'
+    public.current_user_rol() in ('Admin', 'Secretaria')
     or (
-      public.current_user_rol() in ('Profesor', 'Head Coach', 'Secretaria')
+      public.current_user_rol() = 'Profesor'
       and (created_by = auth.uid() or public.usuario_asignado_a_tarea(id, auth.uid()))
+    )
+    or (
+      public.current_user_rol() = 'Head Coach'
+      and (
+        created_by = auth.uid()
+        or public.usuario_asignado_a_tarea(id, auth.uid())
+        or public.tarea_visible_para_head_coach(id)
+      )
     )
   );
 
@@ -107,11 +140,11 @@ create policy "tarea_asignados_select"
       select 1 from public.tareas t
       where t.id = tarea_asignados.tarea_id
         and (
-          public.current_user_rol() = 'Admin'
+          public.current_user_rol() in ('Admin', 'Secretaria')
           or t.created_by = auth.uid()
           or public.usuario_asignado_a_tarea(t.id, auth.uid())
           or (
-            public.current_user_rol() in ('Head Coach', 'Secretaria')
+            public.current_user_rol() = 'Head Coach'
             and public.tarea_visible_para_head_coach(t.id)
           )
         )
@@ -162,11 +195,11 @@ create policy "tarea_comentarios_select"
       select 1 from public.tareas t
       where t.id = tarea_comentarios.tarea_id
         and (
-          public.current_user_rol() = 'Admin'
+          public.current_user_rol() in ('Admin', 'Secretaria')
           or t.created_by = auth.uid()
           or public.usuario_asignado_a_tarea(t.id, auth.uid())
           or (
-            public.current_user_rol() in ('Head Coach', 'Secretaria')
+            public.current_user_rol() = 'Head Coach'
             and public.tarea_visible_para_head_coach(t.id)
           )
         )
@@ -184,11 +217,11 @@ create policy "tarea_comentarios_insert"
       select 1 from public.tareas t
       where t.id = tarea_comentarios.tarea_id
         and (
-          public.current_user_rol() = 'Admin'
+          public.current_user_rol() in ('Admin', 'Secretaria')
           or t.created_by = auth.uid()
           or public.usuario_asignado_a_tarea(t.id, auth.uid())
           or (
-            public.current_user_rol() in ('Head Coach', 'Secretaria')
+            public.current_user_rol() = 'Head Coach'
             and public.tarea_visible_para_head_coach(t.id)
           )
         )

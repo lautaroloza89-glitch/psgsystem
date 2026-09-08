@@ -53,3 +53,7 @@ export function puedeCambiarEstadoTarea(
 export function puedeVerRecaudacion(rol: Rol | undefined | null): boolean {
   return rol === "Admin" || rol === "Head Coach";
 }
+
+export function puedeVerContadoresDashboard(rol: Rol | undefined | null): boolean {
+  return rol === "Admin" || rol === "Head Coach" || rol === "Secretaria";
+}
