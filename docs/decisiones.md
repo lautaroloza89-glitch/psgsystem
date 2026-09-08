@@ -33,7 +33,7 @@
 [Asistencia sin sábados](#asistencia-sin-sábados) · [Presente o ausente, sin tercer estado](#presente-o-ausente-sin-tercer-estado) · [El grupo del día queda congelado en la fila](#el-grupo-del-día-queda-congelado-en-la-fila) · [La alerta de inasistencias se mide en semanas](#la-alerta-de-inasistencias-se-mide-en-semanas)
 
 **Torneos**
-[Torneos cubre solo el registro](#torneos-cubre-solo-el-registro) · [Torneos, exhibiciones y eventos en una sola tabla](#torneos-exhibiciones-y-eventos-en-una-sola-tabla) · [El estado de un torneo se calcula, no se guarda](#el-estado-de-un-torneo-se-calcula-no-se-guarda) · [Torneos es información de todo el club](#torneos-es-información-de-todo-el-club)
+[Torneos cubre solo el registro](#torneos-cubre-solo-el-registro) · [El calendario de torneos y la convocatoria tienen dueños distintos](#el-calendario-de-torneos-y-la-convocatoria-tienen-dueños-distintos) · [Torneos, exhibiciones y eventos en una sola tabla](#torneos-exhibiciones-y-eventos-en-una-sola-tabla) · [El estado de un torneo se calcula, no se guarda](#el-estado-de-un-torneo-se-calcula-no-se-guarda) · [Torneos es información de todo el club](#torneos-es-información-de-todo-el-club)
 
 **Transversales**
 [Un solo criterio de fecha: hoyArgentina()](#un-solo-criterio-de-fecha-hoyargentina) · [Los reportes se consultan, no avisan](#los-reportes-se-consultan-no-avisan) · [Markdown en descripciones y comentarios](#markdown-en-descripciones-y-comentarios)
@@ -122,9 +122,9 @@ Los módulos de Fase 2 (alumnas, pagos, asistencia, torneos) siguen el mismo pat
 ## Alcance del rol Secretaria
 
 **Decisión:** rol para el dominio administrativo.
-- **Completo:** Alumnas, Asistencia, Pagos (registrar, recargo, verificar, anular, deudoras, saldo por alumna) y Tareas (ve todas, crea, asigna, edita y cierra; borra solo las propias).
-- **Solo lectura:** Planificaciones, Torneos y Miembros (con emails).
-- **Nunca:** la recaudación total del club (`/pagos/recaudacion`), la gestión del equipo (no invita, no cambia roles, no da de baja), la escritura en planificaciones, crear/editar torneos y cambiar cuotas de grupo.
+- **Completo:** Alumnas, Asistencia, Pagos (registrar, recargo, verificar, anular, deudoras, saldo por alumna), Tareas (ve todas, crea, asigna, edita y cierra; borra solo las propias) y la **convocatoria** de cada torneo (`torneo_participantes`: convocar, editar el estado de inscripción y desconvocar).
+- **Solo lectura:** Planificaciones, Miembros (con emails) y el **calendario** de torneos (`torneos`: qué eventos hay y cuándo).
+- **Nunca:** la recaudación total del club (`/pagos/recaudacion`), la gestión del equipo (no invita, no cambia roles, no da de baja), la escritura en planificaciones, crear/editar/borrar torneos del calendario y cambiar cuotas de grupo.
 
 **Contexto:** el dominio administrativo se cubría dándole `Admin` a Dai, que le daba control total sobre Tareas, Horarios y gestión de usuarios — mucho más de lo que el puesto necesita. La alternativa descartada fue dejarla en Admin y confiar en el uso; se optó por un rol propio para que el límite lo ponga el sistema y no el criterio de la persona. La recaudación total queda afuera por ser información sensible del club, no por falta de confianza operativa: registra y verifica cada pago, pero no ve el agregado.
 **Estado:** vigente
@@ -349,6 +349,12 @@ Lautaro es el único Admin real del sistema.
 
 **Decisión:** el módulo Torneos registra qué eventos hay y cuándo. Qué alumnas participan tiene el modelo de datos ya creado (`torneo_participantes`) pero todavía **no tiene pantallas**. El control de inscripción paga queda fuera, con su propia definición pendiente.
 **Contexto:** alcance recortado a propósito para cerrar Fase 2 con el calendario funcionando, dejando la participación para cuando esté definida.
+**Estado:** vigente
+
+## El calendario de torneos y la convocatoria tienen dueños distintos
+
+**Decisión:** en `torneos` (qué eventos hay y cuándo) la escritura es de Admin y Head Coach. En `torneo_participantes` (quién va a cada uno) escriben **Admin, Head Coach y Secretaria** por igual: convocar, editar y desconvocar. Profesor lee la convocatoria pero no la toca.
+**Contexto:** son dos decisiones distintas metidas en el mismo módulo. Qué torneos corre el club es una decisión deportiva; armar la lista y controlar quién pagó la inscripción es trabajo administrativo, y es Secretaria quien lo hace. El Bloque 5 la había dejado a mitad de camino — podía marcar quién pagó pero no agregar a nadie a la lista —, así que dependía de otra persona para empezar. Se corrigió en `main` antes de abrir la rama de UI, porque el rediseño no cambia esquema.
 **Estado:** vigente
 
 ## Torneos, exhibiciones y eventos en una sola tabla
