@@ -106,6 +106,12 @@ export function hoyArgentina(): string {
   });
 }
 
+/** Año y mes (base 1) de hoy en Argentina — valor por defecto de los selectores `?mes=`. */
+export function anioMesDeHoy(): { anio: number; mes: number } {
+  const [anio, mes] = hoyArgentina().split("-").map(Number);
+  return { anio, mes };
+}
+
 /**
  * Suma (o resta, con `dias` negativo) días a una fecha `YYYY-MM-DD` y devuelve
  * otra fecha `YYYY-MM-DD`. En UTC, para no desfasar por huso horario.

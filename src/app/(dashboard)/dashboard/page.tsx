@@ -7,7 +7,7 @@ import { TurnoCard, type TurnoCardData } from "@/components/horarios/TurnoCard";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TorneoDestacado } from "@/components/torneos/TorneoDestacado";
-import { hoyArgentina } from "@/lib/utils/date";
+import { hoyArgentina, sumarDias } from "@/lib/utils/date";
 import type { EstadoTarea, EstadoTurno, Rol } from "@/types";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -18,8 +18,7 @@ export default async function DashboardPage() {
   const profile = await getCurrentUserProfile();
   const supabase = await createClient();
 
-  const hoy = new Date();
-  const hoyStr = hoy.toISOString().slice(0, 10);
+  const hoyStr = hoyArgentina();
 
   // Tareas próximas a vencer: no completadas, ordenadas por fecha de
   // vencimiento (las vencidas quedan primero al ser las más antiguas).
@@ -83,11 +82,10 @@ export default async function DashboardPage() {
   // Próximo torneo: visible para todos los roles (misma RLS de lectura
   // abierta que el listado de Torneos). Sin bloque si no hay ningún evento
   // futuro o en curso.
-  const hoyArg = hoyArgentina();
   const { data: torneoDestacado } = await supabase
     .from("torneos")
     .select("id, nombre, tipo, lugar, fecha_inicio, fecha_fin")
-    .gte("fecha_fin", hoyArg)
+    .gte("fecha_fin", hoyStr)
     .order("fecha_inicio", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -101,9 +99,7 @@ export default async function DashboardPage() {
   } | null = null;
 
   if (profile?.rol === "Admin") {
-    const en7Dias = new Date(hoy);
-    en7Dias.setDate(en7Dias.getDate() + 7);
-    const en7DiasStr = en7Dias.toISOString().slice(0, 10);
+    const en7DiasStr = sumarDias(hoyStr, 7);
 
     const [pendientesRes, enProgresoRes, turnosHoyRes, turnosSemanaRes] =
       await Promise.all([
@@ -149,7 +145,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {torneoDestacado && <TorneoDestacado torneo={torneoDestacado} hoy={hoyArg} />}
+      {torneoDestacado && <TorneoDestacado torneo={torneoDestacado} hoy={hoyStr} />}
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">

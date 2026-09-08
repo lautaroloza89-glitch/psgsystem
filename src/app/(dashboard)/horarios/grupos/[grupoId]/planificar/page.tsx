@@ -5,7 +5,7 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { BackButton } from "@/components/ui/BackButton";
 import { PlanificarForm } from "@/components/horarios/PlanificarForm";
 import { guardarPlanificacion } from "../../../planificaciones-actions";
-import { nombreMes } from "@/lib/utils/date";
+import { anioMesDeHoy, nombreMes } from "@/lib/utils/date";
 
 export const metadata: Metadata = { title: "Nueva planificación" };
 
@@ -29,9 +29,9 @@ export default async function PlanificarPage({
     redirect(`/horarios/grupos/${grupoId}`);
   }
 
-  const hoy = new Date();
-  let anio = hoy.getFullYear();
-  let mes = hoy.getMonth() + 1;
+  const hoyAM = anioMesDeHoy();
+  let anio = hoyAM.anio;
+  let mes = hoyAM.mes;
   if (mesParam && /^\d{4}-\d{2}$/.test(mesParam)) {
     const [y, m] = mesParam.split("-").map(Number);
     anio = y;

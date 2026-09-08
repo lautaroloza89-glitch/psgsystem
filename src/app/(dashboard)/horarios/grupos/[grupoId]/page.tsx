@@ -8,7 +8,7 @@ import { ObjetivoMesForm } from "@/components/horarios/ObjetivoMesForm";
 import { FiltroEstadoTurnoTabs } from "@/components/horarios/FiltroEstadoTurnoTabs";
 import { EstadoTurnoBadge } from "@/components/horarios/EstadoTurnoBadge";
 import { MarkdownText } from "@/components/ui/MarkdownText";
-import { formatFecha, nombreMes, primerDiaDeMes } from "@/lib/utils/date";
+import { anioMesDeHoy, formatFecha, nombreMes, primerDiaDeMes } from "@/lib/utils/date";
 import type { EstadoTurno, TipoTurno } from "@/types";
 
 export const metadata: Metadata = { title: "Planificaciones del grupo" };
@@ -48,9 +48,9 @@ export default async function PlanificacionesGrupoPage({
   const { grupoId } = await params;
   const { mes: mesParam, estado } = await searchParams;
 
-  const hoy = new Date();
-  let anio = hoy.getFullYear();
-  let mes = hoy.getMonth() + 1;
+  const hoyAM = anioMesDeHoy();
+  let anio = hoyAM.anio;
+  let mes = hoyAM.mes;
   if (mesParam && /^\d{4}-\d{2}$/.test(mesParam)) {
     const [y, m] = mesParam.split("-").map(Number);
     anio = y;

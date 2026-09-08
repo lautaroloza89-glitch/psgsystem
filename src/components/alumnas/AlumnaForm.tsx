@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useActionState } from "react";
 import type { FormState } from "@/app/(dashboard)/alumnas/actions";
 import type { EstadoAlumna } from "@/types";
+import { hoyArgentina } from "@/lib/utils/date";
 import { Spinner } from "@/components/ui/spinner";
 
 const INPUT_CLASS =
@@ -148,7 +149,7 @@ export function AlumnaForm({
             name="fecha_inscripcion"
             type="date"
             required
-            defaultValue={defaultValues?.fecha_inscripcion ?? new Date().toISOString().slice(0, 10)}
+            defaultValue={defaultValues?.fecha_inscripcion ?? hoyArgentina()}
             className={INPUT_CLASS}
           />
         </div>

@@ -5,6 +5,7 @@ import { crearPago, obtenerSaldoAlumnaMes, type FormState } from "@/app/(dashboa
 import type { SaldoAlumnaMes } from "@/lib/pagos/saldo";
 import { RECARGO_MONTO } from "@/lib/pagos/reglas";
 import { normalizarTexto } from "@/lib/utils/texto";
+import { hoyArgentina } from "@/lib/utils/date";
 import { formatMonto } from "@/lib/utils/money";
 import type { MetodoPago } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
@@ -44,8 +45,7 @@ function nuevaKey(): string {
 }
 
 function mesActualInput(): string {
-  const hoy = new Date();
-  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
+  return hoyArgentina().slice(0, 7);
 }
 
 const initialState: FormState = { error: null };

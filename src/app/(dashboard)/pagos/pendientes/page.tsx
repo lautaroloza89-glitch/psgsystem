@@ -7,7 +7,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MarcarVerificadoButton } from "@/components/pagos/MarcarVerificadoButton";
 import { formatMonto } from "@/lib/utils/money";
-import { mesAnteriorSiguiente, mesQuery, nombreMes, primerDiaDeMes } from "@/lib/utils/date";
+import { anioMesDeHoy, mesAnteriorSiguiente, mesQuery, nombreMes, primerDiaDeMes } from "@/lib/utils/date";
 import type { MetodoPago } from "@/types";
 
 export const metadata: Metadata = { title: "Pendientes de verificar" };
@@ -32,9 +32,9 @@ export default async function PagosPendientesPage({
   }
 
   const { mes: mesParam } = await searchParams;
-  const hoy = new Date();
-  let anio = hoy.getFullYear();
-  let mes = hoy.getMonth() + 1;
+  const hoyAM = anioMesDeHoy();
+  let anio = hoyAM.anio;
+  let mes = hoyAM.mes;
   if (mesParam && /^\d{4}-\d{2}$/.test(mesParam)) {
     const [y, m] = mesParam.split("-").map(Number);
     anio = y;

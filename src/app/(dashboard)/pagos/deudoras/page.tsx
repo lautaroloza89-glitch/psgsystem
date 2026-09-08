@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { calcularDeudorasDelMes } from "@/lib/pagos/saldo";
 import { esDiaDeRecordatorio, mesActualISO } from "@/lib/pagos/reglas";
 import { formatMonto } from "@/lib/utils/money";
-import { mesAnteriorSiguiente, mesQuery, nombreMes, primerDiaDeMes } from "@/lib/utils/date";
+import { anioMesDeHoy, mesAnteriorSiguiente, mesQuery, nombreMes, primerDiaDeMes } from "@/lib/utils/date";
 
 export const metadata: Metadata = { title: "Deudoras" };
 
@@ -26,9 +26,9 @@ export default async function DeudorasPage({
   }
 
   const { mes: mesParam } = await searchParams;
-  const hoy = new Date();
-  let anio = hoy.getFullYear();
-  let mes = hoy.getMonth() + 1;
+  const hoyAM = anioMesDeHoy();
+  let anio = hoyAM.anio;
+  let mes = hoyAM.mes;
   if (mesParam && /^\d{4}-\d{2}$/.test(mesParam)) {
     const [y, m] = mesParam.split("-").map(Number);
     anio = y;
