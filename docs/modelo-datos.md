@@ -40,10 +40,15 @@ Perfil de cada usuario de la app, ligado 1 a 1 con `auth.users` (Supabase Auth, 
 | `id` | `uuid` | PK, FK a `auth.users(id)`, `on delete cascade` |
 | `email` | `text` | `not null`, `unique` |
 | `nombre` | `text` | `not null` |
-| `rol` | `text` | `not null`, check: `'Admin' \| 'Profesor' \| 'Empleado' \| 'Head Coach' \| 'Patinador'` |
+| `rol` | `text` | `not null`, check: `'Admin' \| 'Profesor' \| 'Empleado' \| 'Head Coach' \| 'Patinador' \| 'Secretaria'` — `'Secretaria'` agregado en el Bloque 2 de las Correcciones pre-UI (2026-09-08), ver nota abajo |
 | `dicta_clases` | `boolean` | `not null`, default `false` (Módulo 5). No es un rol de permisos: distingue, entre los usuarios que pueden figurar como profesor de un turno, a los `Admin` que además dictan clases (ej. la Head Coach) de los que no (ej. la Secretaria). Todo `rol = 'Profesor'` lo tiene en `true`, seteado por `handle_new_user` en el alta (corregido 2026-08-29, ver nota abajo) o, para las cuentas creadas antes de la corrección, por el `update` puntual de la migración correspondiente. |
 | `cargo` | `text` | opcional, texto libre (ej. "Preparadora física", "Ayudante de recepción"). Puramente descriptivo, no afecta permisos — solo se muestra en pantalla junto al rol. |
+| `estado` | `text` | `not null`, default `'activo'`, check: `'activo' \| 'baja'` — baja lógica del personal (Bloque 4, 2026-09-08). Mismo criterio que `alumnas.estado`, en masculino porque el listado es de personal mixto |
 | `created_at` | `timestamptz` | default `now()` |
+
+**El rol `'Secretaria'` (Bloque 2 de las Correcciones pre-UI, 2026-09-08):** existía en el tipo TypeScript `Rol` y en las policies de `alumnas`/`contactos`/`pagos`/`pagos_metodos`/`asistencia`/`torneos` desde antes, pero no era un valor posible de esta columna: Dai estaba cargada como `'Admin'` como parche, así que ninguna restricción del rol aplicaba de verdad (entre otras cosas veía la recaudación del club). La migración `20260908120000_rol_secretaria.sql` amplió el CHECK y pasó a Dai a `rol = 'Secretaria'`, `cargo = 'Administración'`. Alcance: Alumnas, Pagos (**menos** `/pagos/recaudacion`), Asistencia y Tareas completos; Planificaciones, Torneos y Miembros solo lectura; sin gestión del equipo. Al hacerlo se descubrió que **ninguna policy de Tareas nombraba al rol** — se recrearon las 9 de `tareas`/`tarea_asignados`/`tarea_comentarios`, porque si no el rol nuevo se quedaba sin el módulo en silencio.
+
+**La baja lógica (`estado`, Bloque 4):** hasta 2026-09-08, si alguien se iba del club solo se podía borrar la fila —perdiendo sus tareas y turnos históricos, o chocando contra los FK `on delete restrict`— o dejarla listada como activa para siempre. Filtran por `estado = 'activo'`: `/miembros`, los selectores de responsables de Tareas y los de profesores de Horarios/Planificaciones. **No hay pantalla para dar de baja**: la app no tiene gestión de usuarios, así que por ahora se carga a mano en la base.
 
 ### `tareas`
 
@@ -265,17 +270,20 @@ Datos puros de las alumnas de la escuela (~150 registros, a cargar por import ap
 | `apellido` | `text` | `not null` — se busca y ordena por este campo, no por DNI |
 | `nombre` | `text` | `not null` |
 | `dni` | `text` | nullable, índice único parcial `alumnas_dni_unique_idx` (`where dni is not null`) — ver nota F2 MOD 2 abajo |
+| `fecha_nacimiento` | `date` | nullable (Bloque 4, 2026-09-08) — ver nota abajo |
 | `fecha_inscripcion` | `date` | `not null`, default `current_date` (agregado en F2 MOD 2) |
 | `estado` | `text` | `not null`, default `'activa'`, check: `'activa' \| 'baja'` |
 | `grupo_id` | `uuid` | FK a `grupos(id)`, nullable, `on delete restrict` — una alumna pertenece a un solo grupo a la vez; se eligió `restrict` (no `set null`/`cascade`) para que borrar un grupo con alumnas asignadas falle explícitamente en vez de dejarlas huérfanas sin nivel; obligatorio a nivel de formulario en el alta/edición manual (F2 MOD 2), pero no en la base |
 | `created_at` | `timestamptz` | default `now()` |
 | `updated_at` | `timestamptz` | default `now()`, se actualiza solo con trigger |
 
-Descartado a propósito (decisión de producto, no un olvido): fecha de nacimiento (los grupos se organizan por nivel/destreza, no por edad), email, datos médicos/alergias, motivo de baja.
+Descartado a propósito (decisión de producto, no un olvido): email, datos médicos/alergias, motivo de baja.
+
+**`fecha_nacimiento` se agregó en el Bloque 4 de las Correcciones pre-UI (2026-09-08), revirtiendo la decisión original de no tenerla.** El motivo por el que se había descartado sigue siendo cierto —los grupos se arman por nivel/destreza, no por edad, y no hay filtro por edad en ninguna pantalla— pero el dato hace falta igual por dos razones nuevas: es **columna obligada de la planilla que se manda a la organización de un torneo** (junto al DNI, ver `torneo_participantes`) y habilita los cumpleaños. Nullable a propósito: las 158 fichas importadas no lo traían (el CSV no lo tenía), y donde falte se muestra vacío sin bloquear nada.
 
 **F2 MOD 2 (2026-09-02) relajó `dni` y `grupo_id`:** Groundwork 1 los había dejado `not null` (`dni` además `unique` total), probado a propósito en esa sesión. F2 MOD 2 necesitaba lo contrario para tolerar el import futuro del listado real de Luciana (~150 filas, incompletas y con DNI posiblemente repetidos): se preguntó al usuario (pregunta de alto impacto) y se aplicó `supabase/migrations/20260902120000_f2_mod2_alumnas_ajustes_esquema.sql` — `dni` nullable con índice único parcial (permite muchas filas con `dni is null` pero sigue bloqueando un `dni` real repetido), `grupo_id` nullable en base (el formulario de alta/edición lo sigue exigiendo). La tabla seguía en 0 filas al aplicar el ALTER, sin riesgo de datos existentes.
 
-Índices: `apellido` (orden/búsqueda), `grupo_id` (filtrar por grupo), `alumnas_dni_unique_idx` (único parcial, ver arriba). RLS: lectura y escritura para Admin, Head Coach y Secretaria — ningún otro rol tiene acceso, ni siquiera lectura (política única `for all`). **`'Secretaria'` todavía no es un valor posible de `users.rol`** — Dai sigue con rol `'Admin'` como parche temporal (ver `PROGRESS.md`); la policy ya quedó escrita contra `'Secretaria'` para que funcione sola en cuanto ese parche se resuelva, sin necesitar otra migración; mientras tanto el acceso real de Dai pasa por la rama `'Admin'`. F2 MOD 2 sumó `'Secretaria'` al tipo TypeScript `Rol` (`src/types/user.ts`) por el mismo motivo, sin tocar el CHECK real de la base.
+Índices: `apellido` (orden/búsqueda), `grupo_id` (filtrar por grupo), `alumnas_dni_unique_idx` (único parcial, ver arriba). RLS: lectura y escritura para Admin, Head Coach y Secretaria — ningún otro rol tiene acceso, ni siquiera lectura (política única `for all`). Esta policy se escribió contra `'Secretaria'` desde F2 MOD 2, cuando el rol todavía no existía en la base; **desde el Bloque 2 (2026-09-08) el rol existe y la policy empezó a aplicar sola, sin necesitar otra migración** — verificado en vivo: simulando la sesión de Dai ya como Secretaria, ve las 158 alumnas.
 
 Tabla vacía al cierre de F2 MOD 2 (datos de prueba creados durante la verificación en el navegador, borrados al terminar). La carga de las ~150 alumnas es una sesión aparte, cuando Luciana entregue el listado — con `dni`/`grupo_id` ya nullable en base, no hace falta otra migración de esquema para ese import.
 
@@ -311,13 +319,21 @@ F2 MOD 3 (2026-09-02). Un pago es un evento de cobro, no un mes cerrado: una alu
 | `monto_cuota` | `numeric(10,2)` | `not null`, check `> 0` — **snapshot** de `grupos.cuota_mensual` al momento de este pago, no referencia viva (la cuota cambia 1-2 veces al año; sin snapshot, un cambio desordenaría el histórico) |
 | `monto_recargo` | `numeric(10,2)` | `not null`, default `0`, check `>= 0` — cargado explícitamente por la Secretaria (checkbox sugerido, editable), no se aplica fijo porque se perdona a veces |
 | `monto` | `numeric(10,2)` | `not null`, check `> 0` — lo efectivamente pagado en este evento, suma de `pagos_metodos`; puede ser parcial, sin bloqueo |
-| `estado` | `text` | `not null`, default `'pendiente_verificar'`, check: `'pendiente_verificar' \| 'verificado'` |
+| `estado` | `text` | `not null`, default `'pendiente_verificar'`, check: `'pendiente_verificar' \| 'verificado' \| 'anulado'` — `'anulado'` agregado en el Bloque 4 (2026-09-08) |
 | `registrado_por` | `uuid` | FK a `users(id)`, `not null`, `on delete restrict` |
 | `verificado_por` | `uuid` | FK a `users(id)`, nullable, `on delete set null` |
 | `verificado_en` | `timestamptz` | nullable |
+| `recibo_texto` | `text` | nullable (Bloque 4) — el texto de WhatsApp que se arma al verificar, guardado para poder reenviarlo |
+| `anulado_por` | `uuid` | FK a `users(id)`, nullable, `on delete set null` (Bloque 4) |
+| `anulado_en` | `timestamptz` | nullable (Bloque 4) |
+| `motivo_anulacion` | `text` | nullable (Bloque 4), obligatorio cuando `estado = 'anulado'` |
 | `created_at` | `timestamptz` | default `now()` |
 
-Constraint adicional `pagos_verificacion_consistente`: `verificado_por`/`verificado_en` van juntos con `estado = 'verificado'` (ambos `null` si está `pendiente_verificar`, ambos no-`null` si está `verificado`) — evita estados a medio verificar si alguien corrige la fila a mano en la base.
+Constraint adicional `pagos_verificacion_consistente`: `verificado_por`/`verificado_en` van juntos con `estado = 'verificado'` (ambos `null` si está `pendiente_verificar`, ambos no-`null` si está `verificado`) — evita estados a medio verificar si alguien corrige la fila a mano en la base. El Bloque 4 (2026-09-08) le sumó una tercera rama: con `estado = 'anulado'` tienen que estar los tres campos de la anulación (`anulado_por`, `anulado_en`, `motivo_anulacion`); no toca `verificado_por`/`verificado_en`, así que si el pago se anula después de haber sido verificado se conserva quién lo había verificado.
+
+**La corrección de pagos (Bloque 4, 2026-09-08):** hasta entonces "marcar como verificado" era la única transición posible y un pago mal cargado solo se arreglaba a mano en la base. La transición que se agregó es **anular con motivo obligatorio** — decisión del usuario entre editar-si-está-pendiente y anular+rechazar: un pago no se edita ni se borra (se conserva el rastro de quién lo cargó), se anula y se vuelve a cargar el correcto. Los pagos anulados salen solos de todo cálculo de plata: saldo, deudoras y recaudación ya filtraban por `'verificado'`, y Pendientes por `'pendiente_verificar'`. Action `anularPago`, botón en Pendientes de verificar.
+
+**El recibo (`recibo_texto`, Bloque 4):** el texto para WhatsApp se armaba al verificar, se mostraba una vez en pantalla y se perdía al salir, así que no había forma de reenviarlo. Ahora se guarda en el pago. Se eligió campo acá y no una tabla `pago_recibos` aparte (decisión del usuario): no hace falta histórico de envíos para un copiar y pegar. La pantalla para reenviarlo es parte de la UI nueva.
 
 Índices: `alumna_id`, `mes_correspondiente`, `estado` (filtro de "Pendientes de verificar"). RLS: lectura y escritura para Admin, Head Coach y Secretaria, mismo patrón que `alumnas`/`contactos` (política única `for all`) — la app solo expone alta (`crearPago`) y la transición de verificación (`marcarPagoVerificado`); no hay edición ni borrado de pagos ya verificados desde la UI (fuera de alcance de F2 MOD 3, corrección manual en base si hace falta).
 
@@ -377,6 +393,7 @@ F2 MOD 5 (2026-09-03). Alcance recortado a **solo el registro**: qué alumnas pa
 | `fecha_inicio` | `date` | `not null` |
 | `fecha_fin` | `date` | `not null` — para eventos de un solo día, igual a `fecha_inicio` (el form la autocompleta) |
 | `notas` | `text` | opcional |
+| `inscripcion_monto` | `numeric(10,2)` | nullable (Bloque 5, 2026-09-08) — valor de la inscripción por alumna de ese torneo, para precargar en la convocatoria; null en eventos sin inscripción |
 | `created_at` / `updated_at` | `timestamptz` | default `now()`, `updated_at` mantenido por el mismo trigger `set_updated_at()` que `tareas`/`turnos` |
 
 Constraint `torneos_fecha_fin_valida`: `fecha_fin >= fecha_inicio`, validado también en el formulario y en `crearTorneo`/`editarTorneo`.
@@ -388,6 +405,34 @@ Constraint `torneos_fecha_fin_valida`: `fecha_fin >= fecha_inicio`, validado tam
 Índice: `fecha_inicio` (orden cronológico del listado y filtro por año). RLS: **primera tabla del proyecto con lectura y escritura diferenciadas** — SELECT abierto a cualquier autenticado (corregido el mismo día por `20260903140000_f2_mod5_torneos_lectura_abierta.sql`: el calendario de torneos no es un dominio administrativo, le interesa a todos los roles, incluidas las alumnas con login), INSERT/UPDATE/DELETE solo para Admin y Head Coach (3 policies separadas de escritura, mismo precedente que `turnos`).
 
 **UI (F2 MOD 5):** `/torneos` (listado en tarjetas cronológicas con ícono por tipo — 🏆 torneo, 💫 exhibición, 📆 evento —, próximo evento destacado arriba con los días que faltan, filtro por año con los pasados atenuados en vez de ocultos), `/torneos/nuevo` y `/torneos/[id]/editar` (solo Admin/Head Coach) y `/torneos/[id]` (detalle, visible para cualquiera pero sin botones de editar/borrar si no puede gestionar). Borrado físico, con confirmación — un torneo cargado por error no tiene historial que preservar en esta fase. **No vive en Administración**: es un ítem propio de `ENLACES` en `AppHeader.tsx`, ubicado arriba de "Tareas" (misma lógica que "Planificaciones", que tampoco es un apartado administrativo). El próximo torneo (si hay alguno futuro o en curso) también se muestra como bloque en `/dashboard`, reusando el componente `TorneoDestacado` — visible para todos los roles, sin bloque si no hay ningún evento próximo.
+
+### `torneo_participantes`
+
+Bloque 5 de las Correcciones pre-UI (2026-09-08). Una fila por alumna convocada a un torneo. Resuelve lo que F2 MOD 5 había dejado explícitamente afuera: qué alumnas participan y el control de inscripción paga. **Esta migración es solo el modelo** — las tres pantallas del recorrido (listado de alumnas activas con buscador y filtro por grupo, marcar convocadas, control de inscripción) son parte de la UI nueva.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `torneo_id` | `uuid` | FK a `torneos(id)`, `not null`, `on delete cascade` |
+| `alumna_id` | `uuid` | FK a `alumnas(id)`, `not null`, `on delete restrict` — borrar una alumna no puede llevarse puesto el histórico de en qué torneos compitió, mismo criterio que `pagos.alumna_id` |
+| `categoria` | `text` | nullable, **texto libre sin enum ni validación** — ver nota abajo |
+| `inscripcion_estado` | `text` | `not null`, default `'Pendiente'`, check: `'Pendiente' \| 'Paga' \| 'Exenta'` — `'Exenta'` porque a veces no se cobra |
+| `inscripcion_monto` | `numeric(10,2)` | nullable — se precarga de `torneos.inscripcion_monto` y se puede pisar por alumna |
+| `pago_id` | `uuid` | FK a `pagos(id)`, nullable, `on delete set null` — une la inscripción con el pago real |
+| `convocada_por` | `uuid` | FK a `users(id)`, `not null`, `on delete restrict` — mismo criterio que `asistencia.registrado_por` y `pagos.registrado_por` |
+| `creado_en` | `timestamptz` | default `now()` |
+
+Constraint `torneo_participantes_torneo_alumna_unica`: único por `(torneo_id, alumna_id)`. Índices: `torneo_id`, `alumna_id`.
+
+**No se modelan categorías federativas** (decisión de producto, no un olvido): son demasiadas y varían por torneo y por federación. La categoría en la que compite cada alumna es **texto libre que escribe quien arma la lista** ("C5 9", "FM 11", "PFM 12", "C5 13 FED") y vive en la convocatoria de ese torneo, no en la ficha de la alumna. Para convocar, el eje de búsqueda es `alumnas.grupo_id`, que ya existe: los grupos del club se arman por habilidad, no por edad.
+
+**La lista de convocadas es la planilla que se manda a la organización**, con estas columnas: nombre, DNI, fecha de nacimiento y categoría — de ahí que `alumnas.fecha_nacimiento` se haya agregado en el Bloque 4.
+
+RLS (verificada en vivo con transacciones con `rollback`, simulando cada rol): SELECT para Admin, Head Coach, Secretaria y Profesor; INSERT y DELETE solo Admin y Head Coach (convocar y sacar es una decisión deportiva); UPDATE para Admin, Head Coach y Secretaria (estado de inscripción y pago). **Patinador/a y Empleado/a no figuran en ninguna policy**: la tabla no existe para ellos, tampoco entrando por URL directa (confirmado: una Empleada ve 0 filas). Confirmado también que una Profesora lee la lista pero su INSERT es rechazado (42501), y que Secretaria actualiza el estado de inscripción pero no puede convocar (42501).
+
+**Dos límites que la RLS no puede expresar y quedan del lado de la aplicación** (la RLS es por fila, no por columna, y las column privileges de Postgres son por rol de base de datos, no por usuario de la app): la Profesora ve la lista de convocadas **sin monto ni estado de pago** —la app no le pide `inscripcion_monto`, `inscripcion_estado` ni `pago_id`, mismo criterio que el email del personal en `/miembros`—, y `categoria` (que según el alcance escriben Admin o Head Coach) queda cubierta por la policy de update de Secretaria.
+
+**Reglas de producto para la UI que viene:** sin filtro por edad (la fecha de nacimiento es columna del listado, no criterio de búsqueda; las alumnas sin el dato aparecen igual y al exportar se avisa cuántas faltan); el listado marca a quién le falta la categoría antes de exportar (chip "Sin categoría · N"); y **la alumna que debe la cuota se puede seleccionar igual** —pasa seguido y se la lleva—, con la nota del motivo visible debajo del nombre tanto en el listado como en la lista de convocadas: avisar, nunca bloquear ni atenuar. La decisión es de la Head Coach.
 
 ## Índices
 
@@ -439,10 +484,13 @@ pagos ──< pagos_metodos
 pagos ──> users (registrado_por, verificado_por)
 asistencia ──> users (registrado_por)
 
-torneos  (sin FK — standalone, F2 MOD 5)
+torneos ──< torneo_participantes >── alumnas   (Bloque 5)
+                     │
+                     ├──> users (convocada_por)
+                     └──> pagos (pago_id, opcional)
 ```
 
-Nota: `alumnas`/`contactos` (Fase 2) no tienen FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito. `grupos` sí conecta ahora con `turnos` vía `grupo_id` (Fase 1.2, Sesión 2, 2026-08-31), además de con `alumnas`/`grupo_horarios` (Fase 2) y `grupo_objetivos_mes` (F2 MOD 1). `pagos` (F2 MOD 3) es la primera tabla de Fase 2 que conecta con `users` (quién registró/verificó cada pago). `asistencia` (F2 MOD 4) conecta con las tres: `alumnas` (quién), `grupos` (en qué grupo estaba ese día, como snapshot y no como referencia viva) y `users` (quién la registró). `torneos` (F2 MOD 5) es la primera tabla de Fase 2 sin ninguna FK — el alcance de esta sesión es solo el registro del evento, sin alumnas participantes ni quién lo cargó.
+Nota: `alumnas`/`contactos` (Fase 2) no tienen FK hacia `users`, `tareas` ni `turnos` — `alumnas` no tiene relación con el rol "Patinador/a" de `users` a propósito. `grupos` sí conecta ahora con `turnos` vía `grupo_id` (Fase 1.2, Sesión 2, 2026-08-31), además de con `alumnas`/`grupo_horarios` (Fase 2) y `grupo_objetivos_mes` (F2 MOD 1). `pagos` (F2 MOD 3) es la primera tabla de Fase 2 que conecta con `users` (quién registró/verificó cada pago). `asistencia` (F2 MOD 4) conecta con las tres: `alumnas` (quién), `grupos` (en qué grupo estaba ese día, como snapshot y no como referencia viva) y `users` (quién la registró). `torneos` (F2 MOD 5) nació sin ninguna FK — el alcance de esa sesión era solo el registro del evento— y dejó de estar aislada en el Bloque 5 de las Correcciones pre-UI (2026-09-08): `torneo_participantes` la une con `alumnas` (quién va), `users` (quién la convocó) y opcionalmente `pagos` (la inscripción cobrada por el circuito de Pagos).
 
 ## Fuera de alcance de este módulo (Módulo 2, Fase 1)
 
