@@ -49,3 +49,7 @@ export function puedeCambiarEstadoTarea(
   }
   return false;
 }
+
+export function puedeVerRecaudacion(rol: Rol | undefined | null): boolean {
+  return rol === "Admin" || rol === "Head Coach";
+}

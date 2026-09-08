@@ -20,7 +20,7 @@ export default async function PlanificarPage({
   const { mes: mesParam } = await searchParams;
 
   const profile = await getCurrentUserProfile();
-  // 'Secretaria' todavía no es un valor posible de users.rol (ver PROGRESS.md).
+  // 'Secretaria' queda afuera a propósito: Planificaciones es solo lectura para ese rol.
   const puedeCargar =
     !!profile &&
     (profile.rol === "Admin" || profile.rol === "Head Coach" || profile.rol === "Profesor");

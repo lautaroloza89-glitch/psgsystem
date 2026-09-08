@@ -12,10 +12,10 @@ import type { FormState } from "./actions";
 
 const TIPOS_VALIDOS: TipoTurno[] = ["Patín", "Preparación física"];
 
-// 'Secretaria' todavía no es un valor posible de users.rol (Dai sigue en
-// 'Admin' como parche temporal, ver PROGRESS.md) — por eso no aparece acá
-// aunque la RLS de grupo_objetivos_mes ya la contempla; en cuanto se
-// agregue al tipo `Rol`, sumarla también a este chequeo de aplicación.
+// 'Secretaria' queda afuera a propósito: sobre Planificaciones tiene solo
+// lectura del calendario (alcance cerrado del rol, ver PROGRESS.md). La RLS
+// de grupo_objetivos_mes la nombraba por adelantado y se corrigió en la
+// misma migración que creó el rol.
 function puedeCargarPlanificaciones(rol: string | undefined): boolean {
   return rol === "Admin" || rol === "Head Coach" || rol === "Profesor";
 }

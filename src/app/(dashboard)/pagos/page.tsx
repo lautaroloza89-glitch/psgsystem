@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeVerRecaudacion } from "@/lib/permisos";
 
 export const metadata: Metadata = { title: "Pagos" };
 
@@ -42,7 +43,9 @@ export default async function PagosPage() {
       <h1 className="text-2xl font-bold tracking-tight">Pagos</h1>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {SECCIONES.map((s) => (
+        {SECCIONES.filter(
+          (s) => s.href !== "/pagos/recaudacion" || puedeVerRecaudacion(profile.rol)
+        ).map((s) => (
           <Link
             key={s.href}
             href={s.href}
