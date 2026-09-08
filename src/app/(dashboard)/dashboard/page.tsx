@@ -9,6 +9,7 @@ import { TorneoLinea } from "@/components/torneos/TorneoLinea";
 import { Icono } from "@/components/ui/Icono";
 import { datosDelInicio } from "@/lib/dashboard/inicio";
 import { hoyArgentina } from "@/lib/utils/date";
+import { puedeGestionarAsistencia } from "@/lib/asistencia/permisos";
 
 export const metadata: Metadata = { title: "Inicio" };
 
@@ -31,8 +32,11 @@ export default async function InicioPage() {
       .maybeSingle(),
   ]);
 
-  const daClases =
-    profile.rol === "Profesor" || (profile.rol === "Empleado" && profile.dicta_clases);
+  // El atajo «Tomar asistencia» del modelo se muestra solo a quien de verdad
+  // puede cargarla: hoy Profesor no está en `puedeGestionarAsistencia`, y un
+  // botón que redirige a /dashboard es peor que no tenerlo. Si más adelante se
+  // decide sumarlo, aparece solo. Ver docs/pendientes.md.
+  const conAccionAsistencia = puedeGestionarAsistencia(profile.rol);
 
   // El saludo y la fecha viven en el header, que ya los muestra en todas las
   // pantallas: acá no se repiten.
@@ -67,7 +71,7 @@ export default async function InicioPage() {
           titulo={datos.clases.titulo}
           verTodas={datos.clases.verTodas}
           clases={datos.clases.items}
-          conAccionAsistencia={daClases}
+          conAccionAsistencia={conAccionAsistencia}
         />
       )}
 

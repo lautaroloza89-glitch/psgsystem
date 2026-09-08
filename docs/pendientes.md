@@ -23,6 +23,10 @@
 - **Migración `20260903120000_f2_mod4_asistencia.sql`** (F2 MOD 4): a pesar de lo registrado en el log, **no** tiene fila en `supabase_migrations.schema_migrations` (la tabla `asistencia` sí existe y funciona en producción, pero el CLI de Supabase la reintentaría aplicar si algún día se corre `supabase db push`). Pendiente insertar el registro faltante a mano.
 - **Mapeo de `grupo_legacy` → `grupo_id`:** los 4 turnos existentes de Fase 1.2 (Sesión 2, 2026-08-31) siguen con el texto libre viejo. Lauti los abre uno por uno en "Editar clase" y elige el grupo correcto (el formulario muestra el texto viejo como ayuda). Recién cuando estén los 4 mapeados se puede dropear `grupo_legacy` en una migración aparte.
 
+## Decisiones de producto abiertas
+
+- **¿Toma asistencia la profesora?** Hoy no: `puedeGestionarAsistencia` es Admin/Head Coach/Secretaria, y la RLS de `asistencia` acompaña. El modelo del módulo 1 del rediseño propone el atajo «Tomar asistencia» en la clase de la profesora, y Lauti marcó (2026-09-08) que **no está convencido de que corresponda** — lo dejó para más adelante porque no bloquea el rediseño. Mientras tanto el atajo se muestra solo a quien ya tiene el permiso, así que no hay botón que lleve a un redirect. Si se decide sumarlo: es un cambio de permisos **y de RLS**, o sea que va en `main` y no en `nueva-ui`; si se decide que no, hay que revisar el modelo del módulo 4 (Asistencia), que asume que la profesora entra a esa pantalla.
+
 ## Datos y UI
 
 - **El inicio del rol Patinador/a quedó sin construir por falta de un vínculo `users` ↔ `alumnas`** (módulo 1 del rediseño, 2026-09-08). El modelo `Ic` propone que la alumna vea su próxima clase, su grupo y el estado de su cuota, pero hoy no hay forma de saber qué fila de `alumnas` corresponde al usuario logueado: la ausencia de FK es una decisión de producto vigente (ver `docs/decisiones.md`, «alumnas no tiene relación con users a propósito»). Mientras tanto su inicio muestra el próximo torneo y un texto que anticipa lo que va a haber ahí. **Es un cambio de esquema: se decide y se agrega en `main`, no desde `nueva-ui`.** Tampoco existe hoy ningún usuario con ese rol para probarlo.
