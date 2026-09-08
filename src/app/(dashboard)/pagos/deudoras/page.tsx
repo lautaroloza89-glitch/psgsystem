@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeGestionarPagos } from "@/lib/permisos";
 import { BackButton } from "@/components/ui/BackButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { calcularDeudorasDelMes } from "@/lib/pagos/saldo";
@@ -18,10 +19,7 @@ export default async function DeudorasPage({
   searchParams: Promise<{ mes?: string }>;
 }) {
   const profile = await getCurrentUserProfile();
-  if (
-    !profile ||
-    (profile.rol !== "Admin" && profile.rol !== "Head Coach" && profile.rol !== "Secretaria")
-  ) {
+  if (!puedeGestionarPagos(profile?.rol)) {
     redirect("/dashboard");
   }
 

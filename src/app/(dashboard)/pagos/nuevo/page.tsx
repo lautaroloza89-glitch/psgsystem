@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeGestionarPagos } from "@/lib/permisos";
 import { BackButton } from "@/components/ui/BackButton";
 import { RegistrarPagoForm } from "@/components/pagos/RegistrarPagoForm";
 
@@ -9,10 +10,7 @@ export const metadata: Metadata = { title: "Registrar pago" };
 
 export default async function NuevoPagoPage() {
   const profile = await getCurrentUserProfile();
-  if (
-    !profile ||
-    (profile.rol !== "Admin" && profile.rol !== "Head Coach" && profile.rol !== "Secretaria")
-  ) {
+  if (!puedeGestionarPagos(profile?.rol)) {
     redirect("/dashboard");
   }
 

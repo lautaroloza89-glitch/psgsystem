@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
-import { puedeVerRecaudacion } from "@/lib/permisos";
+import { puedeGestionarPagos, puedeVerRecaudacion } from "@/lib/permisos";
 
 export const metadata: Metadata = { title: "Pagos" };
 
@@ -31,10 +31,7 @@ const SECCIONES = [
 
 export default async function PagosPage() {
   const profile = await getCurrentUserProfile();
-  if (
-    !profile ||
-    (profile.rol !== "Admin" && profile.rol !== "Head Coach" && profile.rol !== "Secretaria")
-  ) {
+  if (!puedeGestionarPagos(profile?.rol)) {
     redirect("/dashboard");
   }
 
@@ -44,7 +41,7 @@ export default async function PagosPage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {SECCIONES.filter(
-          (s) => s.href !== "/pagos/recaudacion" || puedeVerRecaudacion(profile.rol)
+          (s) => s.href !== "/pagos/recaudacion" || puedeVerRecaudacion(profile?.rol)
         ).map((s) => (
           <Link
             key={s.href}

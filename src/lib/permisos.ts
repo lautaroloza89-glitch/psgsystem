@@ -50,6 +50,22 @@ export function puedeCambiarEstadoTarea(
   return false;
 }
 
+/** Módulo de Pagos: entrar, registrar un pago y marcarlo verificado. */
+export function puedeGestionarPagos(rol: Rol | undefined | null): boolean {
+  return rol === "Admin" || rol === "Head Coach" || rol === "Secretaria";
+}
+
+/**
+ * Anular un pago con motivo — la única corrección posible: un pago no se edita
+ * ni se borra, se anula y se vuelve a cargar el correcto. Hoy coincide con
+ * `puedeGestionarPagos`, pero va aparte por ser una transición destructiva:
+ * si algún día se acota, se acota acá y no hay que buscarla.
+ */
+export function puedeAnularPago(rol: Rol | undefined | null): boolean {
+  return rol === "Admin" || rol === "Head Coach" || rol === "Secretaria";
+}
+
+/** La recaudación total del club es la excepción de Pagos: Secretaria no la ve. */
 export function puedeVerRecaudacion(rol: Rol | undefined | null): boolean {
   return rol === "Admin" || rol === "Head Coach";
 }

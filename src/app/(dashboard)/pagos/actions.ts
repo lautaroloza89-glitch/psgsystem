@@ -7,17 +7,14 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { RECARGO_MONTO } from "@/lib/pagos/reglas";
 import { calcularSaldoAlumnaMes, type SaldoAlumnaMes } from "@/lib/pagos/saldo";
 import { construirTextoRecibo } from "@/lib/pagos/recibo";
-import type { MetodoPago, Rol } from "@/types";
+import { puedeAnularPago, puedeGestionarPagos } from "@/lib/permisos";
+import type { MetodoPago } from "@/types";
 
 export interface FormState {
   error: string | null;
 }
 
 const METODOS_VALIDOS: MetodoPago[] = ["efectivo", "transferencia", "debito"];
-
-function puedeGestionarPagos(rol: Rol | undefined): boolean {
-  return rol === "Admin" || rol === "Head Coach" || rol === "Secretaria";
-}
 
 interface MetodoInput {
   metodo: MetodoPago;
@@ -201,7 +198,7 @@ export async function marcarPagoVerificado(pagoId: string): Promise<ResultadoVer
  */
 export async function anularPago(pagoId: string, motivo: string): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || !puedeGestionarPagos(profile.rol)) {
+  if (!profile || !puedeAnularPago(profile.rol)) {
     return { error: "No tenés permiso para anular pagos." };
   }
 
