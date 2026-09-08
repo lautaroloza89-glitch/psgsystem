@@ -29,7 +29,7 @@ Rama: **`nueva-ui`**, sacada de `main` el 2026-09-08. Base de datos: la misma de
 | 0 | Modelos de diseño al repo | ✅ | `3f81e42` |
 | 1 | Navegación e Inicio | ✅ | `a6351f3` · `10c7c33` |
 | 2 | Miembros | ✅ | `cd3fab9` |
-| 3 | Tareas | ✅ | este |
+| 3 | Tareas | ✅ | `f454c3c` |
 | 4 | Asistencia | ⬜ pendiente | — |
 | 5 | Pagos | ⬜ pendiente | — |
 | 6 | Alumnas | ⬜ pendiente | — |
