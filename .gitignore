@@ -6,3 +6,7 @@ node_modules/
 .DS_Store
 *.tsbuildinfo
 scripts/import-alumnas/data.csv
+
+# Modelos de Claude Design bundleados: 4,85 MB cada uno, casi todo runtime.
+# Al repo va solo el documento extraido (docs/diseno/*.dc.html), ver su index.md.
+*.zip
