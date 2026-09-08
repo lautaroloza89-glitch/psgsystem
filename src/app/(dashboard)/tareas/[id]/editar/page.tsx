@@ -44,6 +44,7 @@ export default async function EditarTareaPage({
   const { data: usuarios } = await supabase
     .from("users")
     .select("id, nombre, rol, cargo")
+    .eq("estado", "activo")
     .order("nombre");
 
   const editarTareaConId = editarTarea.bind(null, id);

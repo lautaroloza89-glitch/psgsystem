@@ -6,6 +6,7 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { BackButton } from "@/components/ui/BackButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MarcarVerificadoButton } from "@/components/pagos/MarcarVerificadoButton";
+import { AnularPagoButton } from "@/components/pagos/AnularPagoButton";
 import { formatMonto } from "@/lib/utils/money";
 import { anioMesDeHoy, mesAnteriorSiguiente, mesQuery, nombreMes, primerDiaDeMes } from "@/lib/utils/date";
 import type { MetodoPago } from "@/types";
@@ -103,6 +104,7 @@ export default async function PagosPendientesPage({
                   {Number(p.monto_recargo) > 0 && ` · Incluye recargo ${formatMonto(Number(p.monto_recargo))}`}
                 </p>
                 <MarcarVerificadoButton pagoId={p.id} />
+                <AnularPagoButton pagoId={p.id} />
               </div>
             );
           })}

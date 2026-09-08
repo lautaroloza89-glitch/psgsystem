@@ -29,7 +29,7 @@ export default async function AlumnaDetallePage({
 
   const { data: alumna } = await supabase
     .from("alumnas")
-    .select("id, apellido, nombre, dni, fecha_inscripcion, estado, grupo:grupos(nombre)")
+    .select("id, apellido, nombre, dni, fecha_nacimiento, fecha_inscripcion, estado, grupo:grupos(nombre)")
     .eq("id", id)
     .single();
 
@@ -62,6 +62,7 @@ export default async function AlumnaDetallePage({
         <div className="space-y-1 text-base text-text-muted">
           <p>Grupo: {grupoNombre}</p>
           <p>DNI: {alumna.dni ?? "Sin cargar"}</p>
+          <p>Fecha de nacimiento: {formatFecha(alumna.fecha_nacimiento)}</p>
           <p>Fecha de inscripción: {formatFecha(alumna.fecha_inscripcion)}</p>
         </div>
 

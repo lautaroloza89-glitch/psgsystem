@@ -20,6 +20,7 @@ export default async function NuevaTareaPage() {
   const { data: usuarios } = await supabase
     .from("users")
     .select("id, nombre, rol, cargo")
+    .eq("estado", "activo")
     .order("nombre");
 
   return (

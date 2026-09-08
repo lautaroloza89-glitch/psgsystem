@@ -21,6 +21,7 @@ export default async function MiembrosPage() {
   const { data } = await supabase
     .from("users")
     .select(conEmail ? "id, nombre, email, rol, cargo" : "id, nombre, rol, cargo")
+    .eq("estado", "activo")
     .order("nombre");
 
   const miembros: MiembroCardData[] = (data ?? []) as unknown as MiembroCardData[];

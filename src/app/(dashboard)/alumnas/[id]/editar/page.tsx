@@ -28,7 +28,7 @@ export default async function EditarAlumnaPage({
 
   const { data: alumna } = await supabase
     .from("alumnas")
-    .select("id, apellido, nombre, dni, fecha_inscripcion, estado, grupo_id")
+    .select("id, apellido, nombre, dni, fecha_nacimiento, fecha_inscripcion, estado, grupo_id")
     .eq("id", id)
     .single();
 
@@ -59,6 +59,7 @@ export default async function EditarAlumnaPage({
             apellido: alumna.apellido,
             nombre: alumna.nombre,
             dni: alumna.dni,
+            fecha_nacimiento: alumna.fecha_nacimiento,
             fecha_inscripcion: alumna.fecha_inscripcion,
             grupo_id: alumna.grupo_id ?? "",
             estado: alumna.estado as EstadoAlumna,

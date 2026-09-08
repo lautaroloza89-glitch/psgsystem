@@ -1,4 +1,4 @@
-export type EstadoPago = "pendiente_verificar" | "verificado";
+export type EstadoPago = "pendiente_verificar" | "verificado" | "anulado";
 export type MetodoPago = "efectivo" | "transferencia" | "debito";
 
 export interface Pago {
@@ -13,6 +13,11 @@ export interface Pago {
   registrado_por: string;
   verificado_por: string | null;
   verificado_en: string | null;
+  /** Texto del recibo de WhatsApp, guardado al verificar para poder reenviarlo. */
+  recibo_texto: string | null;
+  anulado_por: string | null;
+  anulado_en: string | null;
+  motivo_anulacion: string | null;
   created_at: string;
 }
 

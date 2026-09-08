@@ -29,6 +29,7 @@ export interface AlumnaFormDefaultValues {
   apellido: string;
   nombre: string;
   dni: string | null;
+  fecha_nacimiento: string | null;
   fecha_inscripcion: string;
   grupo_id: string;
   estado: EstadoAlumna;
@@ -140,6 +141,22 @@ export function AlumnaForm({
             className={INPUT_CLASS}
           />
         </div>
+        <div className="space-y-1.5">
+          <label htmlFor="fecha_nacimiento" className="text-label font-medium">
+            Fecha de nacimiento{" "}
+            <span className="font-normal text-text-subtle">(opcional)</span>
+          </label>
+          <input
+            id="fecha_nacimiento"
+            name="fecha_nacimiento"
+            type="date"
+            defaultValue={defaultValues?.fecha_nacimiento ?? ""}
+            className={INPUT_CLASS}
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <label htmlFor="fecha_inscripcion" className="text-label font-medium">
             Fecha de inscripción

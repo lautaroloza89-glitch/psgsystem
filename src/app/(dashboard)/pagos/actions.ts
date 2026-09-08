@@ -180,11 +180,70 @@ export async function marcarPagoVerificado(pagoId: string): Promise<ResultadoVer
     saldoPendiente,
   });
 
+  // El texto se guarda en el pago: hasta ahora se armaba acá, se mostraba una
+  // vez y se perdía al salir de la pantalla, así que no había forma de
+  // reenviarlo. Si falla el guardado no se cancela la verificación (el pago ya
+  // está verificado), solo se pierde la copia.
+  await supabase.from("pagos").update({ recibo_texto: reciboTexto }).eq("id", pagoId);
+
   revalidatePath("/pagos/pendientes");
   revalidatePath("/pagos/recaudacion");
   revalidatePath("/pagos/deudoras");
 
   return { error: null, reciboTexto };
+}
+
+/**
+ * Anular un pago cargado por error. Es la única corrección posible: un pago no
+ * se edita ni se borra, se anula con un motivo y se vuelve a cargar el correcto.
+ * Los pagos anulados quedan en la base pero fuera de todo cálculo de plata
+ * (saldo, deudoras y recaudación filtran por estado 'verificado').
+ */
+export async function anularPago(pagoId: string, motivo: string): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!profile || !puedeGestionarPagos(profile.rol)) {
+    return { error: "No tenés permiso para anular pagos." };
+  }
+
+  const motivoLimpio = motivo.trim();
+  if (!motivoLimpio) {
+    return { error: "Escribí el motivo de la anulación." };
+  }
+
+  const supabase = await createClient();
+
+  const { data: pago } = await supabase
+    .from("pagos")
+    .select("id, estado")
+    .eq("id", pagoId)
+    .single();
+
+  if (!pago) {
+    return { error: "No se encontró el pago." };
+  }
+  if (pago.estado === "anulado") {
+    return { error: "Este pago ya está anulado." };
+  }
+
+  const { error } = await supabase
+    .from("pagos")
+    .update({
+      estado: "anulado",
+      anulado_por: profile.id,
+      anulado_en: new Date().toISOString(),
+      motivo_anulacion: motivoLimpio,
+    })
+    .eq("id", pagoId);
+
+  if (error) {
+    return { error: "No se pudo anular el pago." };
+  }
+
+  revalidatePath("/pagos/pendientes");
+  revalidatePath("/pagos/recaudacion");
+  revalidatePath("/pagos/deudoras");
+
+  return { error: null };
 }
 
 interface ResultadoSaldo {

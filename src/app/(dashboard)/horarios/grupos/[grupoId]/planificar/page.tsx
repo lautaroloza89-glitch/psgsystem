@@ -56,6 +56,7 @@ export default async function PlanificarPage({
   const { data: usuarios } = await supabase
     .from("users")
     .select("id, nombre, rol, cargo, dicta_clases")
+    .eq("estado", "activo")
     .order("nombre");
 
   const profesores = (usuarios ?? []).filter((u) => u.rol === "Profesor" || u.dicta_clases);

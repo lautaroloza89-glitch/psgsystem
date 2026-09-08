@@ -5,6 +5,7 @@ export interface Alumna {
   apellido: string;
   nombre: string;
   dni: string | null;
+  fecha_nacimiento: string | null;
   fecha_inscripcion: string;
   estado: EstadoAlumna;
   grupo_id: string | null;

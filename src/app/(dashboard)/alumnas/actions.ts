@@ -29,10 +29,12 @@ function leerCamposAlumna(formData: FormData) {
   const nombre = ((formData.get("nombre") as string) ?? "").trim();
   const dniRaw = ((formData.get("dni") as string) ?? "").trim();
   const dni = dniRaw.length > 0 ? dniRaw : null;
+  const fechaNacimientoRaw = ((formData.get("fecha_nacimiento") as string) ?? "").trim();
+  const fecha_nacimiento = fechaNacimientoRaw.length > 0 ? fechaNacimientoRaw : null;
   const fecha_inscripcion = ((formData.get("fecha_inscripcion") as string) ?? "").trim();
   const grupo_id = ((formData.get("grupo_id") as string) ?? "").trim();
 
-  return { apellido, nombre, dni, fecha_inscripcion, grupo_id };
+  return { apellido, nombre, dni, fecha_nacimiento, fecha_inscripcion, grupo_id };
 }
 
 function validarCamposAlumna({
@@ -184,6 +186,7 @@ export async function crearAlumna(_prevState: FormState, formData: FormData): Pr
       apellido: campos.apellido,
       nombre: campos.nombre,
       dni: campos.dni,
+      fecha_nacimiento: campos.fecha_nacimiento,
       fecha_inscripcion: campos.fecha_inscripcion || undefined,
       grupo_id: campos.grupo_id,
       estado: "activa",
@@ -259,6 +262,7 @@ export async function editarAlumna(
       apellido: campos.apellido,
       nombre: campos.nombre,
       dni: campos.dni,
+      fecha_nacimiento: campos.fecha_nacimiento,
       fecha_inscripcion: campos.fecha_inscripcion || undefined,
       grupo_id: campos.grupo_id,
       estado,
