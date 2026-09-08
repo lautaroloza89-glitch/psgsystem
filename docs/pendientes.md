@@ -1,0 +1,31 @@
+# Pendientes sueltos
+
+> Trabajo vivo que no bloquea nada, pero conviene retomar. Movido desde la sección "Pendientes sueltos" de `PROGRESS.md` (reorganización de documentación, 2026-09-08).
+> Los pendientes que ya se cerraron **no** están acá: quedaron en el historial del mes en que se cerraron (`docs/historial/YYYY-MM.md`), con el detalle de cómo se resolvieron.
+> Al cerrar un pendiente: borrarlo de este archivo y dejar constancia en la fila del log de esa sesión.
+
+---
+
+## Verificación en el navegador
+
+- **Correcciones pre-UI (2026-09-08): nada se probó en el navegador** (sesión sin herramienta de browser). Lo más importante a repasar a mano, con la cuenta real de Dai ya migrada a `Secretaria`: que **no** entre a `/pagos/recaudacion` (ni pegando la URL) y que no le aparezca la tarjeta en `/pagos`; que **no** pueda guardar una planificación; y que sí siga registrando pagos, cargando asistencia, editando alumnas y viendo/creando tareas. Con una cuenta Patinador: que `/tareas`, `/tareas/[id]` y `/miembros` redirijan a `/dashboard`. Con cualquier cuenta: que el Dashboard muestre las clases de hoy después de las 21:00 (era el bug del Bloque 3).
+- **F2 MOD 5 (Torneos):** no se probó en el navegador con una cuenta Profesor/Empleado/Patinador real (sin esas credenciales en esa sesión) — recomendado un vistazo manual: loguearse con cualquiera de esos roles y confirmar que ve "Torneos" en el menú (arriba de Tareas, no dentro de Administración) y el bloque del Dashboard, pero sin los botones de crear/editar/borrar. Sí se confirmó por SQL simulando el rol de un Profesor real (Keyla) dentro de una transacción sin commit: después de la corrección de RLS ve las 7 filas reales (antes veía 0) y su INSERT sigue rechazado por la policy de escritura.
+- **Import de alumnas (2026-09-08):** no se probó visualmente en el navegador (sin herramienta de browser en esa sesión) — pendiente que el usuario filtre el listado de Alumnas por los 4 grupos en la app y confirme: Nivel inicial 86, Equipo de competencia infantil 13, Equipo de competencia (Jungla) 36, Equipo avanzado 23.
+- **Parche del 2026-09-01** (entrada de Planificaciones + notificaciones): no se probó en el navegador — recomendado un vistazo manual: entrar a Planificaciones y confirmar que abre en el selector de grupo, que los filtros Todas/Activo/Cancelado funcionan dentro de un grupo y mes (y que el mes se conserva al cambiar de pestaña), que el contador de la campana muestra el número correcto y baja al abrir una notificación, y que "Marcar todas como leídas" lo deja en cero.
+- **Formulario de Clases/Turnos** con el select de grupo y la pregunta de bloque de Jungla: no se probó en el navegador — recomendado un vistazo manual: crear/editar un turno con un grupo de un solo bloque y con Jungla (dos bloques), y confirmar que el horario mostrado es el correcto en ambos casos.
+- **Groundwork 3 (2026-08-31):** no se probó en el navegador el checklist de varios profesores por clase ni el color ámbar de "Cancelar clase" — recomendado un vistazo manual: crear/editar una clase asignando dos profesores (Admin o Head Coach), confirmar que ambos la ven en el detalle y que a ambos les llega la notificación de asignación (campana + push); confirmar visualmente que "Cancelar clase" se ve ámbar/distinto de "Borrar clase" (rojo).
+- **Deploy `214f2a9`:** confirmar visualmente que Vercel ya redesplegó (pusheado el 2026-08-31 vía `/supervisor-proyecto`, ver el incidente en el historial) y que `/horarios` y `/dashboard` vuelven a mostrar datos (desde el parche del 2026-09-01, `/horarios` muestra el selector de grupos, no la lista de clases).
+- **F2 MOD 3 (Pagos):** no se simuló en vivo el banner de recordatorio de Deudoras (depende de que hoy sea día 8 o 9, no se forzó el reloj del sistema) — misma lógica de fecha ya probada para el recargo.
+
+## Base de datos e infraestructura
+
+- **Revocar los Personal Access Tokens de Supabase** (`sbp_...`) en supabase.com/dashboard/account/tokens: quedaron **9 sin revocar**, uno por sesión que tocó la base — Groundwork 3, Parche de retoques varios y F2 MOD 1 (2026-08-31), F2 MOD 2 y F2 MOD 3 (2026-09-02), verificación de F2 MOD 4, F2 MOD 5 y su corrección de alcance (2026-09-03), Parche de import de alumnas y Correcciones pre-UI (2026-09-08). No se pueden revocar desde una sesión de Claude Code: la Management API no expone gestión de tokens (`/v1/profile` responde, pero todas las rutas de tokens dan 404), así que es una acción manual de dashboard. Borrar esta línea cuando estén revocados.
+- **Migración `20260903120000_f2_mod4_asistencia.sql`** (F2 MOD 4): a pesar de lo registrado en el log, **no** tiene fila en `supabase_migrations.schema_migrations` (la tabla `asistencia` sí existe y funciona en producción, pero el CLI de Supabase la reintentaría aplicar si algún día se corre `supabase db push`). Pendiente insertar el registro faltante a mano.
+- **Mapeo de `grupo_legacy` → `grupo_id`:** los 4 turnos existentes de Fase 1.2 (Sesión 2, 2026-08-31) siguen con el texto libre viejo. Lauti los abre uno por uno en "Editar clase" y elige el grupo correcto (el formulario muestra el texto viejo como ayuda). Recién cuando estén los 4 mapeados se puede dropear `grupo_legacy` en una migración aparte.
+
+## Datos y UI
+
+- **Tarea con fechas invertidas:** corregir a mano en la app la tarea con Inicio 01/09/2026 y Vence 31/08/2026 (detectada en el Parche de retoques varios, 2026-08-31) — el usuario prefirió corregirla él mismo desde la UI ahora que el formulario valida el orden de fechas, en vez de que se corrija por SQL.
+- **Baja de personal sin pantalla** (Correcciones pre-UI, Bloque 4): `users.estado` existe y los listados y selectores ya filtran, pero no hay pantalla para dar de baja a alguien del personal, porque la app no tiene gestión de usuarios. Por ahora la baja se carga a mano en la base.
+- **Reenvío de recibo sin pantalla** (Correcciones pre-UI, Bloque 4): el recibo ya se guarda en `pagos.recibo_texto`, pero todavía no hay dónde reenviarlo — se sigue viendo solo en el momento de verificar. La pantalla es parte de la UI nueva.
+- **Participación en torneos sin pantallas** (Correcciones pre-UI, Bloque 5): el modelo `torneo_participantes` está aplicado, las tres pantallas del recorrido son parte de la UI nueva.

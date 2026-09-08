@@ -13,7 +13,7 @@ import type { FormState } from "./actions";
 const TIPOS_VALIDOS: TipoTurno[] = ["Patín", "Preparación física"];
 
 // 'Secretaria' queda afuera a propósito: sobre Planificaciones tiene solo
-// lectura del calendario (alcance cerrado del rol, ver PROGRESS.md). La RLS
+// lectura del calendario (alcance cerrado del rol, ver docs/decisiones.md). La RLS
 // de grupo_objetivos_mes la nombraba por adelantado y se corrigió en la
 // misma migración que creó el rol.
 function puedeCargarPlanificaciones(rol: string | undefined): boolean {
