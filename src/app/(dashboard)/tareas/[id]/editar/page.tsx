@@ -45,6 +45,9 @@ export default async function EditarTareaPage({
     .from("users")
     .select("id, nombre, rol, cargo")
     .eq("estado", "activo")
+    // Solo el personal del club: una tarea no se le asigna a una alumna con
+    // login, y hasta ahora el selector las listaba a todas.
+    .neq("rol", "Patinador")
     .order("nombre");
 
   const editarTareaConId = editarTarea.bind(null, id);
