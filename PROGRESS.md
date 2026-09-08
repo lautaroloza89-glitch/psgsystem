@@ -74,4 +74,4 @@ Estados: ⬜ Pendiente · 🟡 En progreso · ✅ Terminado
 | Mes | Resumen | Archivo |
 |---|---|---|
 | 2026-08 | Arranque del proyecto y cierre completo de Fase 1 (setup, modelo de datos, auth y roles, Tareas, Clases, Dashboard, Notificaciones con push), auditoría Fase B y groundwork de Fase 2 con Planificaciones. | [docs/historial/2026-08.md](docs/historial/2026-08.md) |
-| 2026-09 | Cierre de Fase 2 (Alumnas, Pagos, Asistencia y Torneos), import de las 158 alumnas reales y los 5 bloques de Correcciones pre-UI. | [docs/historial/2026-09.md](docs/historial/2026-09.md) |
+| 2026-09 | Cierre de Fase 2 (Alumnas, Pagos, Asistencia y Torneos), import de las 158 alumnas reales, los 5 bloques de Correcciones pre-UI y la reorganización de la documentación. | [docs/historial/2026-09.md](docs/historial/2026-09.md) |
