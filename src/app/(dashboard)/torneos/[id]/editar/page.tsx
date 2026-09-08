@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
-import { puedeGestionarTorneos } from "@/lib/torneos/permisos";
+import { puedeGestionarTorneos } from "@/lib/permisos";
 import { TorneoForm } from "@/components/torneos/TorneoForm";
 import { BackButton } from "@/components/ui/BackButton";
 import { editarTorneo } from "../../actions";
@@ -16,7 +16,7 @@ export default async function EditarTorneoPage({
 }) {
   const { id } = await params;
   const profile = await getCurrentUserProfile();
-  if (!puedeGestionarTorneos(profile?.rol)) {
+  if (!puedeGestionarTorneos(profile)) {
     redirect(`/torneos/${id}`);
   }
 

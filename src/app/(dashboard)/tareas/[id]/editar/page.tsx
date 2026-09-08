@@ -17,7 +17,7 @@ export default async function EditarTareaPage({
   const { id } = await params;
   const profile = await getCurrentUserProfile();
 
-  if (!puedeVerModuloTareas(profile?.rol)) {
+  if (!puedeVerModuloTareas(profile)) {
     redirect("/dashboard");
   }
 

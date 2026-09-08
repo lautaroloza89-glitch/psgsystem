@@ -32,7 +32,7 @@ export default async function TareasPage({
 
   const profile = await getCurrentUserProfile();
 
-  if (!puedeVerModuloTareas(profile?.rol)) {
+  if (!puedeVerModuloTareas(profile)) {
     redirect("/dashboard");
   }
 
@@ -69,7 +69,7 @@ export default async function TareasPage({
     ),
   }));
 
-  const puedeCrear = puedeCrearTarea(profile?.rol);
+  const puedeCrear = puedeCrearTarea(profile);
 
   return (
     <div className="space-y-6">

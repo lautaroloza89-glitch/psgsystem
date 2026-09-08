@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
-import { puedeGestionarTorneos, puedeVerTorneos } from "@/lib/torneos/permisos";
+import { puedeGestionarTorneos, puedeVerTorneos } from "@/lib/permisos";
 import { hoyArgentina } from "@/lib/utils/date";
 import { estadoTorneo, formatRangoFechasTorneo } from "@/lib/torneos/fechas";
 import { ICONO_TIPO_TORNEO, LABEL_TIPO_TORNEO } from "@/lib/torneos/tipo";
@@ -21,7 +21,7 @@ export default async function TorneoDetallePage({
 }) {
   const { id } = await params;
   const profile = await getCurrentUserProfile();
-  if (!puedeVerTorneos(profile?.rol)) {
+  if (!puedeVerTorneos(profile)) {
     redirect("/dashboard");
   }
 
@@ -38,7 +38,7 @@ export default async function TorneoDetallePage({
 
   const hoy = hoyArgentina();
   const estado = estadoTorneo(torneo.fecha_inicio, torneo.fecha_fin, hoy);
-  const puedeEditar = puedeGestionarTorneos(profile?.rol);
+  const puedeEditar = puedeGestionarTorneos(profile);
   const tipo = torneo.tipo as TipoTorneo;
 
   return (

@@ -26,7 +26,7 @@ export default async function PagosPendientesPage({
   searchParams: Promise<{ mes?: string }>;
 }) {
   const profile = await getCurrentUserProfile();
-  if (!puedeGestionarPagos(profile?.rol)) {
+  if (!puedeGestionarPagos(profile)) {
     redirect("/dashboard");
   }
 

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
-import { puedeGestionarTorneos } from "@/lib/torneos/permisos";
+import { puedeGestionarTorneos } from "@/lib/permisos";
 import type { TipoTorneo } from "@/types";
 
 const TIPOS_VALIDOS: TipoTorneo[] = ["torneo", "exhibicion", "evento"];
@@ -51,7 +51,7 @@ export async function crearTorneo(
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!puedeGestionarTorneos(profile?.rol)) {
+  if (!puedeGestionarTorneos(profile)) {
     return { error: "No tenés permiso para crear torneos." };
   }
 
@@ -83,7 +83,7 @@ export async function editarTorneo(
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!puedeGestionarTorneos(profile?.rol)) {
+  if (!puedeGestionarTorneos(profile)) {
     return { error: "No tenés permiso para editar torneos." };
   }
 
@@ -108,7 +108,7 @@ export async function editarTorneo(
 
 export async function borrarTorneo(torneoId: string): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!puedeGestionarTorneos(profile?.rol)) {
+  if (!puedeGestionarTorneos(profile)) {
     return { error: "No tenés permiso para borrar torneos." };
   }
 

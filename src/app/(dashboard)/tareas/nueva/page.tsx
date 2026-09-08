@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Nueva tarea" };
 export default async function NuevaTareaPage() {
   const profile = await getCurrentUserProfile();
 
-  if (!puedeCrearTarea(profile?.rol)) {
+  if (!puedeCrearTarea(profile)) {
     redirect("/tareas");
   }
 

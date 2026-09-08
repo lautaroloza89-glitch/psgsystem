@@ -11,11 +11,11 @@ export const metadata: Metadata = { title: "Miembros del equipo" };
 export default async function MiembrosPage() {
   const profile = await getCurrentUserProfile();
 
-  if (!puedeVerModuloMiembros(profile?.rol)) {
+  if (!puedeVerModuloMiembros(profile)) {
     redirect("/dashboard");
   }
 
-  const conEmail = puedeVerEmailsMiembros(profile?.rol);
+  const conEmail = puedeVerEmailsMiembros(profile);
 
   const supabase = await createClient();
   const { data } = await supabase

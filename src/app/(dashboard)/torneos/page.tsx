@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
-import { puedeGestionarTorneos, puedeVerTorneos } from "@/lib/torneos/permisos";
+import { puedeGestionarTorneos, puedeVerTorneos } from "@/lib/permisos";
 import { hoyArgentina } from "@/lib/utils/date";
 import { estadoTorneo } from "@/lib/torneos/fechas";
 import { TorneoCard } from "@/components/torneos/TorneoCard";
@@ -19,7 +19,7 @@ export default async function TorneosPage({
   searchParams: Promise<{ anio?: string }>;
 }) {
   const profile = await getCurrentUserProfile();
-  if (!puedeVerTorneos(profile?.rol)) {
+  if (!puedeVerTorneos(profile)) {
     redirect("/dashboard");
   }
 
@@ -51,7 +51,7 @@ export default async function TorneosPage({
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-start justify-between gap-2">
         <h1 className="text-2xl font-bold tracking-tight">Torneos</h1>
-        {puedeGestionarTorneos(profile?.rol) && (
+        {puedeGestionarTorneos(profile) && (
           <Link
             href="/torneos/nuevo"
             className="inline-block rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"

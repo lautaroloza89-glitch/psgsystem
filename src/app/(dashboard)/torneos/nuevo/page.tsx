@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
-import { puedeGestionarTorneos } from "@/lib/torneos/permisos";
+import { puedeGestionarTorneos } from "@/lib/permisos";
 import { TorneoForm } from "@/components/torneos/TorneoForm";
 import { BackButton } from "@/components/ui/BackButton";
 import { crearTorneo } from "../actions";
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Nuevo torneo" };
 
 export default async function NuevoTorneoPage() {
   const profile = await getCurrentUserProfile();
-  if (!puedeGestionarTorneos(profile?.rol)) {
+  if (!puedeGestionarTorneos(profile)) {
     redirect("/torneos");
   }
 

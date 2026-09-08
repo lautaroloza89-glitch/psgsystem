@@ -101,7 +101,7 @@ export default async function DashboardPage() {
     turnosSemana: number;
   } | null = null;
 
-  if (puedeVerContadoresDashboard(profile?.rol)) {
+  if (puedeVerContadoresDashboard(profile)) {
     const en7DiasStr = sumarDias(hoyStr, 7);
 
     const [pendientesRes, enProgresoRes, turnosHoyRes, turnosSemanaRes] =

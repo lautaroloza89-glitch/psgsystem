@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Registrar pago" };
 
 export default async function NuevoPagoPage() {
   const profile = await getCurrentUserProfile();
-  if (!puedeGestionarPagos(profile?.rol)) {
+  if (!puedeGestionarPagos(profile)) {
     redirect("/dashboard");
   }
 

@@ -39,7 +39,7 @@ export async function crearTarea(
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || !puedeCrearTarea(profile.rol)) {
+  if (!puedeCrearTarea(profile)) {
     return { error: "No tenés permiso para crear tareas." };
   }
 

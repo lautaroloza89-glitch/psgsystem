@@ -24,7 +24,7 @@ export default async function RecaudacionPage({
   searchParams: Promise<{ mes?: string }>;
 }) {
   const profile = await getCurrentUserProfile();
-  if (!puedeVerRecaudacion(profile?.rol)) {
+  if (!puedeVerRecaudacion(profile)) {
     redirect("/dashboard");
   }
 

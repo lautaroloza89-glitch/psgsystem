@@ -42,7 +42,7 @@ function leerMetodos(formData: FormData): MetodoInput[] | null {
 
 export async function crearPago(_prevState: FormState, formData: FormData): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || !puedeGestionarPagos(profile.rol)) {
+  if (!puedeGestionarPagos(profile)) {
     return { error: "No tenés permiso para registrar pagos." };
   }
 
@@ -119,7 +119,7 @@ interface ResultadoVerificacion {
 
 export async function marcarPagoVerificado(pagoId: string): Promise<ResultadoVerificacion> {
   const profile = await getCurrentUserProfile();
-  if (!profile || !puedeGestionarPagos(profile.rol)) {
+  if (!puedeGestionarPagos(profile)) {
     return { error: "No tenés permiso para verificar pagos." };
   }
 
@@ -198,7 +198,7 @@ export async function marcarPagoVerificado(pagoId: string): Promise<ResultadoVer
  */
 export async function anularPago(pagoId: string, motivo: string): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || !puedeAnularPago(profile.rol)) {
+  if (!puedeAnularPago(profile)) {
     return { error: "No tenés permiso para anular pagos." };
   }
 
@@ -251,7 +251,7 @@ interface ResultadoSaldo {
 /** Callable directo desde el cliente (no atado a un `<form>`) para la sugerencia en vivo del formulario de alta. */
 export async function obtenerSaldoAlumnaMes(alumnaId: string, mesInput: string): Promise<ResultadoSaldo> {
   const profile = await getCurrentUserProfile();
-  if (!profile || !puedeGestionarPagos(profile.rol)) {
+  if (!puedeGestionarPagos(profile)) {
     return { error: "No tenés permiso." };
   }
   if (!/^\d{4}-\d{2}$/.test(mesInput)) {

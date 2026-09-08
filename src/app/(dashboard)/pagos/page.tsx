@@ -31,7 +31,7 @@ const SECCIONES = [
 
 export default async function PagosPage() {
   const profile = await getCurrentUserProfile();
-  if (!puedeGestionarPagos(profile?.rol)) {
+  if (!puedeGestionarPagos(profile)) {
     redirect("/dashboard");
   }
 
@@ -41,7 +41,7 @@ export default async function PagosPage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {SECCIONES.filter(
-          (s) => s.href !== "/pagos/recaudacion" || puedeVerRecaudacion(profile?.rol)
+          (s) => s.href !== "/pagos/recaudacion" || puedeVerRecaudacion(profile)
         ).map((s) => (
           <Link
             key={s.href}
