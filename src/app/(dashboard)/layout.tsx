@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { AppHeader } from "@/components/ui/AppHeader";
+import { BarraPestanas } from "@/components/ui/BarraPestanas";
 
 export default async function DashboardLayout({
   children,
@@ -22,9 +23,16 @@ export default async function DashboardLayout({
         Saltar al contenido principal
       </a>
       <AppHeader profile={profile} />
-      <main id="main-content" className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
+      {/* El padding de abajo deja libre la altura de la barra fija (y el área
+          segura del iPhone), para que el último elemento de cualquier pantalla
+          no quede tapado. */}
+      <main
+        id="main-content"
+        className="mx-auto max-w-5xl px-4 py-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-8 sm:py-10 sm:pb-[calc(6rem+env(safe-area-inset-bottom))]"
+      >
         {children}
       </main>
+      <BarraPestanas profile={profile} />
     </div>
   );
 }

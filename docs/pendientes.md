@@ -25,6 +25,8 @@
 
 ## Datos y UI
 
+- **El inicio del rol Patinador/a quedó sin construir por falta de un vínculo `users` ↔ `alumnas`** (módulo 1 del rediseño, 2026-09-08). El modelo `Ic` propone que la alumna vea su próxima clase, su grupo y el estado de su cuota, pero hoy no hay forma de saber qué fila de `alumnas` corresponde al usuario logueado: la ausencia de FK es una decisión de producto vigente (ver `docs/decisiones.md`, «alumnas no tiene relación con users a propósito»). Mientras tanto su inicio muestra el próximo torneo y un texto que anticipa lo que va a haber ahí. **Es un cambio de esquema: se decide y se agrega en `main`, no desde `nueva-ui`.** Tampoco existe hoy ningún usuario con ese rol para probarlo.
+
 - **`alumnas.fecha_nacimiento` está vacía en las 158 alumnas** (confirmado por SQL el 2026-09-08): la columna existe y la migración del Bloque 4 está aplicada, pero el CSV del import no traía el dato. **El módulo 8 del rediseño (Participación en torneos) la necesita**, porque la planilla que se manda a la organización lleva nombre, DNI, fecha de nacimiento y categoría. Hay que cargarla antes de llegar a ese módulo — es el último de los ocho, así que no bloquea arrancar.
 - **No hay ningún usuario con rol `Patinador` en la base** (los 8 son 1 Admin, 1 Head Coach, 1 Secretaria, 2 Profesor, 3 Empleado). Los gates que cierran `/tareas` y `/miembros` a ese rol están verificados en el código, pero no se pueden probar con una cuenta real hasta que exista alguna. Conviene crear una cuenta descartable con ese rol desde el Dashboard para poder verificar el rediseño con un rol de personal y uno sin acceso.
 

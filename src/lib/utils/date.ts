@@ -130,3 +130,13 @@ export function sumarDias(fecha: string, dias: number): string {
 export function lunesDeLaSemana(fecha: string): string {
   return sumarDias(fecha, -(diaIsoDeFecha(fecha) - 1));
 }
+
+/**
+ * «Lunes 7 de septiembre» — el subtítulo del saludo en el inicio. Sale de
+ * `hoyArgentina()` como todo lo demás, así que no cambia de día a las 21:00.
+ */
+export function fechaLargaDeHoy(): string {
+  const hoy = hoyArgentina();
+  const [, mes, dia] = hoy.split("-").map(Number);
+  return `${nombreDia(diaIsoDeFecha(hoy))} ${dia} de ${nombreMes(mes).toLowerCase()}`;
+}

@@ -1,196 +1,90 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
-import { TareaCard, type TareaCardData } from "@/components/tareas/TareaCard";
-import { TurnoCard, type TurnoCardData } from "@/components/horarios/TurnoCard";
-import { StatCard } from "@/components/dashboard/StatCard";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { TorneoDestacado } from "@/components/torneos/TorneoDestacado";
-import { hoyArgentina, sumarDias } from "@/lib/utils/date";
-import { puedeVerContadoresDashboard } from "@/lib/permisos";
-import type { EstadoTarea, EstadoTurno, Rol } from "@/types";
+import { BloqueAvisos } from "@/components/dashboard/BloqueAvisos";
+import { BloqueClasesHoy } from "@/components/dashboard/BloqueClasesHoy";
+import { TorneoLinea } from "@/components/torneos/TorneoLinea";
+import { Icono } from "@/components/ui/Icono";
+import { datosDelInicio } from "@/lib/dashboard/inicio";
+import { hoyArgentina } from "@/lib/utils/date";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export const metadata: Metadata = { title: "Inicio" };
 
-const LIMITE_ITEMS = 5;
-
-export default async function DashboardPage() {
+export default async function InicioPage() {
   const profile = await getCurrentUserProfile();
+  if (!profile) redirect("/login");
+
   const supabase = await createClient();
+  const hoy = hoyArgentina();
 
-  const hoyStr = hoyArgentina();
+  const [datos, { data: torneo }] = await Promise.all([
+    datosDelInicio(supabase, profile),
+    // El próximo evento es de todo el club: misma lectura abierta que /torneos.
+    supabase
+      .from("torneos")
+      .select("id, nombre, tipo, lugar, fecha_inicio, fecha_fin")
+      .gte("fecha_fin", hoy)
+      .order("fecha_inicio", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
-  // Tareas próximas a vencer: no completadas, ordenadas por fecha de
-  // vencimiento (las vencidas quedan primero al ser las más antiguas).
-  // Misma tabla y sin filtro de usuario: la RLS del Módulo 3 ya limita
-  // lo que cada rol puede ver (Admin todo, Profesor/Empleado lo suyo).
-  const { data: tareasData } = await supabase
-    .from("tareas")
-    .select(
-      "id, titulo, estado, fecha_vencimiento, tarea_asignados(usuario_id, users(nombre, rol, cargo))"
-    )
-    .neq("estado", "Completada")
-    .order("fecha_vencimiento", { ascending: true, nullsFirst: false })
-    .limit(LIMITE_ITEMS);
+  const daClases =
+    profile.rol === "Profesor" || (profile.rol === "Empleado" && profile.dicta_clases);
 
-  const tareasProximas: TareaCardData[] = (tareasData ?? []).map((tarea) => ({
-    id: tarea.id,
-    titulo: tarea.titulo,
-    estado: tarea.estado as EstadoTarea,
-    fecha_vencimiento: tarea.fecha_vencimiento,
-    asignados: (tarea.tarea_asignados ?? []).flatMap((a) =>
-      a.users
-        ? [
-            {
-              nombre: (a.users as unknown as { nombre: string }).nombre,
-              rol: (a.users as unknown as { rol: Rol }).rol,
-              cargo: (a.users as unknown as { cargo: string | null }).cargo,
-            },
-          ]
-        : []
-    ),
-  }));
-
-  // Próximos turnos: el horario es compartido (la RLS deja verlo completo
-  // a cualquier autenticado), así que se muestra igual para los 3 roles.
-  const { data: turnosData } = await supabase
-    .from("turnos")
-    .select(
-      "id, fecha, hora_inicio, hora_fin, grupo_legacy, grupo:grupos(nombre), estado, profesores:turno_profesores(profesor:users(nombre, rol, cargo))"
-    )
-    .eq("estado", "Activo")
-    .gte("fecha", hoyStr)
-    .order("fecha", { ascending: true })
-    .order("hora_inicio", { ascending: true })
-    .limit(LIMITE_ITEMS);
-
-  const turnosProximos: TurnoCardData[] = (turnosData ?? []).map((turno) => ({
-    id: turno.id,
-    fecha: turno.fecha,
-    hora_inicio: turno.hora_inicio,
-    hora_fin: turno.hora_fin,
-    grupoNombre:
-      (turno.grupo as unknown as { nombre: string } | null)?.nombre ??
-      turno.grupo_legacy ??
-      "Sin grupo",
-    estado: turno.estado as EstadoTurno,
-    profesores: (
-      turno.profesores as unknown as { profesor: { nombre: string; rol: Rol; cargo: string | null } }[]
-    ).map((p) => p.profesor),
-  }));
-
-  // Próximo torneo: visible para todos los roles (misma RLS de lectura
-  // abierta que el listado de Torneos). Sin bloque si no hay ningún evento
-  // futuro o en curso.
-  const { data: torneoDestacado } = await supabase
-    .from("torneos")
-    .select("id, nombre, tipo, lugar, fecha_inicio, fecha_fin")
-    .gte("fecha_fin", hoyStr)
-    .order("fecha_inicio", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  // Contadores agregados: panorama general del equipo, para los tres roles que
-  // coordinan (Admin, Head Coach y Secretaria). Son de tareas y clases, no de
-  // plata: no chocan con que Secretaria no vea la recaudación.
-  let contadores: {
-    pendientes: number;
-    enProgreso: number;
-    turnosHoy: number;
-    turnosSemana: number;
-  } | null = null;
-
-  if (puedeVerContadoresDashboard(profile)) {
-    const en7DiasStr = sumarDias(hoyStr, 7);
-
-    const [pendientesRes, enProgresoRes, turnosHoyRes, turnosSemanaRes] =
-      await Promise.all([
-        supabase
-          .from("tareas")
-          .select("*", { count: "exact", head: true })
-          .eq("estado", "Pendiente"),
-        supabase
-          .from("tareas")
-          .select("*", { count: "exact", head: true })
-          .eq("estado", "En progreso"),
-        supabase
-          .from("turnos")
-          .select("*", { count: "exact", head: true })
-          .eq("estado", "Activo")
-          .eq("fecha", hoyStr),
-        supabase
-          .from("turnos")
-          .select("*", { count: "exact", head: true })
-          .eq("estado", "Activo")
-          .gte("fecha", hoyStr)
-          .lte("fecha", en7DiasStr),
-      ]);
-
-    contadores = {
-      pendientes: pendientesRes.count ?? 0,
-      enProgreso: enProgresoRes.count ?? 0,
-      turnosHoy: turnosHoyRes.count ?? 0,
-      turnosSemana: turnosSemanaRes.count ?? 0,
-    };
-  }
+  // El saludo y la fecha viven en el header, que ya los muestra en todas las
+  // pantallas: acá no se repiten.
+  const nadaQueAtender =
+    datos.avisos.length === 0 && !datos.clases && datos.accesos.length === 0;
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+    <div className="space-y-6">
+      <h1 className="sr-only">Inicio</h1>
 
-      {contadores && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Tareas pendientes" value={contadores.pendientes} />
-          <StatCard label="Tareas en progreso" value={contadores.enProgreso} />
-          <StatCard label="Clases hoy" value={contadores.turnosHoy} />
-          <StatCard label="Clases esta semana" value={contadores.turnosSemana} />
+      {datos.avisos.length > 0 && (
+        <BloqueAvisos titulo={datos.tituloAvisos} avisos={datos.avisos} />
+      )}
+
+      {datos.accesos.length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {datos.accesos.map((acceso) => (
+            <Link
+              key={acceso.href}
+              href={acceso.href}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-3 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            >
+              <Icono nombre={acceso.icono} className="h-5 w-5" />
+              {acceso.label}
+            </Link>
+          ))}
         </div>
       )}
 
-      {torneoDestacado && <TorneoDestacado torneo={torneoDestacado} hoy={hoyStr} />}
+      {datos.clases && (
+        <BloqueClasesHoy
+          titulo={datos.clases.titulo}
+          verTodas={datos.clases.verTodas}
+          clases={datos.clases.items}
+          conAccionAsistencia={daClases}
+        />
+      )}
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Tareas próximas a vencer</h2>
-          <Link
-            href="/tareas"
-            className="rounded text-sm text-text-subtle transition-colors duration-[var(--duration-fast)] ease-standard hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-          >
-            Ver todas
-          </Link>
+      {/* Un solo mensaje cuando no hay nada que atender, en vez de dos cajas
+          vacías («No hay tareas pendientes.» / «No hay clases próximas.»). */}
+      {nadaQueAtender && (
+        <div className="rounded-xl border border-border bg-surface px-4 py-8 text-center">
+          <p className="font-semibold">Todo al día</p>
+          <p className="mt-1 text-sm text-text-subtle">
+            {profile.rol === "Patinador"
+              ? "Acá vas a ver tus clases y el estado de tu cuota."
+              : "No hay nada pendiente para vos por ahora."}
+          </p>
         </div>
-        {tareasProximas.length === 0 ? (
-          <EmptyState mensaje="No hay tareas pendientes." />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {tareasProximas.map((tarea) => (
-              <TareaCard key={tarea.id} tarea={tarea} headingLevel="h3" />
-            ))}
-          </div>
-        )}
-      </section>
+      )}
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Próximas clases</h2>
-          <Link
-            href="/horarios"
-            className="rounded text-sm text-text-subtle transition-colors duration-[var(--duration-fast)] ease-standard hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-          >
-            Ver por grupo
-          </Link>
-        </div>
-        {turnosProximos.length === 0 ? (
-          <EmptyState mensaje="No hay clases próximas." />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {turnosProximos.map((turno) => (
-              <TurnoCard key={turno.id} turno={turno} headingLevel="h3" />
-            ))}
-          </div>
-        )}
-      </section>
+      {torneo && <TorneoLinea torneo={torneo} hoy={hoy} />}
     </div>
   );
 }

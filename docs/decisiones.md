@@ -12,7 +12,7 @@
 [Alcance del producto](#alcance-del-producto) · [Stack técnico](#stack-técnico) · [Estructura de carpetas](#estructura-de-carpetas)
 
 **Roles y permisos**
-[Los roles son niveles de permiso, no cargos](#los-roles-son-niveles-de-permiso-no-cargos) · [Alcance de cada rol](#alcance-de-cada-rol) · [Alcance del rol Secretaria](#alcance-del-rol-secretaria) · [Asignación de roles del equipo real](#asignación-de-roles-del-equipo-real) · [Head Coach con control total sobre clases](#head-coach-con-control-total-sobre-clases) · [Sin auto-registro público](#sin-auto-registro-público) · [La RLS es la fuente de verdad de los permisos](#la-rls-es-la-fuente-de-verdad-de-los-permisos) · [Las reglas de permiso viven en un solo archivo](#las-reglas-de-permiso-viven-en-un-solo-archivo) · [dicta_clases es independiente del rol](#dicta_clases-es-independiente-del-rol)
+[Los roles son niveles de permiso, no cargos](#los-roles-son-niveles-de-permiso-no-cargos) · [Alcance de cada rol](#alcance-de-cada-rol) · [La navegación y el inicio son distintos por rol](#la-navegación-y-el-inicio-son-distintos-por-rol) · [Alcance del rol Secretaria](#alcance-del-rol-secretaria) · [Asignación de roles del equipo real](#asignación-de-roles-del-equipo-real) · [Head Coach con control total sobre clases](#head-coach-con-control-total-sobre-clases) · [Sin auto-registro público](#sin-auto-registro-público) · [La RLS es la fuente de verdad de los permisos](#la-rls-es-la-fuente-de-verdad-de-los-permisos) · [Las reglas de permiso viven en un solo archivo](#las-reglas-de-permiso-viven-en-un-solo-archivo) · [dicta_clases es independiente del rol](#dicta_clases-es-independiente-del-rol)
 
 **Tareas**
 [Tareas y proyectos son la misma entidad](#tareas-y-proyectos-son-la-misma-entidad) · [Una tarea puede tener varios responsables](#una-tarea-puede-tener-varios-responsables) · [Los comentarios son historial](#los-comentarios-son-historial) · [Aviso cuando una tarea queda sin responsables](#aviso-cuando-una-tarea-queda-sin-responsables)
@@ -117,6 +117,12 @@ Los módulos de Fase 2 (alumnas, pagos, asistencia, torneos) siguen el mismo pat
 | **Secretaria** | Ver la entrada [Alcance del rol Secretaria](#alcance-del-rol-secretaria). |
 
 **Contexto:** cada rol se fue acotando contra un caso real del club, no a priori. El caso Patinador es el más particular: el rol existe para que las alumnas con login vean el calendario y los torneos, no para que participen de la gestión interna — por eso queda afuera de Tareas y Miembros aunque su nivel de permiso base sea el de Empleado.
+**Estado:** vigente
+
+## La navegación y el inicio son distintos por rol
+
+**Decisión:** la barra de pestañas muestra **los 3 destinos que ese rol usa a diario** y manda el resto a «Más» (Admin y Head Coach: Hoy · Planificaciones · Asistencia; Secretaria: Hoy · Alumnas · Pagos; Profesor y Empleado que dicta clases: Hoy · Mis clases · Tareas; Empleado sin clases: Hoy · Tareas · Torneos; Patinador: Inicio · Torneos, sin «Más»). El inicio deja de ser la misma pantalla para los seis roles: cada uno abre con lo suyo, y los cuatro contadores se reemplazan por avisos que llevan a algún lado y solo aparecen si hay algo que atender.
+**Contexto:** el criterio de las pestañas no es la jerarquía del rol sino la frecuencia de uso — por eso Secretaria tiene Pagos a mano y Head Coach no. Reemplaza al cajón `☰`, donde los ocho destinos pesaban lo mismo, nada indicaba dónde estabas parado sin abrirlo, y Torneos, Tareas, Planificaciones y Miembros le aparecían también a una alumna. De los contadores viejos, «Tareas en progreso» no sobrevivió: no pide nada de nadie.
 **Estado:** vigente
 
 ## Alcance del rol Secretaria
