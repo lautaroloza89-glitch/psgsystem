@@ -111,12 +111,14 @@ Los módulos de Fase 2 (alumnas, pagos, asistencia, torneos) siguen el mismo pat
 |---|---|
 | **Admin** (dueño) | Crear/editar/borrar todo. Ver todo. Gestionar usuarios y permisos. |
 | **Profesor** | Crear y gestionar sus tareas y sus horarios asignados. |
-| **Head Coach** | Sobre **tareas**: mismos permisos que Profesor sobre las propias (crear/editar/borrar lo suyo), más lectura de las de Profesor, Empleado y Patinador. Sin edición/borrado de tareas ajenas. Sobre **horarios/turnos**: control total, igual que Admin. Sin gestión de usuarios. |
+| **Head Coach** | Sobre **tareas**: ve y edita **cualquiera**, igual que Admin y Secretaria (ampliado el 2026-09-08, ver abajo); borra solo las que creó. Sobre **horarios/turnos**: control total, igual que Admin. Sin gestión de usuarios. |
 | **Empleado** | Ve solo lo asignado a él. Puede cambiar el estado de su propia tarea (Pendiente → En progreso → Completada) y dejar un comentario corto. NO edita estructura, fechas ni asignados. |
 | **Patinador** | Mismos permisos que Empleado, con una excepción: **no accede al módulo de Tareas** — `/tareas` y `/tareas/[id]` lo redirigen a `/dashboard`, y no puede cambiar el estado de una tarea aunque figure asignado. Tampoco entra a `/miembros`. |
 | **Secretaria** | Ver la entrada [Alcance del rol Secretaria](#alcance-del-rol-secretaria). |
 
 **Contexto:** cada rol se fue acotando contra un caso real del club, no a priori. El caso Patinador es el más particular: el rol existe para que las alumnas con login vean el calendario y los torneos, no para que participen de la gestión interna — por eso queda afuera de Tareas y Miembros aunque su nivel de permiso base sea el de Empleado.
+
+**Head Coach en Tareas se amplió el 2026-09-08** (migración `20260908160000`). Antes veía y editaba lo propio más las tareas de Profesor, Empleado y Patinador: quedaba afuera una tarea que fuera solo entre Admin y Secretaria. Ahora ve y edita cualquiera. El recorte venía de Fase 1, cuando el rol se pensó como «Profesor con más alcance sobre horarios», y no describía a la dueña del club. La **lectura se amplió junto con la escritura**: no se puede editar lo que no aparece en ningún listado. **Borrar no se tocó** — sigue siendo Admin, o quien creó la tarea.
 **Estado:** vigente
 
 ## Alcance del rol Secretaria
