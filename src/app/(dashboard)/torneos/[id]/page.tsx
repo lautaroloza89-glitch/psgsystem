@@ -6,8 +6,8 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { puedeGestionarTorneos, puedeVerTorneos } from "@/lib/permisos";
 import { hoyArgentina } from "@/lib/utils/date";
 import { estadoTorneo, formatRangoFechasTorneo } from "@/lib/torneos/fechas";
-import { ICONO_TIPO_TORNEO, LABEL_TIPO_TORNEO } from "@/lib/torneos/tipo";
 import { EstadoTorneoBadge } from "@/components/torneos/EstadoTorneoBadge";
+import { ChipTipoTorneo } from "@/components/torneos/ChipTipoTorneo";
 import { BorrarTorneoButton } from "@/components/torneos/BorrarTorneoButton";
 import { BackButton } from "@/components/ui/BackButton";
 import type { TipoTorneo } from "@/types";
@@ -47,19 +47,16 @@ export default async function TorneoDetallePage({
 
       <div className="space-y-6 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         <div className="flex items-start justify-between gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">
-            <span aria-hidden="true" className="mr-2">
-              {ICONO_TIPO_TORNEO[tipo]}
-            </span>
-            {torneo.nombre}
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight">{torneo.nombre}</h1>
           <EstadoTorneoBadge estado={estado} />
         </div>
 
-        <div className="space-y-1 text-base text-text-muted">
-          <p>Tipo: {LABEL_TIPO_TORNEO[tipo]}</p>
-          <p>Fecha: {formatRangoFechasTorneo(torneo.fecha_inicio, torneo.fecha_fin)}</p>
-          <p>Lugar: {torneo.lugar ?? "En el club"}</p>
+        <div className="space-y-2">
+          <ChipTipoTorneo tipo={tipo} />
+          <div className="space-y-1 text-base text-text-muted">
+            <p>{formatRangoFechasTorneo(torneo.fecha_inicio, torneo.fecha_fin)}</p>
+            <p>{torneo.lugar ?? "En el club"}</p>
+          </div>
         </div>
 
         {puedeEditar && (

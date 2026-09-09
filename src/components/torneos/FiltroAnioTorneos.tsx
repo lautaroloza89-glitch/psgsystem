@@ -15,7 +15,7 @@ export function FiltroAnioTorneos({
         return (
           <Link
             key={anio}
-            href={`/torneos?anio=${anio}`}
+            href={`/torneos?ver=pasados&anio=${anio}`}
             className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
               activo
                 ? "border-primary-500 bg-primary-500 text-on-primary hover:bg-primary-600"

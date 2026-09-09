@@ -23,6 +23,19 @@ export interface TorneoFormDefaultValues {
 
 const initialState: FormState = { error: null };
 
+/**
+ * Mismos seis campos y las mismas validaciones. Lo que cambia es que dos cosas
+ * que el formulario ya hacía por dentro ahora se ven:
+ *
+ * - El tipo era un `select` de tres opciones que abría la rueda de iOS; ahora
+ *   son tres chips.
+ * - La fecha de fin ya se autocompletaba con la de inicio, porque el caso
+ *   normal es un solo día, pero eso no se notaba: había dos campos de fecha
+ *   idénticos y había que cargar la misma dos veces. «Un día / Varios días»
+ *   lo dice, y con «Un día» el segundo campo directamente no está.
+ * - «En el club» era una aclaración entre paréntesis en el placeholder; ahora
+ *   es un chip que llena el campo.
+ */
 export function TorneoForm({
   action,
   defaultValues,
@@ -31,24 +44,38 @@ export function TorneoForm({
   defaultValues?: TorneoFormDefaultValues;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
+  const [tipo, setTipo] = useState<TipoTorneo>(defaultValues?.tipo ?? "torneo");
   const [fechaInicio, setFechaInicio] = useState(defaultValues?.fecha_inicio ?? "");
   const [fechaFin, setFechaFin] = useState(defaultValues?.fecha_fin ?? "");
-  const [fechaFinTocada, setFechaFinTocada] = useState(!!defaultValues);
+  const [lugar, setLugar] = useState(defaultValues?.lugar ?? "");
+  const [variosDias, setVariosDias] = useState(
+    !!defaultValues && defaultValues.fecha_inicio !== defaultValues.fecha_fin
+  );
 
   function handleFechaInicioChange(valor: string) {
     setFechaInicio(valor);
-    // El caso más común es de un solo día: autocompletar fecha_fin evita
-    // cargar la misma fecha dos veces. Solo mientras el usuario no la tocó
-    // a mano (para no pisarle una fecha de fin ya elegida).
-    if (!fechaFinTocada) {
-      setFechaFin(valor);
-    }
+    // Con «Un día» las dos fechas son la misma y el usuario nunca ve la de
+    // fin: el formulario la mantiene al día sin que tenga que cargarla.
+    if (!variosDias) setFechaFin(valor);
   }
 
-  const rangoInvalido = !!fechaInicio && !!fechaFin && fechaFin < fechaInicio;
+  function cambiarDuracion(varios: boolean) {
+    setVariosDias(varios);
+    if (!varios) setFechaFin(fechaInicio);
+  }
+
+  const rangoInvalido = variosDias && !!fechaInicio && !!fechaFin && fechaFin < fechaInicio;
+
+  const chip =
+    "rounded-full border px-4 py-2 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
+  const chipActivo = "border-primary-500 bg-primary-500 text-on-primary";
+  const chipInactivo = "border-border text-text-muted hover:border-border-strong";
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} className="space-y-6">
+      <input type="hidden" name="tipo" value={tipo} />
+      <input type="hidden" name="fecha_fin" value={variosDias ? fechaFin : fechaInicio} />
+
       <div className="space-y-1.5">
         <label htmlFor="nombre" className="text-label font-medium">
           Nombre
@@ -64,42 +91,49 @@ export function TorneoForm({
         />
       </div>
 
-      <div className="space-y-1.5">
-        <label htmlFor="tipo" className="text-label font-medium">
-          Tipo
-        </label>
-        <select
-          id="tipo"
-          name="tipo"
-          defaultValue={defaultValues?.tipo ?? "torneo"}
-          className={INPUT_CLASS}
-        >
-          {TIPOS.map((tipo) => (
-            <option key={tipo} value={tipo}>
-              {LABEL_TIPO_TORNEO[tipo]}
-            </option>
+      <fieldset className="space-y-2">
+        <legend className="text-label font-medium">Tipo</legend>
+        <div className="flex flex-wrap gap-2">
+          {TIPOS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTipo(t)}
+              aria-pressed={tipo === t}
+              className={`${chip} ${tipo === t ? chipActivo : chipInactivo}`}
+            >
+              {LABEL_TIPO_TORNEO[t]}
+            </button>
           ))}
-        </select>
-      </div>
+        </div>
+      </fieldset>
 
-      <div className="space-y-1.5">
-        <label htmlFor="lugar" className="text-label font-medium">
-          Lugar
-        </label>
-        <input
-          id="lugar"
-          name="lugar"
-          type="text"
-          defaultValue={defaultValues?.lugar ?? ""}
-          placeholder="San Juan, Río Segundo - Córdoba... (vacío si es en el club)"
-          className={INPUT_CLASS}
-        />
-      </div>
+      <fieldset className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <legend className="text-label font-medium">Cuándo</legend>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => cambiarDuracion(false)}
+              aria-pressed={!variosDias}
+              className={`${chip} ${variosDias ? chipInactivo : chipActivo}`}
+            >
+              Un día
+            </button>
+            <button
+              type="button"
+              onClick={() => cambiarDuracion(true)}
+              aria-pressed={variosDias}
+              className={`${chip} ${variosDias ? chipActivo : chipInactivo}`}
+            >
+              Varios días
+            </button>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <label htmlFor="fecha_inicio" className="text-label font-medium">
-            Fecha de inicio
+          <label htmlFor="fecha_inicio" className="sr-only">
+            {variosDias ? "Fecha de inicio" : "Fecha"}
           </label>
           <input
             id="fecha_inicio"
@@ -112,28 +146,53 @@ export function TorneoForm({
           />
         </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="fecha_fin" className="text-label font-medium">
-            Fecha de fin
-          </label>
-          <input
-            id="fecha_fin"
-            name="fecha_fin"
-            type="date"
-            required
-            value={fechaFin}
-            onChange={(e) => {
-              setFechaFinTocada(true);
-              setFechaFin(e.target.value);
-            }}
-            className={INPUT_CLASS}
-          />
-        </div>
-      </div>
+        {variosDias && (
+          <div className="space-y-1.5">
+            <label htmlFor="fecha_fin_visible" className="text-label font-medium">
+              Hasta
+            </label>
+            <input
+              id="fecha_fin_visible"
+              type="date"
+              required
+              value={fechaFin}
+              onChange={(e) => setFechaFin(e.target.value)}
+              className={INPUT_CLASS}
+            />
+          </div>
+        )}
 
-      {rangoInvalido && (
-        <p className="text-sm text-error-600">La fecha de fin no puede ser anterior a la de inicio.</p>
-      )}
+        {rangoInvalido && (
+          <p className="text-sm text-error-600">
+            La fecha de fin no puede ser anterior a la de inicio.
+          </p>
+        )}
+      </fieldset>
+
+      <div className="space-y-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <label htmlFor="lugar" className="text-label font-medium">
+            Lugar
+          </label>
+          <button
+            type="button"
+            onClick={() => setLugar("")}
+            aria-pressed={lugar === ""}
+            className={`${chip} ${lugar === "" ? chipActivo : chipInactivo}`}
+          >
+            En el club
+          </button>
+        </div>
+        <input
+          id="lugar"
+          name="lugar"
+          type="text"
+          value={lugar}
+          onChange={(e) => setLugar(e.target.value)}
+          placeholder="San Juan, Río Segundo - Córdoba…"
+          className={INPUT_CLASS}
+        />
+      </div>
 
       <div className="space-y-1.5">
         <label htmlFor="notas" className="text-label font-medium">
@@ -144,7 +203,7 @@ export function TorneoForm({
           name="notas"
           rows={4}
           defaultValue={defaultValues?.notas ?? ""}
-          placeholder="Opcional"
+          placeholder="Horarios, categorías, qué llevar… opcional."
           className={INPUT_CLASS}
         />
       </div>
@@ -158,10 +217,10 @@ export function TorneoForm({
       <button
         type="submit"
         disabled={pending || rangoInvalido}
-        className="flex w-full items-center justify-center gap-2 rounded-md bg-primary-500 py-2.5 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        className="flex w-full items-center justify-center gap-2 rounded-md bg-primary-500 py-3 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       >
         {pending && <Spinner />}
-        {pending ? "Guardando..." : "Guardar"}
+        {pending ? "Guardando..." : "Guardar torneo"}
       </button>
     </form>
   );
