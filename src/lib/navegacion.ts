@@ -8,7 +8,10 @@ export type NombreIcono =
   | "money"
   | "trophy"
   | "list-checks"
-  | "dots";
+  | "dots"
+  | "note"
+  | "target"
+  | "plus";
 
 export interface Destino {
   href: string;

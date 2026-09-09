@@ -108,6 +108,14 @@ export default async function TurnoDetallePage({
           </p>
         </div>
 
+        {!puedeEditar && (
+          // Lo dice de entrada, sin que haya que descubrirlo tocando: el rol
+          // ve el texto completo y los comentarios, pero no las acciones.
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-muted px-3 py-1 text-sm font-medium text-text-muted">
+            Solo lectura
+          </span>
+        )}
+
         {puedeEditar && (
           <div className="flex flex-wrap gap-2">
             <Link

@@ -6,9 +6,11 @@ import { diaIsoDeFecha } from "@/lib/utils/date";
  * había antes de poder tildar a alguien (elegir grupo → elegir fecha): la
  * pantalla abre en hoy y moverse de día es un toque.
  *
- * El sábado aparece en gris y sin enlace: es día de horario para Jungla, pero
- * de ese bloque no se toma asistencia (decisión ya cerrada en F2 MOD 4). Que
- * esté a la vista, apagado, evita que se lea como un día que falta.
+ * En Asistencia el sábado aparece en gris y sin enlace: es día de horario para
+ * Jungla, pero de ese bloque no se toma asistencia (decisión ya cerrada en
+ * F2 MOD 4). Que esté a la vista, apagado, evita que se lea como un día que
+ * falta. En Planificaciones el sábado **sí es un día normal** — Iniciación
+ * entrena los sábados y su planificación existe —, de ahí `sabadoInactivo`.
  */
 
 const LETRAS = ["L", "M", "X", "J", "V", "S"];
@@ -17,11 +19,16 @@ export function TiraDeDias({
   dias,
   seleccionado,
   hoy,
+  basePath,
+  sabadoInactivo,
 }: {
   /** Los seis días de la semana, de lunes a sábado. */
   dias: string[];
   seleccionado: string;
   hoy: string;
+  /** Pantalla que se recorre por fecha; el día viaja como `?dia=`. */
+  basePath: string;
+  sabadoInactivo: boolean;
 }) {
   return (
     <nav aria-label="Días de la semana">
@@ -29,7 +36,7 @@ export function TiraDeDias({
         {dias.map((dia, i) => {
           const activo = dia === seleccionado;
           const esHoy = dia === hoy;
-          const esSabado = diaIsoDeFecha(dia) === 6;
+          const esSabado = sabadoInactivo && diaIsoDeFecha(dia) === 6;
           const numero = Number(dia.slice(8, 10));
 
           const contenido = (
@@ -58,7 +65,7 @@ export function TiraDeDias({
           return (
             <li key={dia}>
               <Link
-                href={`/asistencia?dia=${dia}`}
+                href={`${basePath}?dia=${dia}`}
                 aria-current={activo ? "date" : undefined}
                 className={
                   activo

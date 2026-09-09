@@ -21,6 +21,11 @@ const TRAZOS: Record<NombreIcono, string> = {
     "M7 4h10v5a5 5 0 0 1-10 0V4Zm0 1H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3m-5 4v4m-3 3h6",
   "list-checks": "M3 6l2 2 3-3M3 14l2 2 3-3M11 6h10M11 15h10",
   dots: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM8.5 12h.01M12 12h.01M15.5 12h.01",
+  // La hoja escrita: marca que un torneo tiene notas y que una clase tiene
+  // planificación cargada. Es el mismo contenido largo en los dos módulos.
+  note: "M6 3h8l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm8 0v6h5M9 13h6M9 17h4",
+  target: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-5a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0-3.5v.01",
+  plus: "M12 5v14M5 12h14",
 };
 
 export function Icono({

@@ -169,7 +169,13 @@ export default async function AsistenciaPage({
             Semana →
           </Link>
         </div>
-        <TiraDeDias dias={semana} seleccionado={dia} hoy={hoy} />
+        <TiraDeDias
+          dias={semana}
+          seleccionado={dia}
+          hoy={hoy}
+          basePath="/asistencia"
+          sabadoInactivo
+        />
       </div>
 
       {guardadaEn && (

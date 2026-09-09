@@ -6,7 +6,7 @@ import { puedeCargarPlanificaciones } from "@/lib/permisos";
 import { BackButton } from "@/components/ui/BackButton";
 import { PlanificarForm } from "@/components/horarios/PlanificarForm";
 import { guardarPlanificacion } from "../../../planificaciones-actions";
-import { anioMesDeHoy, nombreMes } from "@/lib/utils/date";
+import { anioMesDeHoy, mesQuery, nombreMes } from "@/lib/utils/date";
 
 export const metadata: Metadata = { title: "Nueva planificación" };
 
@@ -15,10 +15,10 @@ export default async function PlanificarPage({
   searchParams,
 }: {
   params: Promise<{ grupoId: string }>;
-  searchParams: Promise<{ mes?: string }>;
+  searchParams: Promise<{ mes?: string; fecha?: string }>;
 }) {
   const { grupoId } = await params;
-  const { mes: mesParam } = await searchParams;
+  const { mes: mesParam, fecha: fechaParam } = await searchParams;
 
   const profile = await getCurrentUserProfile();
   if (!puedeCargarPlanificaciones(profile)) {
@@ -59,11 +59,25 @@ export default async function PlanificarPage({
 
   const guardarPlanificacionDeGrupo = guardarPlanificacion.bind(null, grupoId);
 
+  // La fecha del atajo «Sin planificación» solo vale si cae dentro del mes que
+  // se está cargando; si no, el formulario abriría con una fecha que ni
+  // siquiera aparece en la lista.
+  const fechaInicial =
+    fechaParam &&
+    /^\d{4}-\d{2}-\d{2}$/.test(fechaParam) &&
+    fechaParam.startsWith(mesQuery(anio, mes))
+      ? fechaParam
+      : undefined;
+
   return (
     <div className="mx-auto max-w-lg space-y-6">
-      <BackButton href={`/horarios/grupos/${grupoId}`} />
-      <h1 className="text-2xl font-bold tracking-tight">Nueva planificación</h1>
-      <p className="text-sm text-text-subtle">{grupo.nombre}</p>
+      <BackButton href={`/horarios/grupos/${grupoId}?mes=${mesQuery(anio, mes)}`} />
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Nueva planificación</h1>
+        <p className="text-sm text-text-subtle">
+          {grupo.nombre} · {nombreMes(mes).toLowerCase()}
+        </p>
+      </div>
 
       <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         {diasDisponibles.length === 0 ? (
@@ -79,6 +93,7 @@ export default async function PlanificarPage({
             anio={anio}
             mes={mes}
             mesLabel={`${nombreMes(mes)} ${anio}`}
+            fechaInicial={fechaInicial}
           />
         )}
       </div>

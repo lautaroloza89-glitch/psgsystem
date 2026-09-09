@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-/** Mismo patrón de pills que `FiltroEstadoTurnoTabs` (Horarios). */
+/** Mismo patrón de pills que los filtros del resto de la app. */
 export function FiltroAnioTorneos({
   anios,
   anioActual,
