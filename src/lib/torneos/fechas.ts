@@ -1,4 +1,4 @@
-import { nombreMes } from "@/lib/utils/date";
+import { diaIsoDeFecha, nombreDia, nombreMes } from "@/lib/utils/date";
 
 export type EstadoTorneo = "Próximo" | "En curso" | "Pasado";
 
@@ -47,4 +47,18 @@ export function formatRangoFechasTorneo(fechaInicio: string, fechaFin: string): 
   }
 
   return `${puntaInicio(cruzaAnio)} al ${puntaFin(cruzaAnio)}`;
+}
+
+/**
+ * El rango con el día de la semana adelante: «sáb 12 al lun 14 de septiembre»,
+ * «sáb 4 de octubre». Solo en el destacado, donde saber si el evento cae en
+ * fin de semana es parte de lo que se mira; en la lista el día grande de la
+ * izquierda ya lo dice.
+ */
+export function formatRangoConDiaDeSemana(fechaInicio: string, fechaFin: string): string {
+  const rango = formatRangoFechasTorneo(fechaInicio, fechaFin);
+  const abrev = (fecha: string) => nombreDia(diaIsoDeFecha(fecha)).slice(0, 3).toLowerCase();
+
+  if (fechaInicio === fechaFin) return `${abrev(fechaInicio)} ${rango}`;
+  return `${abrev(fechaInicio)} ${rango.replace(" al ", ` al ${abrev(fechaFin)} `)}`;
 }

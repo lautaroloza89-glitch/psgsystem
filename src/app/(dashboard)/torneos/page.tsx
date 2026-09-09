@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { puedeGestionarTorneos, puedeVerTorneos } from "@/lib/permisos";
-import { hoyArgentina, nombreMes } from "@/lib/utils/date";
-import { estadoTorneo } from "@/lib/torneos/fechas";
+import { hoyArgentina } from "@/lib/utils/date";
+import { agruparPorMes, repartirTorneos, type GrupoDeMes } from "@/lib/torneos/agrupar";
 import type { Torneo } from "@/types";
 import { TorneoFila } from "@/components/torneos/TorneoFila";
 import { TorneoDestacado } from "@/components/torneos/TorneoDestacado";
@@ -19,28 +19,6 @@ type TorneoDeLista = Pick<
   Torneo,
   "id" | "nombre" | "tipo" | "lugar" | "fecha_inicio" | "fecha_fin" | "notas"
 >;
-
-/** Agrupa por mes conservando el orden en que vienen los eventos. */
-function porMes(torneos: TorneoDeLista[]): { clave: string; titulo: string; items: TorneoDeLista[] }[] {
-  const grupos: { clave: string; titulo: string; items: TorneoDeLista[] }[] = [];
-
-  for (const torneo of torneos) {
-    const clave = torneo.fecha_inicio.slice(0, 7);
-    const ultimo = grupos[grupos.length - 1];
-
-    if (ultimo?.clave === clave) {
-      ultimo.items.push(torneo);
-    } else {
-      grupos.push({
-        clave,
-        titulo: nombreMes(Number(clave.slice(5, 7))),
-        items: [torneo],
-      });
-    }
-  }
-
-  return grupos;
-}
 
 export default async function TorneosPage({
   searchParams,
@@ -65,14 +43,7 @@ export default async function TorneosPage({
   const torneos = (torneosData ?? []) as TorneoDeLista[];
   const puedeEditar = puedeGestionarTorneos(profile);
 
-  const proximos = torneos.filter(
-    (t) => estadoTorneo(t.fecha_inicio, t.fecha_fin, hoy) !== "Pasado"
-  );
-  // Lo más reciente primero: en Pasados nadie busca el torneo de marzo antes
-  // que el del mes anterior.
-  const pasados = torneos
-    .filter((t) => estadoTorneo(t.fecha_inicio, t.fecha_fin, hoy) === "Pasado")
-    .reverse();
+  const { proximos, pasados } = repartirTorneos(torneos, hoy);
 
   const aniosPasados = [...new Set(pasados.map((t) => Number(t.fecha_inicio.slice(0, 4))))].sort(
     (a, b) => b - a
@@ -140,7 +111,7 @@ export default async function TorneosPage({
             {pasadosDelAnio.length === 0 ? (
               <EmptyState mensaje={`No hay eventos cargados en ${anioElegido}.`} />
             ) : (
-              <ListaPorMes grupos={porMes(pasadosDelAnio)} hoy={hoy} />
+              <ListaPorMes grupos={agruparPorMes(pasadosDelAnio)} hoy={hoy} />
             )}
           </>
         )
@@ -151,7 +122,7 @@ export default async function TorneosPage({
           {destacado && (
             <TorneoDestacado torneo={destacado} hoy={hoy} puedeEditar={puedeEditar} />
           )}
-          {restoProximos.length > 0 && <ListaPorMes grupos={porMes(restoProximos)} hoy={hoy} />}
+          {restoProximos.length > 0 && <ListaPorMes grupos={agruparPorMes(restoProximos)} hoy={hoy} />}
         </>
       )}
     </div>
@@ -162,7 +133,7 @@ function ListaPorMes({
   grupos,
   hoy,
 }: {
-  grupos: { clave: string; titulo: string; items: TorneoDeLista[] }[];
+  grupos: GrupoDeMes<TorneoDeLista>[];
   hoy: string;
 }) {
   return (

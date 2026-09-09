@@ -2,9 +2,12 @@ import Link from "next/link";
 import type { Torneo } from "@/types";
 import { EstadoTorneoBadge } from "./EstadoTorneoBadge";
 import { ChipTipoTorneo } from "./ChipTipoTorneo";
-import { diasHastaTorneo, estadoTorneo, formatRangoFechasTorneo } from "@/lib/torneos/fechas";
+import {
+  diasHastaTorneo,
+  estadoTorneo,
+  formatRangoConDiaDeSemana,
+} from "@/lib/torneos/fechas";
 import { Icono } from "@/components/ui/Icono";
-import { diaIsoDeFecha, nombreDia } from "@/lib/utils/date";
 
 /**
  * El próximo evento, arriba de todo. Y **solo** arriba: la lista ya no vuelve
@@ -17,15 +20,6 @@ function textoFaltante(dias: number): string {
   if (dias === 0) return "Es hoy";
   if (dias === 1) return "Es mañana";
   return `Faltan ${dias} días`;
-}
-
-/** «sáb 12 al lun 14 de septiembre»: el día de la semana ayuda a ubicarlo. */
-function conDiaDeSemana(fechaInicio: string, fechaFin: string): string {
-  const rango = formatRangoFechasTorneo(fechaInicio, fechaFin);
-  const abrev = (fecha: string) => nombreDia(diaIsoDeFecha(fecha)).slice(0, 3).toLowerCase();
-
-  if (fechaInicio === fechaFin) return `${abrev(fechaInicio)} ${rango}`;
-  return `${abrev(fechaInicio)} ${rango.replace(" al ", ` al ${abrev(fechaFin)} `)}`;
 }
 
 export function TorneoDestacado({
@@ -68,7 +62,7 @@ export function TorneoDestacado({
           </Link>
         </h2>
         <p className="mt-1 text-base text-text-muted">
-          {conDiaDeSemana(torneo.fecha_inicio, torneo.fecha_fin)}
+          {formatRangoConDiaDeSemana(torneo.fecha_inicio, torneo.fecha_fin)}
         </p>
         <p className="text-base text-text-muted">{torneo.lugar ?? "En el club"}</p>
       </div>
