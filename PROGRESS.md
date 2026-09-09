@@ -52,8 +52,8 @@
 
 | # | Módulo | Depende de | Estado |
 |---|---|---|---|
-| — | **UI nueva** (rediseño de la interfaz) | Correcciones pre-UI | 🟡 En progreso — 6 de 8 módulos, ver [docs/diseno/estado-del-rediseno.md](docs/diseno/estado-del-rediseno.md) |
-| — | Participación en torneos: las 3 pantallas (el modelo ya está) | UI nueva | ⬜ Pendiente |
+| — | **UI nueva** (rediseño de la interfaz) | Correcciones pre-UI | 🟡 En progreso — 7 de 8 módulos, ver [docs/diseno/estado-del-rediseno.md](docs/diseno/estado-del-rediseno.md) |
+| — | Participación en torneos: las 3 pantallas (el modelo ya está) — es el módulo 8, el último del rediseño | UI nueva | ⬜ Pendiente |
 | — | Reenvío de recibo de pago (el campo ya está) | UI nueva | ⬜ Pendiente |
 
 Estados: ⬜ Pendiente · 🟡 En progreso · ✅ Terminado

@@ -67,28 +67,39 @@ Este orden **no es una sugerencia: es el orden de trabajo.** Va de la estructura
 | 4 | **Asistencia** | Entrar directo al grupo de hoy, «Vino / Faltó», estado Parcial, pie fijo. | ✅ | `27161b3` |
 | 5 | **Pagos** | Pantalla con números en vez del menú de cuatro tarjetas, recargo explicado, atraso por alumna. | ✅ | `d50b8fa` (main) · `40d4a74` · `7cbd721` |
 | 6 | **Alumnas** | Ficha con asistencia y deuda, teléfono tocable, baja fuera del formulario, listado denso. | ✅ | `40984cf` · `9e0f80c` |
-| 7 | **Planificaciones** y **Torneos** | Pestañas Próximos/Pasados, sin duplicar el destacado, señal de notas. | ⬜ **el que sigue** | — |
-| 8 | **Participación en torneos** (modelos Tg y Th) | Va última porque es la única pantalla que no existe hoy: se construye sobre `torneo_participantes` y sobre las categorías, que dependen de `alumnas.fecha_nacimiento`. | ⬜ | — |
+| 7 | **Planificaciones** y **Torneos** | Pestañas Próximos/Pasados, sin duplicar el destacado, señal de notas. | ✅ | `935d71f` · `e263812` · `3712573` · `84ffc12` |
+| 8 | **Participación en torneos** (modelos Tg y Th) | Va última porque es la única pantalla que no existe hoy: se construye sobre `torneo_participantes` y sobre las categorías, que dependen de `alumnas.fecha_nacimiento`. | ⬜ **el que sigue** | — |
 
 Antes del módulo 1 hubo dos commits de preparación: los helpers de permisos pasados a type guards (`60b4210`) y los modelos de diseño incorporados al repo (`3f81e42`).
 
-### Al arrancar el módulo 7 (Planificaciones y Torneos)
+### Al arrancar el módulo 8 (Participación en torneos)
 
-Está desbloqueado. Son **dos modelos**, `docs/diseno/07-planificaciones.dc.html` y `docs/diseno/08-torneos.dc.html`: leerlos **enteros** los dos, todas sus opciones, antes de escribir nada. En el módulo 3 se saltó la opción `Rd` y el formulario de alta quedó sin hacer hasta que Lauti lo detectó en el preview.
+Está desbloqueado y es el último. El modelo son las opciones **`Tg` y `Th`** de `docs/diseno/08-torneos.dc.html` (la sección `T2`, arriba del todo del archivo): leerlas enteras antes de escribir nada.
 
-Es el primer módulo que agrupa dos pantallas distintas, así que ojo con dos cosas:
+Es la única pantalla del rediseño que **no existe hoy**. Se construye sobre `torneo_participantes` (modelo ya aplicado en el Bloque 5 de las Correcciones pre-UI, sin pantallas) y sobre `torneos.inscripcion_monto`.
 
-- **Planificaciones es el único módulo donde escribe la Profesora.** El permiso vive aparte del archivo único: `puedeCargarPlanificaciones`, dentro de `horarios/planificaciones-actions.ts`. Cruzalo con el modelo antes de escribir cualquier botón — y si no coinciden, se le pregunta a Lauti en el momento.
-- **Torneos lo ve todo el club**, incluidos Profesor y Empleado, que no entran a ningún otro módulo de los rediseñados hasta ahora (`puedeVerTorneos` deja pasar a cualquiera logueado; crear y editar es solo Admin/Head Coach, y la convocatoria suma Secretaria). Es el módulo con más roles distintos mirando la misma pantalla: probalo con uno de gestión y uno del personal, que es justamente el repaso que viene quedando pendiente.
+Tres cosas para tener a mano:
 
-El módulo 8 (participación en torneos) se apoya en este, así que lo que se decida acá sobre cómo se ve un torneo manda allá.
+- **Los permisos ya están escritos** en `src/lib/permisos.ts`: `puedeGestionarConvocatoria` (Admin, Head Coach, Secretaria: convocar, sacar, categoría, estado de inscripción) y `puedeVerConvocatoria` (los tres anteriores más Profesor). Pero `Th` los parte más fino que los dos helpers: **convocar y escribir la categoría es solo Admin/Head Coach** —es una decisión deportiva—, mientras que cambiar el estado de inscripción y registrar el pago suma Secretaria. Y la Profesora ve nombres, **no el monto ni el estado de pago**. Cruzarlo con Lauti antes de escribir los botones.
+- **Empleado/a y Patinador/a no ven nada de esto**: ni la lista, ni el bloque del detalle, ni las cifras. Y no solo el botón — el gate va en el servidor. Ojo que hoy la RLS de `torneo_participantes` no lo acompaña (ver `docs/pendientes.md`).
+- **`alumnas.fecha_nacimiento` sigue vacía en las 158.** No frena nada: es una columna de la planilla, no un criterio de cálculo, y la categoría es texto libre. **Recordáselo a Lauti al arrancar** por si prefiere cargarlas antes para probarlo con datos reales. Si aparece algo que sí se rompa sin el dato, frenar y avisar — no inventar un valor por defecto ni derivar la categoría de la edad.
+
+Lo que se decidió en el módulo 7 sobre cómo se ve un torneo manda acá: el chip de tipo sin emoji, el destacado que no se repite en la lista, y el ícono de nota como señal de contenido largo.
+
+### Lo que dejó el módulo 7
+
+- **`clasesPlanificadasDelDia` y `gruposDelMes`** (`src/lib/horarios/dia.ts`) derivan las clases de `grupo_horarios` y no de `turnos`, así que una fecha sin planificación cargada **aparece igual**. Acá el sábado cuenta (Iniciación entrena los sábados), a diferencia de `lib/asistencia/dia.ts`.
+- **`agruparPorMes` y `repartirTorneos`** (`src/lib/torneos/agrupar.ts`) — el mes como encabezado y las dos pestañas. Sirven para cualquier listado de eventos con fecha.
+- **`ChipTipoTorneo`** y **`TorneoFila`** son las piezas de la lista de eventos; `TorneoCard` se borró.
+- **`ChipObjetivoMes`** — un `<details>` estilizado como chip, que abre un panel sin JavaScript. Patrón para cualquier contenido largo que no tiene que ocupar lugar hasta que se lo pide.
+- **`TiraDeDias`** ahora toma `basePath` y `sabadoInactivo`: la comparten Asistencia y Planificaciones.
 
 ---
 
 ## Lo que ya está construido y conviene reusar
 
 - **`src/lib/navegacion.ts`** — qué pestañas ve cada rol. Si un módulo cambia de nombre o de ruta, se toca acá.
-- **`src/lib/permisos.ts`** — archivo único de permisos, todos type guards. `lib/torneos/permisos.ts` se consolidó acá; quedan aparte `lib/asistencia/permisos.ts` (`puedeGestionarAsistencia`) y `puedeCargarPlanificaciones`, dentro de `horarios/planificaciones-actions.ts`.
+- **`src/lib/permisos.ts`** — archivo único de permisos, todos type guards. `lib/torneos/permisos.ts` se consolidó acá, y en el módulo 7 también `puedeCargarPlanificaciones` y `puedeEditarClase`. El único que queda aparte es `lib/asistencia/permisos.ts` (`puedeGestionarAsistencia`).
 - **`src/components/ui/Icono.tsx`** — SVG inline. Para sumar un icono, agregá el trazo al mapa; **no** instalar una librería.
 - **`src/lib/miembros/equipo.ts`** — `iniciales()`, `nombreDeRol()` (femenino: «Profesora», «Empleada»), `subtituloMiembro()`.
 - **`src/lib/tareas/agenda.ts`** — `cuandoVence()` («Venció hace 7 días», «Mañana») y `agruparPorUrgencia()`. Sirve para cualquier listado con fechas.
@@ -140,7 +151,12 @@ El módulo 5 fue el primero que necesitó tocar el esquema, y siguió el camino 
 
 El módulo 4, que cambia cómo se guarda, se verificó además contra la base real: el guardado parcial y el borrado al desmarcar, dentro de una transacción con `rollback` (3 filas de 13, después 2 — la tabla quedó en 0, que es como estaba); la policy `asistencia_admin_headcoach_secretaria` es `for all`, así que el `delete` nuevo entra en el permiso que ya existía; y el cálculo de rachas se probó con siete casos de borde (racha de 3, semana sin marca salteada, presente que corta, semana en curso, volvió esta semana, sin registro, última presencia). **La tabla `asistencia` está vacía en producción**: el módulo nunca se usó, así que todavía no hay datos reales que mirar.
 
-**Ningún módulo se probó en el navegador desde estas sesiones**: no hubo herramienta de browser. Lauti revisa el preview de Vercel de `nueva-ui` — así detectó que faltaba el formulario de alta del módulo 3. El repaso con dos roles que pide el `02-` sigue pendiente. Si en una sesión futura hay browser, o si se crea una cuenta de prueba con rol Secretaria desde el Dashboard, se puede verificar de verdad: incluso sin browser, levantando `next start`, pidiendo el token con la anon key y haciendo `curl` con la cookie de sesión.
+El módulo 7 sumó dos tandas de casos de borde sobre la lógica nueva, sin tocar la base:
+
+- **La capa de datos de Planificaciones** (`lib/horarios/dia.ts`) con un cliente Supabase falso, 25 casos: que una fecha sin turno creado aparezca igual como clase (es lo que hace visible «Sin planificación»), que en ese caso no se le atribuya a nadie, que el sábado cuente, que una clase cancelada se muestre con su tipo, que «Mis clases» marque por `turno_profesores`, que el horario salga del bloque de `grupo_horarios` y no del turno, y los conteos del mes (9 fechas de Pre-competencia con 1 cargada, un grupo sin horario en 0, y las 8 que le faltan a la profesora).
+- **El calendario de Torneos** (`lib/torneos/agrupar.ts` y `fechas.ts`), 19 casos: el evento en curso va con los próximos, los pasados salen del más reciente al más viejo, el destacado no se repite en la lista, el mismo mes de dos años distintos no se fusiona, y los tres formatos de rango con día de la semana.
+
+**Ningún módulo se probó en el navegador desde estas sesiones**: no hubo herramienta de browser. Lauti revisa el preview de Vercel de `nueva-ui` — así detectó que faltaba el formulario de alta del módulo 3. El repaso con dos roles que pide el `02-` **sigue pendiente, también en el módulo 7**: en esta sesión sí había cómo levantar `next start` (las cinco rutas nuevas responden 307 a `/login`, sin errores de servidor), pero no hay credenciales de ninguna cuenta real ni forma de crear una de prueba sin la `service_role key`, así que las pantallas no se vieron con ningún rol. Para verificarlo de verdad hace falta una sesión con browser, o las credenciales de una cuenta de cada tipo.
 
 Para tocar la base hace falta un **Personal Access Token** de Supabase (`sbp_...`), que Lauti genera en el momento — no queda guardado en el repo ni entre sesiones. El método está en `CLAUDE.md`.
 

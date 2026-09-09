@@ -18,7 +18,7 @@
 [Tareas y proyectos son la misma entidad](#tareas-y-proyectos-son-la-misma-entidad) · [Una tarea puede tener varios responsables](#una-tarea-puede-tener-varios-responsables) · [Los comentarios son historial](#los-comentarios-son-historial) · [Aviso cuando una tarea queda sin responsables](#aviso-cuando-una-tarea-queda-sin-responsables) · [El Admin no puede ser responsable de una tarea](#el-admin-no-puede-ser-responsable-de-una-tarea)
 
 **Clases y planificaciones**
-[Las clases son por fecha puntual, no recurrentes](#las-clases-son-por-fecha-puntual-no-recurrentes) · [Cancelar no es borrar](#cancelar-no-es-borrar) · [Una clase puede tener varios profesores](#una-clase-puede-tener-varios-profesores) · [El horario del club es de lectura abierta](#el-horario-del-club-es-de-lectura-abierta) · [La entrada a Planificaciones es grupo → mes](#la-entrada-a-planificaciones-es-grupo--mes)
+[Las clases son por fecha puntual, no recurrentes](#las-clases-son-por-fecha-puntual-no-recurrentes) · [Cancelar no es borrar](#cancelar-no-es-borrar) · [Una clase puede tener varios profesores](#una-clase-puede-tener-varios-profesores) · [El horario del club es de lectura abierta](#el-horario-del-club-es-de-lectura-abierta) · [Los comentarios de una clase son del equipo que la organiza](#los-comentarios-de-una-clase-son-del-equipo-que-la-organiza) · [La entrada a Planificaciones es por día y por grupo](#la-entrada-a-planificaciones-es-por-día-y-por-grupo)
 
 **Notificaciones**
 [Alcance de las notificaciones](#alcance-de-las-notificaciones) · [Destinatarios de una notificación](#destinatarios-de-una-notificación) · [Push con Web Push API nativo](#push-con-web-push-api-nativo) · [Los recordatorios de vencimiento corren por cron](#los-recordatorios-de-vencimiento-corren-por-cron) · [Las notificaciones sobreviven al borrado de su origen](#las-notificaciones-sobreviven-al-borrado-de-su-origen)
@@ -33,7 +33,7 @@
 [La profesora no toma asistencia](#la-profesora-no-toma-asistencia) · [Asistencia sin sábados](#asistencia-sin-sábados) · [Presente o ausente, sin tercer estado](#presente-o-ausente-sin-tercer-estado) · [Sin marcar no es ausente](#sin-marcar-no-es-ausente) · [El grupo del día queda congelado en la fila](#el-grupo-del-día-queda-congelado-en-la-fila) · [La alerta de inasistencias se mide en semanas](#la-alerta-de-inasistencias-se-mide-en-semanas)
 
 **Torneos**
-[Torneos cubre solo el registro](#torneos-cubre-solo-el-registro) · [El calendario de torneos y la convocatoria tienen dueños distintos](#el-calendario-de-torneos-y-la-convocatoria-tienen-dueños-distintos) · [Torneos, exhibiciones y eventos en una sola tabla](#torneos-exhibiciones-y-eventos-en-una-sola-tabla) · [El estado de un torneo se calcula, no se guarda](#el-estado-de-un-torneo-se-calcula-no-se-guarda) · [Torneos es información de todo el club](#torneos-es-información-de-todo-el-club)
+[Torneos cubre solo el registro](#torneos-cubre-solo-el-registro) · [El calendario de torneos y la convocatoria tienen dueños distintos](#el-calendario-de-torneos-y-la-convocatoria-tienen-dueños-distintos) · [Torneos, exhibiciones y eventos en una sola tabla](#torneos-exhibiciones-y-eventos-en-una-sola-tabla) · [El estado de un torneo se calcula, no se guarda](#el-estado-de-un-torneo-se-calcula-no-se-guarda) · [Torneos es información de todo el club](#torneos-es-información-de-todo-el-club) · [El tipo de evento se escribe, no se dibuja](#el-tipo-de-evento-se-escribe-no-se-dibuja)
 
 **Transversales**
 [Un solo criterio de fecha: hoyArgentina()](#un-solo-criterio-de-fecha-hoyargentina) · [Los reportes se consultan, no avisan](#los-reportes-se-consultan-no-avisan) · [Markdown en descripciones y comentarios](#markdown-en-descripciones-y-comentarios)
@@ -229,14 +229,26 @@ Lautaro es el único Admin real del sistema.
 
 ## El horario del club es de lectura abierta
 
-**Decisión:** cualquier usuario autenticado ve el horario completo del club, no solo sus propias clases. Las notificaciones sí van dirigidas únicamente a los asignados.
-**Contexto:** es un horario compartido, no información privada por profesor. Se confirmó explícitamente al construir el multi-profesor, cuando el pedido sugería restringir por rol: se mantuvo abierto.
+**Decisión:** todo el **equipo** autenticado ve el horario completo del club, no solo sus propias clases: la Profesora arranca en «Mis clases» pero «Todas» está a un toque, y Empleado/a lo lee entero. La excepción es **Patinador/a, que no entra al módulo**. Las notificaciones sí van dirigidas únicamente a los asignados.
+**Contexto:** es un horario compartido entre quienes trabajan en el club, no información privada por profesor — se confirmó explícitamente al construir el multi-profesor, cuando el pedido sugería restringir por rol. Lo que no era compartido es la planificación con una alumna: hasta el módulo 7 del rediseño `/horarios` no validaba ningún rol, así que una alumna logueada abría cualquier grupo por URL y leía el trabajo individual escrito sobre otra alumna. La pantalla que el modelo `Pd` le propone (solo su grupo, solo lectura) no se puede construir sin el vínculo `users` ↔ `alumnas`, que está fuera de alcance.
 **Estado:** vigente
 
-## La entrada a Planificaciones es grupo → mes
+## Los comentarios de una clase son del equipo que la organiza
 
-**Decisión:** `/horarios` es el selector de grupo. Se elige grupo, después mes, y ahí se ven las planificaciones, con los filtros Todas/Activo/Cancelado adentro de esa vista.
-**Contexto:** antes la entrada era una grilla con las planificaciones de todos los grupos mezcladas más un link a la vista por grupo — dos pantallas donde iba una, y la que se usaba de verdad era la segunda.
+**Decisión:** escriben comentarios Admin, Head Coach, Profesor y Secretaria. **Empleado/a los lee pero no los escribe**, y Patinador/a no llega a la pantalla.
+**Contexto:** son la coordinación entre quienes dictan la clase y quienes la organizan — por eso Secretaria entra aunque no cargue planificaciones. Antes la caja de texto aparecía para cualquier autenticado, que es el nivel de apertura que tenía la lectura del turno. A quien no puede escribir se le muestra la lista completa y se le saca solo la caja.
+**Estado:** vigente
+
+## La entrada a Planificaciones es por día y por grupo
+
+**Decisión:** `/horarios` tiene dos pestañas. **Por día** muestra las clases de una fecha con grupo, horario y quién la dicta; **por grupo** muestra el mes de cada grupo, con qué días entrena, cuántas clases tiene cargadas y si le falta el objetivo. La carga de una planificación sigue entrando por grupo → mes, porque crear una es elegir un grupo, un mes y varias fechas de una: desde la vista por día el atajo es el chip «Sin planificación», que abre el formulario con esa fecha ya marcada.
+**Contexto:** con la entrada solo por grupo había que saber de antemano qué grupo tocaba hoy — no existía «qué clases hay hoy». La vista por grupo no se pierde: es donde se arma el mes, y ahora dice dónde queda trabajo pendiente en vez de ser cinco nombres sueltos. El filtro Todas/Activo/Cancelado se sacó: con la barra de días a la vista nunca hay más de tres o cuatro clases en pantalla, y las canceladas se muestran igual con su badge.
+**Estado:** vigente
+
+## El tipo de evento se escribe, no se dibuja
+
+**Decisión:** en Torneos el tipo (Torneo / Exhibición / Evento) es un chip de texto, sin emoji. Los emojis se conservan en `ICONO_TIPO_TORNEO` y siguen usándose en la línea del próximo evento del inicio.
+**Contexto:** eran un emoji suelto delante del nombre y la palabra solo aparecía en el detalle. Escrito se lee mejor y no depende de que el emoji cargue en el celular de cada una. El modelo lo dejaba como decisión abierta de Lauti (`Tf`) y la resolvió al cerrar el módulo 7. Por el mismo motivo el módulo sigue llamándose «Torneos» para todos los roles, y no «Calendario» para la alumna.
 **Estado:** vigente
 
 ## Alcance de las notificaciones
