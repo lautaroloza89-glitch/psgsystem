@@ -67,7 +67,7 @@ Este orden **no es una sugerencia: es el orden de trabajo.** Va de la estructura
 | 4 | **Asistencia** | Entrar directo al grupo de hoy, «Vino / Faltó», estado Parcial, pie fijo. | ✅ | `27161b3` |
 | 5 | **Pagos** | Pantalla con números en vez del menú de cuatro tarjetas, recargo explicado, atraso por alumna. | ✅ | `d50b8fa` (main) · `40d4a74` · `7cbd721` |
 | 6 | **Alumnas** | Ficha con asistencia y deuda, teléfono tocable, baja fuera del formulario, listado denso. | ✅ | `40984cf` · `9e0f80c` |
-| 7 | **Planificaciones** y **Torneos** | Pestañas Próximos/Pasados, sin duplicar el destacado, señal de notas. | ✅ | `935d71f` · `e263812` · `3712573` · `84ffc12` · `30cfb37` |
+| 7 | **Planificaciones** y **Torneos** | Pestañas Próximos/Pasados, sin duplicar el destacado, señal de notas. | ✅ | `935d71f` · `e263812` · `3712573` · `84ffc12` · `30cfb37` · `dc4e272` · `8dccd3c` |
 | 8 | **Participación en torneos** (modelos Tg y Th) | Va última porque es la única pantalla que no existe hoy: se construye sobre `torneo_participantes` y sobre las categorías, que dependen de `alumnas.fecha_nacimiento`. | ⬜ **el que sigue** | — |
 
 Antes del módulo 1 hubo dos commits de preparación: los helpers de permisos pasados a type guards (`60b4210`) y los modelos de diseño incorporados al repo (`3f81e42`).
