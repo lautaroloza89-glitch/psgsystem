@@ -1,11 +1,19 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeVerPlanificaciones } from "@/lib/permisos";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export const metadata: Metadata = { title: "Planificaciones" };
 
 export default async function HorariosPage() {
+  const profile = await getCurrentUserProfile();
+  if (!puedeVerPlanificaciones(profile)) {
+    redirect("/dashboard");
+  }
+
   const supabase = await createClient();
   const { data: grupos } = await supabase.from("grupos").select("id, nombre").order("nombre");
 

@@ -213,3 +213,74 @@ export function puedeVerConvocatoria<T extends PerfilPermisos>(
 ): profile is T {
   return tieneRol(profile, ["Admin", "Head Coach", "Secretaria", "Profesor"]);
 }
+
+/**
+ * Ver el módulo Planificaciones (`/horarios`). Todo el equipo entra: es el
+ * pizarrón del club, y Empleado/a lo lee aunque no dicte.
+ *
+ * La excepción es **Patinador/a**. Hasta ahora `/horarios` no validaba ningún
+ * rol, así que una alumna logueada abría cualquier grupo por URL y leía la
+ * planificación completa — incluido el trabajo individual que Luciana escribe
+ * sobre otra alumna. La nav nunca le ofreció el módulo; lo que faltaba era
+ * cerrar la puerta de atrás. La pantalla que el modelo `Pd` le propone (solo su
+ * grupo, solo lectura) no se puede construir todavía: necesita el vínculo
+ * `users` ↔ `alumnas`, que quedó fuera del alcance del rediseño.
+ */
+export function puedeVerPlanificaciones<T extends PerfilPermisos>(
+  profile: T | null | undefined
+): profile is T {
+  return !!profile && profile.rol !== "Patinador";
+}
+
+/**
+ * Cargar y editar planificaciones y el objetivo del mes: Admin, Head Coach y
+ * Profesor. Es el único módulo donde escribe la Profesora.
+ *
+ * Vivía en `horarios/planificaciones-actions.ts`, el último helper de permisos
+ * fuera de este archivo junto con `puedeGestionarAsistencia`. Se consolidó acá
+ * al rediseñar el módulo, sin cambiar a quién deja pasar: la pantalla del grupo
+ * y la del formulario repetían la misma condición escrita a mano, y como no
+ * estrechaba el tipo, el formulario terminaba usando `profile!` dos veces.
+ *
+ * Secretaria queda afuera a propósito (alcance cerrado del rol, ver
+ * `docs/decisiones.md`). La RLS de `grupo_objetivos_mes` la nombra por
+ * adelantado, así que ahí la app es más restrictiva que la base.
+ */
+export function puedeCargarPlanificaciones<T extends PerfilPermisos>(
+  profile: T | null | undefined
+): profile is T {
+  return tieneRol(profile, ["Admin", "Head Coach", "Profesor"]);
+}
+
+/**
+ * Editar una clase puntual (contenido, estado, duplicar): Admin y Head Coach
+ * con cualquiera, Profesor solo con las que tiene asignadas en
+ * `turno_profesores` — mismo criterio que la RLS de `turnos_update`.
+ */
+export function puedeEditarClase<T extends PerfilPermisos>(
+  profile: T | null | undefined,
+  profesoresAsignados: { profesor_id: string }[]
+): profile is T {
+  if (!profile) return false;
+  if (profile.rol === "Admin" || profile.rol === "Head Coach") return true;
+  if (profile.rol === "Profesor") {
+    return profesoresAsignados.some((p) => p.profesor_id === profile.id);
+  }
+  return false;
+}
+
+/**
+ * Escribir un comentario en una clase. Los comentarios son la coordinación
+ * entre quienes la dictan y quienes la organizan, así que Secretaria entra
+ * aunque no cargue planificaciones.
+ *
+ * **Empleado/a lee pero no escribe** (modelo `Pc`): la lista de comentarios se
+ * le muestra completa y lo único que se le saca es la caja de texto. Hasta
+ * acá `turno_comentarios_insert` era `using (true)` y la caja aparecía para
+ * cualquier autenticado, alumnas incluidas.
+ */
+export function puedeComentarClase<T extends PerfilPermisos>(
+  profile: T | null | undefined
+): profile is T {
+  return tieneRol(profile, ["Admin", "Head Coach", "Profesor", "Secretaria"]);
+}

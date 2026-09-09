@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeCargarPlanificaciones } from "@/lib/permisos";
 import { BackButton } from "@/components/ui/BackButton";
 import { PlanificarForm } from "@/components/horarios/PlanificarForm";
 import { guardarPlanificacion } from "../../../planificaciones-actions";
@@ -20,12 +21,7 @@ export default async function PlanificarPage({
   const { mes: mesParam } = await searchParams;
 
   const profile = await getCurrentUserProfile();
-  // 'Secretaria' queda afuera a propósito: Planificaciones es solo lectura para ese rol.
-  const puedeCargar =
-    !!profile &&
-    (profile.rol === "Admin" || profile.rol === "Head Coach" || profile.rol === "Profesor");
-
-  if (!puedeCargar) {
+  if (!puedeCargarPlanificaciones(profile)) {
     redirect(`/horarios/grupos/${grupoId}`);
   }
 
@@ -77,7 +73,7 @@ export default async function PlanificarPage({
         ) : (
           <PlanificarForm
             action={guardarPlanificacionDeGrupo}
-            profile={{ id: profile!.id, rol: profile!.rol }}
+            profile={{ id: profile.id, rol: profile.rol }}
             profesores={profesores}
             diasDisponibles={diasDisponibles}
             anio={anio}

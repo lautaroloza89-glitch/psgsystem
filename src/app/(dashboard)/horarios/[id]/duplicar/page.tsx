@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeCargarPlanificaciones } from "@/lib/permisos";
 import { BackButton } from "@/components/ui/BackButton";
 import { DuplicarPlanificacionForm } from "@/components/horarios/DuplicarPlanificacionForm";
 import { duplicarPlanificacion } from "../../planificaciones-actions";
@@ -16,12 +17,7 @@ export default async function DuplicarPlanificacionPage({
   const { id } = await params;
 
   const profile = await getCurrentUserProfile();
-  // 'Secretaria' queda afuera a propósito: Planificaciones es solo lectura para ese rol.
-  const puedeCargar =
-    !!profile &&
-    (profile.rol === "Admin" || profile.rol === "Head Coach" || profile.rol === "Profesor");
-
-  if (!puedeCargar) {
+  if (!puedeCargarPlanificaciones(profile)) {
     redirect(`/horarios/${id}`);
   }
 

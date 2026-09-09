@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeComentarClase } from "@/lib/permisos";
 import { resolverHorarioPorDia } from "@/lib/horarios/resolver-horario";
 import { sincronizarProfesores } from "@/lib/horarios/sync-profesores";
 import { diaIsoDeFecha } from "@/lib/utils/date";
@@ -118,8 +119,8 @@ export async function agregarComentarioTurno(
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile) {
-    return { error: "No autenticado." };
+  if (!puedeComentarClase(profile)) {
+    return { error: "No tenés permiso para comentar en una clase." };
   }
 
   const comentario = ((formData.get("comentario") as string) ?? "").trim();

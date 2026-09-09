@@ -1,8 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import {
+  puedeComentarClase,
+  puedeEditarClase,
+  puedeVerPlanificaciones,
+} from "@/lib/permisos";
 import { EstadoTurnoBadge } from "@/components/horarios/EstadoTurnoBadge";
 import { ToggleEstadoTurnoButton } from "@/components/horarios/ToggleEstadoTurnoButton";
 import { BorrarTurnoButton } from "@/components/horarios/BorrarTurnoButton";
@@ -22,6 +27,10 @@ export default async function TurnoDetallePage({
 }) {
   const { id } = await params;
   const profile = await getCurrentUserProfile();
+  if (!puedeVerPlanificaciones(profile)) {
+    redirect("/dashboard");
+  }
+
   const supabase = await createClient();
 
   const { data: turno } = await supabase
@@ -63,12 +72,7 @@ export default async function TurnoDetallePage({
     turno.grupo_legacy ??
     "Sin grupo";
 
-  const puedeEditar =
-    !!profile &&
-    (profile.rol === "Admin" ||
-      profile.rol === "Head Coach" ||
-      (profile.rol === "Profesor" &&
-        profesoresAsignados.some((p) => p.profesor_id === profile.id)));
+  const puedeEditar = puedeEditarClase(profile, profesoresAsignados);
 
   // Vuelve al mes del grupo del que viene la planificación; si la clase es de las viejas
   // (sin grupo_id mapeado), al selector de grupos.
@@ -119,7 +123,7 @@ export default async function TurnoDetallePage({
           </div>
         )}
 
-        {profile?.rol === "Admin" && <BorrarTurnoButton turnoId={turno.id} />}
+        {profile.rol === "Admin" && <BorrarTurnoButton turnoId={turno.id} />}
       </div>
 
       <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
@@ -144,7 +148,11 @@ export default async function TurnoDetallePage({
       <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         <h2 className="text-lg font-semibold">Comentarios</h2>
         <ComentariosTurnoList comentarios={comentarios} />
-        <ComentarioTurnoForm turnoId={turno.id} />
+        {puedeComentarClase(profile) ? (
+          <ComentarioTurnoForm turnoId={turno.id} />
+        ) : (
+          <p className="text-sm text-text-subtle">No podés comentar en este rol.</p>
+        )}
       </div>
     </div>
   );

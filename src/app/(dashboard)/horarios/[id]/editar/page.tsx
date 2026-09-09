@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeEditarClase } from "@/lib/permisos";
 import { TurnoForm } from "@/components/horarios/TurnoForm";
 import { BackButton } from "@/components/ui/BackButton";
 import { editarTurno } from "../../actions";
@@ -29,17 +30,10 @@ export default async function EditarTurnoPage({
     notFound();
   }
 
-  const profesoresIdsActuales = (
-    turno.profesores as unknown as { profesor_id: string }[]
-  ).map((p) => p.profesor_id);
+  const profesoresAsignados = turno.profesores as unknown as { profesor_id: string }[];
+  const profesoresIdsActuales = profesoresAsignados.map((p) => p.profesor_id);
 
-  const puedeEditar =
-    !!profile &&
-    (profile.rol === "Admin" ||
-      profile.rol === "Head Coach" ||
-      (profile.rol === "Profesor" && profesoresIdsActuales.includes(profile.id)));
-
-  if (!puedeEditar) {
+  if (!puedeEditarClase(profile, profesoresAsignados)) {
     redirect(`/horarios/${id}`);
   }
 
@@ -71,7 +65,7 @@ export default async function EditarTurnoPage({
       <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
         <TurnoForm
           action={editarTurnoConId}
-          profile={{ id: profile!.id, rol: profile!.rol }}
+          profile={{ id: profile.id, rol: profile.rol }}
           profesores={profesores}
           grupos={grupos}
           defaultValues={{

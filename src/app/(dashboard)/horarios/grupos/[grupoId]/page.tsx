@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeCargarPlanificaciones, puedeVerPlanificaciones } from "@/lib/permisos";
 import { BackButton } from "@/components/ui/BackButton";
 import { ObjetivoMesForm } from "@/components/horarios/ObjetivoMesForm";
 import { FiltroEstadoTurnoTabs } from "@/components/horarios/FiltroEstadoTurnoTabs";
@@ -62,6 +63,10 @@ export default async function PlanificacionesGrupoPage({
     : null;
 
   const profile = await getCurrentUserProfile();
+  if (!puedeVerPlanificaciones(profile)) {
+    redirect("/dashboard");
+  }
+
   const supabase = await createClient();
 
   const { data: grupo } = await supabase.from("grupos").select("id, nombre").eq("id", grupoId).single();
@@ -96,10 +101,7 @@ export default async function PlanificacionesGrupoPage({
     turnosQuery,
   ]);
 
-  // 'Secretaria' queda afuera a propósito: Planificaciones es solo lectura para ese rol.
-  const puedeCargar =
-    !!profile &&
-    (profile.rol === "Admin" || profile.rol === "Head Coach" || profile.rol === "Profesor");
+  const puedeCargar = puedeCargarPlanificaciones(profile);
 
   const planificacionesPorTipo = TIPOS.map((tipo) => ({
     tipo,

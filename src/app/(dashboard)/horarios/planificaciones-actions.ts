@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeCargarPlanificaciones } from "@/lib/permisos";
 import { resolverHorarioPorDia } from "@/lib/horarios/resolver-horario";
 import { sincronizarProfesores } from "@/lib/horarios/sync-profesores";
 import { diaIsoDeFecha } from "@/lib/utils/date";
@@ -11,14 +12,6 @@ import type { TipoTurno } from "@/types";
 import type { FormState } from "./actions";
 
 const TIPOS_VALIDOS: TipoTurno[] = ["Patín", "Preparación física"];
-
-// 'Secretaria' queda afuera a propósito: sobre Planificaciones tiene solo
-// lectura del calendario (alcance cerrado del rol, ver docs/decisiones.md). La RLS
-// de grupo_objetivos_mes la nombraba por adelantado y se corrigió en la
-// misma migración que creó el rol.
-function puedeCargarPlanificaciones(rol: string | undefined): boolean {
-  return rol === "Admin" || rol === "Head Coach" || rol === "Profesor";
-}
 
 /**
  * Crea o actualiza la fila de `turnos` de una fecha puntual con el
@@ -102,7 +95,7 @@ export async function guardarPlanificacion(
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || !puedeCargarPlanificaciones(profile.rol)) {
+  if (!puedeCargarPlanificaciones(profile)) {
     return { error: "No tenés permiso para cargar planificaciones." };
   }
 
@@ -152,7 +145,7 @@ export async function duplicarPlanificacion(
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || !puedeCargarPlanificaciones(profile.rol)) {
+  if (!puedeCargarPlanificaciones(profile)) {
     return { error: "No tenés permiso para duplicar planificaciones." };
   }
 
@@ -217,7 +210,7 @@ export async function guardarObjetivoMes(
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || !puedeCargarPlanificaciones(profile.rol)) {
+  if (!puedeCargarPlanificaciones(profile)) {
     return { error: "No tenés permiso para editar el objetivo del mes." };
   }
 
