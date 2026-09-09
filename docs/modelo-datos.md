@@ -274,6 +274,7 @@ Datos puros de las alumnas de la escuela (~150 registros, a cargar por import ap
 | `fecha_nacimiento` | `date` | nullable (Bloque 4, 2026-09-08) — ver nota abajo |
 | `fecha_inscripcion` | `date` | `not null`, default `current_date` (agregado en F2 MOD 2) |
 | `estado` | `text` | `not null`, default `'activa'`, check: `'activa' \| 'baja'` |
+| `fecha_baja` | `date` | nullable (2026-09-08) — desde cuándo dejó de deber cuota. Solo tiene sentido con `estado = 'baja'`; ver nota abajo |
 | `grupo_id` | `uuid` | FK a `grupos(id)`, nullable, `on delete restrict` — una alumna pertenece a un solo grupo a la vez; se eligió `restrict` (no `set null`/`cascade`) para que borrar un grupo con alumnas asignadas falle explícitamente en vez de dejarlas huérfanas sin nivel; obligatorio a nivel de formulario en el alta/edición manual (F2 MOD 2), pero no en la base |
 | `created_at` | `timestamptz` | default `now()` |
 | `updated_at` | `timestamptz` | default `now()`, se actualiza solo con trigger |
@@ -281,6 +282,8 @@ Datos puros de las alumnas de la escuela (~150 registros, a cargar por import ap
 Descartado a propósito (decisión de producto, no un olvido): email, datos médicos/alergias, motivo de baja.
 
 **`fecha_nacimiento` se agregó en el Bloque 4 de las Correcciones pre-UI (2026-09-08), revirtiendo la decisión original de no tenerla.** El motivo por el que se había descartado sigue siendo cierto —los grupos se arman por nivel/destreza, no por edad, y no hay filtro por edad en ninguna pantalla— pero el dato hace falta igual por dos razones nuevas: es **columna obligada de la planilla que se manda a la organización de un torneo** (junto al DNI, ver `torneo_participantes`) y habilita los cumpleaños. Nullable a propósito: las 158 fichas importadas no lo traían (el CSV no lo tenía), y donde falte se muestra vacío sin bloquear nada.
+
+**`fecha_baja` se agregó el 2026-09-08** (`20260908170000_deuda_no_se_borra_con_la_baja.sql`), pedido del modelo del módulo 5 del rediseño. `estado` decía «está de baja» pero no «desde cuándo», y sin eso `calcularDeudorasDelMes` no tenía forma de incluir a una alumna de baja sin cobrarle cuota para siempre: filtraba `estado = 'activa'`, así que dar de baja **borraba la deuda en silencio**. Con la columna, el cálculo incluye a las de baja solo hasta el mes de su baja inclusive. Nullable, con dos lecturas según el estado: en una alumna activa `null` es lo normal; en una de baja significa «baja vieja, sin fecha registrada» y **no genera cuota de ningún mes** — el lado seguro, no inventar deuda de un dato que nadie cargó. Sin trigger que la complete al pasar a `'baja'`: la fecha real de baja no siempre es el día en que alguien la carga, así que la elige quien da la baja. Al aplicar la migración las 158 alumnas estaban activas y ninguna tenía baja, así que la columna arrancó vacía sin ambigüedad.
 
 **F2 MOD 2 (2026-09-02) relajó `dni` y `grupo_id`:** Groundwork 1 los había dejado `not null` (`dni` además `unique` total), probado a propósito en esa sesión. F2 MOD 2 necesitaba lo contrario para tolerar el import futuro del listado real de Luciana (~150 filas, incompletas y con DNI posiblemente repetidos): se preguntó al usuario (pregunta de alto impacto) y se aplicó `supabase/migrations/20260902120000_f2_mod2_alumnas_ajustes_esquema.sql` — `dni` nullable con índice único parcial (permite muchas filas con `dni is null` pero sigue bloqueando un `dni` real repetido), `grupo_id` nullable en base (el formulario de alta/edición lo sigue exigiendo). La tabla seguía en 0 filas al aplicar el ALTER, sin riesgo de datos existentes.
 
@@ -356,6 +359,25 @@ La suma de estas filas tiene que dar exacto `pagos.monto` — validado en `crear
 **Reglas de negocio compartidas** (`src/lib/pagos/reglas.ts`, `src/lib/pagos/saldo.ts`): recargo fijo de $10.000, sugerido cuando ya pasó el día 10 del mes correspondiente y la alumna todavía tiene saldo pendiente (checkbox editable, no un campo separado por alumna/mes); "días de atraso" del reporte de Deudoras se cuentan desde el día 15. Las fechas de "hoy" para estas reglas se calculan en huso horario Argentina (`America/Argentina/Buenos_Aires`), no en el huso del servidor, para no correr un día el corte según la hora en que corra Vercel.
 
 **UI (F2 MOD 3):** `/pagos` (menú), `/pagos/nuevo` (alta: buscador de alumna por apellido, mes, contacto que paga, métodos como repetidor de filas, checkbox de recargo, saldo pendiente informativo antes de guardar), `/pagos/pendientes` (verificación, filtrable por mes; "Marcar como verificado" genera el recibo en el momento, no antes), `/pagos/recaudacion` (total del mes verificado + desglose por método) y `/pagos/deudoras` (alumnas activas con saldo pendiente de un mes, con banner de recordatorio los días 8-9). Sección "Administración" de `AppHeader.tsx` suma el ítem "Pagos" junto a "Alumnas".
+
+### `deudas_saldadas`
+
+Creada el 2026-09-08 (`20260908170000_deuda_no_se_borra_con_la_baja.sql`), pedido del modelo del módulo 5 del rediseño. Cierra el mes de una alumna **sin plata de por medio**: perdonar una deuda obligaba a inventar un pago falso, y eso ensuciaba la recaudación del mes. El cálculo de deudoras consulta esta tabla igual que los pagos, pero como no toca `pagos`, la recaudación no se altera.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `alumna_id` | `uuid` | FK a `alumnas(id)`, `not null`, `on delete restrict` — mismo criterio que `pagos.alumna_id`: borrar una alumna no debe destruir en silencio por qué se le perdonó un mes |
+| `mes_correspondiente` | `date` | `not null`, siempre el día 1 (check `deudas_saldadas_mes_dia_1`), misma convención que `pagos.mes_correspondiente` |
+| `motivo` | `text` | `not null`, no vacío (check `deudas_saldadas_motivo_no_vacio`, `btrim(motivo) <> ''`) — la longitud mínima real la valida el formulario |
+| `saldada_por` | `uuid` | FK a `users(id)`, `not null`, `on delete restrict` |
+| `created_at` | `timestamptz` | default `now()` |
+
+Constraint `deudas_saldadas_alumna_mes_unica`: `unique (alumna_id, mes_correspondiente)` — saldar dos veces el mismo mes no tiene sentido, y para deshacerlo se borra la fila. Índice `deudas_saldadas_mes_idx` (`mes_correspondiente`), que es como lee el reporte. RLS: política única `for all` para Admin, Head Coach y Secretaria, mismo trío que `pagos`/`pagos_metodos` — saldar una deuda es una operación del módulo Pagos.
+
+**«Eliminar de la lista» y «marcar como saldada» son la misma acción, con motivo obligatorio.** Si fueran dos, en tres meses nadie recordaría qué significaba cada una.
+
+Verificado contra el proyecto real al aplicar la migración, todo dentro de transacciones con `rollback` (0 filas de prueba restantes): los 4 escenarios de constraint (mes que no es día 1 rechazado, motivo en blanco rechazado, insert válido, duplicado alumna+mes rechazado) y la RLS con los IDs reales — Profesor ve 0 filas y su INSERT lo rechaza la policy; Secretaria ve e inserta.
 
 ### `asistencia`
 
@@ -478,6 +500,7 @@ users ──┬──< tareas (created_by)
 grupos ──┬──< grupo_horarios
          ├──< alumnas ──┬──< contactos
          │              ├──< pagos (contacto_id, opcional)
+         │              ├──< deudas_saldadas (2026-09-08)
          │              └──< asistencia (F2 MOD 4)
          ├──< turnos (grupo_id, desde Fase 1.2 Sesión 2)
          ├──< grupo_objetivos_mes (F2 MOD 1)
@@ -485,6 +508,7 @@ grupos ──┬──< grupo_horarios
 
 pagos ──< pagos_metodos
 pagos ──> users (registrado_por, verificado_por)
+deudas_saldadas ──> users (saldada_por)
 asistencia ──> users (registrado_por)
 
 torneos ──< torneo_participantes >── alumnas   (Bloque 5)
