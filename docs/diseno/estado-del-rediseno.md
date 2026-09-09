@@ -32,6 +32,7 @@ Antes de arrancar el rediseño se hizo una tanda de **correcciones pre-UI** en c
 | `docs/modelo-datos.md` | Tablas, campos, índices, RLS, triggers. |
 | `docs/diseno/0N-*.dc.html` | Los modelos visuales, uno por módulo. **Mandan en diseño.** |
 | Este archivo | El estado del rediseño. |
+| `docs/diseno/lo-que-falta.md` | La hoja de ruta de lo que queda (módulos 7 y 8 + pendientes). Temporal: se borra al terminar el rediseño. |
 
 ---
 
