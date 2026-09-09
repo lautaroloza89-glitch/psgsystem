@@ -85,13 +85,27 @@ export function puedeCrearTarea<T extends PerfilPermisos>(
   return tieneRol(profile, ["Admin", "Profesor", "Head Coach", "Secretaria"]);
 }
 
+/**
+ * Editar una tarea: Admin, Head Coach y Secretaria pueden con **cualquiera**;
+ * Profesor solo con las que creó o tiene asignadas.
+ *
+ * Head Coach se amplió el 2026-09-08 (migración
+ * `20260908160000_head_coach_ve_y_edita_todas_las_tareas`): es la dueña del
+ * club, y el recorte venía de la Fase 1, cuando el rol se pensó como "Profesor
+ * con más alcance sobre horarios". La RLS acompaña, y también se le abrió la
+ * lectura: no se puede editar lo que no aparece en ningún listado.
+ *
+ * Borrar sigue siendo otra cosa — Admin, o quien la creó (`tareas_delete`).
+ */
 export function puedeEditarTarea<T extends PerfilPermisos>(
   profile: T | null | undefined,
   tarea: TareaPermisos
 ): profile is T {
   if (!profile) return false;
-  if (profile.rol === "Admin") return true;
-  if (profile.rol === "Profesor" || profile.rol === "Head Coach" || profile.rol === "Secretaria") {
+  if (profile.rol === "Admin" || profile.rol === "Head Coach" || profile.rol === "Secretaria") {
+    return true;
+  }
+  if (profile.rol === "Profesor") {
     return tarea.created_by === profile.id || esResponsable(profile, tarea);
   }
   return false;

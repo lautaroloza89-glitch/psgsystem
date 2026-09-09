@@ -18,7 +18,7 @@ Rama: **`nueva-ui`**, sacada de `main` el 2026-09-08. Base de datos: la misma de
 - **Un módulo por sesión, un commit por módulo.** Al terminar, probarlo con al menos dos roles: uno de gestión y uno del personal.
 - **No se cambia el esquema desde esta rama.** Si falta un campo, se agrega en `main`, se documenta en `docs/modelo-datos.md` y recién ahí se mergea. Lo mismo vale para cambios de RLS y de permisos.
 - **No mezclar correcciones de permisos con cambios de UI en el mismo commit.**
-- **Ninguna acción en pantalla sin verificar el permiso.** Antes de escribir un botón que el modelo propone, cruzarlo contra el helper de `src/lib/permisos.ts` (o el de dominio). Si el permiso no coincide con el modelo, atar el renderizado al helper real y anotar la discrepancia en `docs/pendientes.md` — nunca copiar el modelo a ciegas ni borrar la acción en silencio. *(Esta regla salió de un error real: el módulo 1 le puso «Tomar asistencia» a la profesora, que no puede.)*
+- **Cada cruce entre el modelo y los permisos lo decide Lauti, sobre la marcha.** Antes de escribir un botón que el modelo propone, cruzarlo contra el helper de `src/lib/permisos.ts` (o el de dominio). Si el permiso no coincide con lo que muestra el modelo, **frenar y preguntarle** en el momento: no resolverlo por cuenta propia ni dejarlo anotado para después. Instrucción explícita del 2026-09-08, después de dos episodios opuestos — el módulo 1 le puso «Tomar asistencia» a la profesora, que no podía; y en el módulo 3 se respetó el `.md` sobre quién edita cuando la intención real era la del modelo.
 - **Ningún `profile!` ni `as User`.** Los helpers de `permisos.ts` son type guards: si el compilador se queja de null después de un gate, es que a ese helper le falta el guard.
 
 ## Estado de los módulos
@@ -29,7 +29,7 @@ Rama: **`nueva-ui`**, sacada de `main` el 2026-09-08. Base de datos: la misma de
 | 0 | Modelos de diseño al repo | ✅ | `3f81e42` |
 | 1 | Navegación e Inicio | ✅ | `a6351f3` · `10c7c33` |
 | 2 | Miembros | ✅ | `cd3fab9` |
-| 3 | Tareas | ✅ | `f454c3c` |
+| 3 | Tareas | 🟡 falta el formulario de alta (modelo `Rd`) | `f454c3c` |
 | 4 | Asistencia | ⬜ pendiente | — |
 | 5 | Pagos | ⬜ pendiente | — |
 | 6 | Alumnas | ⬜ pendiente | — |
