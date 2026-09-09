@@ -55,10 +55,8 @@ export default async function EditarTareaPage({
 
   return (
     <div className="mx-auto max-w-lg space-y-5">
-      <div className="flex items-center gap-2">
-        <BackButton href={`/tareas/${id}`} />
-        <h1 className="text-xl font-bold tracking-tight">Editar tarea</h1>
-      </div>
+      <BackButton href={`/tareas/${id}`} />
+      <h1 className="text-2xl font-bold tracking-tight">Editar tarea</h1>
       <TareaForm
         action={editarTareaConId}
         usuarios={usuarios ?? []}

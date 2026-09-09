@@ -29,7 +29,7 @@ function leerCamposTarea(formData: FormData) {
 
 function validarFechas(fecha_inicio: string | null, fecha_vencimiento: string | null) {
   if (fecha_inicio && fecha_vencimiento && fecha_vencimiento < fecha_inicio) {
-    return "La fecha de vencimiento no puede ser anterior a la fecha de inicio.";
+    return "La fecha límite no puede ser anterior al día en que se empieza.";
   }
   return null;
 }

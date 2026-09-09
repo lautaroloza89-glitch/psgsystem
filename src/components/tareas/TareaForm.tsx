@@ -61,7 +61,7 @@ export function TareaForm({
     <form action={formAction} className="space-y-6">
       <div className="space-y-1.5">
         <label htmlFor="titulo" className="text-label font-medium">
-          Qué hay que hacer
+          Qué se debe hacer
         </label>
         <input
           id="titulo"
@@ -76,15 +76,20 @@ export function TareaForm({
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="text-label font-medium">Quién</legend>
+        <legend className="text-label font-medium">Encargados de realizar la tarea</legend>
         <ChipsResponsables usuarios={usuarios} seleccionados={defaultValues?.asignadosIds} />
         <p className="text-sm text-text-subtle">
           Solo el personal del club. Las patinadoras no reciben tareas.
         </p>
       </fieldset>
 
+      {/* Las dos fechas, juntas y con nombres que las distinguen.
+          «Para cuándo» arriba y «Fecha de inicio» abajo del Detalle se leían
+          como dos maneras de cargar lo mismo: son columnas distintas
+          (`fecha_vencimiento` y `fecha_inicio`) y ahora lo dicen. */}
       <fieldset className="space-y-2">
-        <legend className="text-label font-medium">Para cuándo</legend>
+        <legend className="text-label font-medium">Fecha límite</legend>
+        <p className="text-sm text-text-subtle">Hasta cuándo hay tiempo de hacerla.</p>
         <div className="flex flex-wrap gap-2">
           {atajos.map((atajo) => {
             const activo = vence === atajo.valor;
@@ -123,7 +128,7 @@ export function TareaForm({
 
         {(otraFecha || (!!vence && !usaAtajo)) && (
           <input
-            aria-label="Fecha de vencimiento"
+            aria-label="Fecha límite"
             type="date"
             value={vence}
             onChange={(e) => setVence(e.target.value)}
@@ -135,6 +140,44 @@ export function TareaForm({
             validación del servidor no cambia. */}
         <input type="hidden" name="fecha_vencimiento" value={vence} />
       </fieldset>
+
+      {/* Va pegada a la fecha límite, no al final del formulario: son las dos
+          fechas de la tarea y separarlas era lo que las hacía parecer la
+          misma. Casi nunca se usa, así que sigue replegada. */}
+      <div className="space-y-1.5">
+        {conInicio ? (
+          <>
+            <label htmlFor="fecha_inicio" className="text-label font-medium">
+              Cuándo se empieza{" "}
+              <span className="font-normal text-text-subtle">· opcional</span>
+            </label>
+            <input
+              id="fecha_inicio"
+              name="fecha_inicio"
+              type="date"
+              defaultValue={defaultValues?.fecha_inicio}
+              className={INPUT_CLASS}
+            />
+            <p className="text-sm text-text-subtle">
+              Solo si la tarea no arranca hoy. No es la fecha límite.
+            </p>
+          </>
+        ) : (
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-label font-medium">
+              Cuándo se empieza{" "}
+              <span className="font-normal text-text-subtle">· opcional</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setConInicio(true)}
+              className="rounded px-1 text-sm font-medium text-primary-600 transition-colors duration-[var(--duration-fast)] ease-standard hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            >
+              Agregar
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="space-y-1.5">
         <label htmlFor="descripcion" className="text-label font-medium">
@@ -149,34 +192,6 @@ export function TareaForm({
           defaultValue={defaultValues?.descripcion}
           className={INPUT_CLASS}
         />
-      </div>
-
-      <div className="space-y-1.5">
-        {conInicio ? (
-          <>
-            <label htmlFor="fecha_inicio" className="text-label font-medium">
-              Fecha de inicio
-            </label>
-            <input
-              id="fecha_inicio"
-              name="fecha_inicio"
-              type="date"
-              defaultValue={defaultValues?.fecha_inicio}
-              className={INPUT_CLASS}
-            />
-          </>
-        ) : (
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-label font-medium">Fecha de inicio</span>
-            <button
-              type="button"
-              onClick={() => setConInicio(true)}
-              className="rounded px-1 text-sm font-medium text-primary-600 transition-colors duration-[var(--duration-fast)] ease-standard hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-            >
-              Agregar
-            </button>
-          </div>
-        )}
       </div>
 
       {state.error && (

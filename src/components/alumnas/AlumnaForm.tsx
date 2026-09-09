@@ -296,7 +296,7 @@ export function AlumnaForm({
       <details className="overflow-hidden rounded-xl border border-border bg-surface">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-surface-muted">
           <span>
-            <span className="block font-medium">DNI, nacimiento y fecha de inscripción</span>
+            <span className="block font-medium">DNI, fecha de nacimiento e inscripción</span>
             <span className="block text-text-subtle">{datosRepleglados}</span>
           </span>
           <span className="shrink-0 font-medium text-primary-600">Editar</span>

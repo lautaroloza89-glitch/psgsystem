@@ -29,10 +29,8 @@ export default async function NuevaTareaPage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-5">
-      <div className="flex items-center gap-2">
-        <BackButton href="/tareas" />
-        <h1 className="text-xl font-bold tracking-tight">Nueva tarea</h1>
-      </div>
+      <BackButton href="/tareas" />
+      <h1 className="text-2xl font-bold tracking-tight">Nueva tarea</h1>
       <TareaForm
         action={crearTarea}
         usuarios={usuarios ?? []}
