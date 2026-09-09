@@ -4,7 +4,7 @@ import type { User } from "@/types";
 /**
  * «Quién»: los responsables como chips con el nombre y nada más.
  *
- * Antes era `AsignadosChecklist`, una lista de checkboxes con tres líneas por
+ * Antes era `AsignadosChecklist` (ya borrado), una lista de checkboxes con tres líneas por
  * persona (rol en negrita y cargo debajo) que empujaba «Crear tarea» abajo del
  * scroll. Acá entran las seis en dos renglones.
  *

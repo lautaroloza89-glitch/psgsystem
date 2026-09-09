@@ -132,11 +132,19 @@ export function lunesDeLaSemana(fecha: string): string {
 }
 
 /**
- * «Lunes 7 de septiembre» — el subtítulo del saludo en el inicio. Sale de
- * `hoyArgentina()` como todo lo demás, así que no cambia de día a las 21:00.
+ * «Lunes 7 de septiembre». El formato de fecha del rediseño: `formatFecha`
+ * (`07/09/2026`) sigue existiendo para donde importa la fecha exacta, pero en
+ * una pantalla de clase el dato que se busca es el día de la semana.
+ */
+export function fechaLargaConDia(fecha: string): string {
+  const [, mes, dia] = fecha.split("-").map(Number);
+  return `${nombreDia(diaIsoDeFecha(fecha))} ${dia} de ${nombreMes(mes).toLowerCase()}`;
+}
+
+/**
+ * El subtítulo del saludo en el inicio. Sale de `hoyArgentina()` como todo lo
+ * demás, así que no cambia de día a las 21:00.
  */
 export function fechaLargaDeHoy(): string {
-  const hoy = hoyArgentina();
-  const [, mes, dia] = hoy.split("-").map(Number);
-  return `${nombreDia(diaIsoDeFecha(hoy))} ${dia} de ${nombreMes(mes).toLowerCase()}`;
+  return fechaLargaConDia(hoyArgentina());
 }

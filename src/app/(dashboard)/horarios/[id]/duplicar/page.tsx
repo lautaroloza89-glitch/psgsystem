@@ -42,10 +42,12 @@ export default async function DuplicarPlanificacionPage({
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <BackButton href={`/horarios/${id}`} />
-      <h1 className="text-2xl font-bold tracking-tight">Duplicar planificación</h1>
-      <p className="text-sm text-text-subtle">{grupoNombre}</p>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Duplicar planificación</h1>
+        <p className="text-sm text-text-subtle">{grupoNombre}</p>
+      </div>
 
-      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-xs sm:p-6">
         <DuplicarPlanificacionForm
           action={duplicarPlanificacionDeTurno}
           tipoInicial={turno.tipo}

@@ -5,6 +5,7 @@ import type { FormState } from "@/app/(dashboard)/horarios/actions";
 import type { Rol, User } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
 import { ChipsResponsables } from "@/components/tareas/ChipsResponsables";
+import { ChipOpcion } from "@/components/ui/ChipOpcion";
 import { fechasDelMesPorDia, nombreDia } from "@/lib/utils/date";
 
 const INPUT_CLASS =
@@ -93,8 +94,6 @@ export function PlanificarForm({
     setMarcadas(new Set(todas ? fechas : []));
   }
 
-  const chip =
-    "rounded-full border px-4 py-2 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
   const chipActivo = "border-primary-500 bg-primary-500 text-on-primary";
   const chipInactivo = "border-border text-text-muted hover:border-border-strong";
 
@@ -110,15 +109,9 @@ export function PlanificarForm({
         <legend className="text-label font-medium">Día de la semana</legend>
         <div className="flex flex-wrap gap-2">
           {diasDisponibles.map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => cambiarDia(d)}
-              aria-pressed={diaIso === d}
-              className={`${chip} ${diaIso === d ? chipActivo : chipInactivo}`}
-            >
+            <ChipOpcion key={d} activo={diaIso === d} onClick={() => cambiarDia(d)}>
               {nombreDia(d)}
-            </button>
+            </ChipOpcion>
           ))}
         </div>
         <p className="text-sm text-text-subtle">Días que este grupo entrena.</p>
@@ -176,15 +169,9 @@ export function PlanificarForm({
           </label>
           <div className="flex gap-2">
             {(["Patín", "Preparación física"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTipo(t)}
-                aria-pressed={tipo === t}
-                className={`${chip} ${tipo === t ? chipActivo : chipInactivo}`}
-              >
+              <ChipOpcion key={t} activo={tipo === t} onClick={() => setTipo(t)}>
                 {t === "Preparación física" ? "Prep. física" : t}
-              </button>
+              </ChipOpcion>
             ))}
           </div>
         </div>

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { puedeEditarClase } from "@/lib/permisos";
+import { fechaLargaConDia } from "@/lib/utils/date";
 import { TurnoForm } from "@/components/horarios/TurnoForm";
 import { BackButton } from "@/components/ui/BackButton";
 import { editarTurno } from "../../actions";
@@ -61,8 +62,11 @@ export default async function EditarTurnoPage({
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <BackButton href={`/horarios/${id}`} />
-      <h1 className="text-2xl font-bold tracking-tight">Editar clase</h1>
-      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Editar clase</h1>
+        <p className="text-sm text-text-subtle">{fechaLargaConDia(turno.fecha)}</p>
+      </div>
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-xs sm:p-6">
         <TurnoForm
           action={editarTurnoConId}
           profile={{ id: profile.id, rol: profile.rol }}

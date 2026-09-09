@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import type { FormState } from "@/app/(dashboard)/torneos/actions";
 import type { TipoTorneo } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
+import { ChipOpcion } from "@/components/ui/ChipOpcion";
 import { LABEL_TIPO_TORNEO } from "@/lib/torneos/tipo";
 
 const INPUT_CLASS =
@@ -66,11 +67,6 @@ export function TorneoForm({
 
   const rangoInvalido = variosDias && !!fechaInicio && !!fechaFin && fechaFin < fechaInicio;
 
-  const chip =
-    "rounded-full border px-4 py-2 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
-  const chipActivo = "border-primary-500 bg-primary-500 text-on-primary";
-  const chipInactivo = "border-border text-text-muted hover:border-border-strong";
-
   return (
     <form action={formAction} className="space-y-6">
       <input type="hidden" name="tipo" value={tipo} />
@@ -95,15 +91,9 @@ export function TorneoForm({
         <legend className="text-label font-medium">Tipo</legend>
         <div className="flex flex-wrap gap-2">
           {TIPOS.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTipo(t)}
-              aria-pressed={tipo === t}
-              className={`${chip} ${tipo === t ? chipActivo : chipInactivo}`}
-            >
+            <ChipOpcion key={t} activo={tipo === t} onClick={() => setTipo(t)}>
               {LABEL_TIPO_TORNEO[t]}
-            </button>
+            </ChipOpcion>
           ))}
         </div>
       </fieldset>
@@ -112,22 +102,12 @@ export function TorneoForm({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <legend className="text-label font-medium">Cuándo</legend>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => cambiarDuracion(false)}
-              aria-pressed={!variosDias}
-              className={`${chip} ${variosDias ? chipInactivo : chipActivo}`}
-            >
+            <ChipOpcion activo={!variosDias} onClick={() => cambiarDuracion(false)}>
               Un día
-            </button>
-            <button
-              type="button"
-              onClick={() => cambiarDuracion(true)}
-              aria-pressed={variosDias}
-              className={`${chip} ${variosDias ? chipActivo : chipInactivo}`}
-            >
+            </ChipOpcion>
+            <ChipOpcion activo={variosDias} onClick={() => cambiarDuracion(true)}>
               Varios días
-            </button>
+            </ChipOpcion>
           </div>
         </div>
 
@@ -174,14 +154,9 @@ export function TorneoForm({
           <label htmlFor="lugar" className="text-label font-medium">
             Lugar
           </label>
-          <button
-            type="button"
-            onClick={() => setLugar("")}
-            aria-pressed={lugar === ""}
-            className={`${chip} ${lugar === "" ? chipActivo : chipInactivo}`}
-          >
+          <ChipOpcion activo={lugar === ""} onClick={() => setLugar("")}>
             En el club
-          </button>
+          </ChipOpcion>
         </div>
         <input
           id="lugar"

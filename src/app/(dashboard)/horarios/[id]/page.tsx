@@ -15,7 +15,8 @@ import { ComentariosTurnoList, type ComentarioTurnoData } from "@/components/hor
 import { ComentarioTurnoForm } from "@/components/horarios/ComentarioTurnoForm";
 import { BackButton } from "@/components/ui/BackButton";
 import { MarkdownText } from "@/components/ui/MarkdownText";
-import { formatFecha } from "@/lib/utils/date";
+import { Icono } from "@/components/ui/Icono";
+import { fechaLargaConDia } from "@/lib/utils/date";
 import type { EstadoTurno, Rol } from "@/types";
 
 export const metadata: Metadata = { title: "Detalle de clase" };
@@ -84,43 +85,44 @@ export default async function TurnoDetallePage({
     <div className="mx-auto max-w-2xl space-y-6">
       <BackButton href={volverA} />
 
-      <div className="space-y-6 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
+      <div className="space-y-5 rounded-xl border border-border bg-surface p-5 shadow-xs sm:p-6">
         <div className="flex items-start justify-between gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">
-            {grupoNombre}
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight">{grupoNombre}</h1>
+            {/* La fecha en lenguaje natural, como en el resto del rediseño: el
+                formato numérico obligaba a traducir «09/09/2026» a «miércoles»
+                justo en la pantalla donde el día de la semana es el dato. */}
+            <p className="mt-1 text-base text-text-muted">
+              {fechaLargaConDia(turno.fecha)} · {turno.hora_inicio.slice(0, 5)}–
+              {turno.hora_fin.slice(0, 5)}
+            </p>
+            <p className="text-base text-text-muted">
+              {profesoresNombres.length > 0 ? profesoresNombres.join(", ") : "Sin profesora asignada"}
+            </p>
+          </div>
+          <div className="flex flex-none flex-col items-end gap-2">
+            {turno.estado === "Cancelado" && <EstadoTurnoBadge estado="Cancelado" />}
             {turno.tipo === "Preparación física" && (
-              <span className="ml-2 text-base font-normal text-text-subtle">
-                (Preparación física)
+              <span className="rounded-full bg-surface-muted px-2.5 py-1 text-sm font-medium text-text-muted">
+                Prep. física
               </span>
             )}
-          </h1>
-          <EstadoTurnoBadge estado={turno.estado as EstadoTurno} />
+            {!puedeEditar && (
+              // Lo dice de entrada, sin que haya que descubrirlo tocando: el
+              // rol ve el texto completo y los comentarios, pero no las
+              // acciones.
+              <span className="rounded-full border border-border bg-surface-muted px-3 py-1 text-sm font-medium text-text-muted">
+                Solo lectura
+              </span>
+            )}
+          </div>
         </div>
-
-        <div className="space-y-1 text-base text-text-muted">
-          <p>Fecha: {formatFecha(turno.fecha)}</p>
-          <p>
-            Horario: {turno.hora_inicio.slice(0, 5)}–{turno.hora_fin.slice(0, 5)}
-          </p>
-          <p>
-            {profesoresNombres.length > 1 ? "Profesores" : "Profesor"}:{" "}
-            {profesoresNombres.length > 0 ? profesoresNombres.join(", ") : "Sin asignar"}
-          </p>
-        </div>
-
-        {!puedeEditar && (
-          // Lo dice de entrada, sin que haya que descubrirlo tocando: el rol
-          // ve el texto completo y los comentarios, pero no las acciones.
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-muted px-3 py-1 text-sm font-medium text-text-muted">
-            Solo lectura
-          </span>
-        )}
 
         {puedeEditar && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
             <Link
               href={`/horarios/${turno.id}/editar`}
-              className="inline-block rounded-md border border-border-strong px-4 py-2 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard hover:border-neutral-400 hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              className="inline-flex min-h-11 items-center rounded-md border border-border-strong px-4 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard hover:border-neutral-400 hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             >
               Editar clase
             </Link>
@@ -128,21 +130,30 @@ export default async function TurnoDetallePage({
               turnoId={turno.id}
               estadoActual={turno.estado as EstadoTurno}
             />
+            {/* Borrar va al final y separado: es la única acción que no se
+                deshace. Antes colgaba en una fila propia debajo de todo. */}
+            {profile.rol === "Admin" && (
+              <span className="ml-auto">
+                <BorrarTurnoButton turnoId={turno.id} />
+              </span>
+            )}
           </div>
         )}
-
-        {profile.rol === "Admin" && <BorrarTurnoButton turnoId={turno.id} />}
       </div>
 
-      <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
+      <div className="space-y-4 rounded-xl border border-border bg-surface p-5 shadow-xs sm:p-6">
         <div className="flex items-start justify-between gap-2">
           <h2 className="text-lg font-semibold">Planificación</h2>
-          {puedeEditar && (
+          {puedeEditar && turno.planificacion && (
+            // Solo si hay algo que duplicar: el link aparecía igual sobre una
+            // planificación vacía, y llevaba a un formulario que no se podía
+            // guardar.
             <Link
               href={`/horarios/${turno.id}/duplicar`}
-              className="text-sm font-medium text-primary-600 hover:text-primary-700"
+              className="inline-flex min-h-11 flex-none items-center gap-1.5 rounded-md border border-border-strong px-3 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard hover:border-neutral-400 hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             >
-              Duplicar a otra fecha
+              <Icono nombre="note" className="h-4 w-4" />
+              Duplicar
             </Link>
           )}
         </div>
@@ -153,7 +164,7 @@ export default async function TurnoDetallePage({
         )}
       </div>
 
-      <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
+      <div className="space-y-4 rounded-xl border border-border bg-surface p-5 shadow-xs sm:p-6">
         <h2 className="text-lg font-semibold">Comentarios</h2>
         <ComentariosTurnoList comentarios={comentarios} />
         {puedeComentarClase(profile) ? (
