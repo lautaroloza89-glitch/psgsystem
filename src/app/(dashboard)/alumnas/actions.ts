@@ -5,13 +5,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { puedeGestionarAlumnas } from "@/lib/permisos";
-import type { EstadoAlumna } from "@/types";
 
 export interface FormState {
   error: string | null;
 }
-
-const ESTADOS_VALIDOS: EstadoAlumna[] = ["activa", "baja"];
 
 interface ContactoInput {
   id: string | null;
@@ -215,6 +212,68 @@ export async function crearAlumna(_prevState: FormState, formData: FormData): Pr
   redirect(`/alumnas/${nuevaAlumna.id}`);
 }
 
+/**
+ * Dar de baja, con la fecha desde la que deja de deber cuota.
+ *
+ * Salió del formulario de edición, donde era un desplegable «Activa / Baja»
+ * perdido entre el grupo y los contactos: es la acción que apaga la alerta de
+ * inasistencia, así que tiene que ser fácil de encontrar y difícil de tocar
+ * sin querer.
+ *
+ * La fecha la elige quien da la baja y **no** es automáticamente hoy: la fecha
+ * real en que la alumna dejó de venir casi nunca coincide con el día en que
+ * alguien lo carga en el sistema. De ella depende hasta qué mes sigue
+ * figurando en Deudoras — **la baja no cancela la deuda**.
+ */
+export async function darDeBajaAlumna(alumnaId: string, fechaBaja: string): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!puedeGestionarAlumnas(profile)) {
+    return { error: "No tenés permiso para dar de baja alumnas." };
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaBaja)) {
+    return { error: "Elegí la fecha de la baja." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("alumnas")
+    .update({ estado: "baja", fecha_baja: fechaBaja })
+    .eq("id", alumnaId);
+
+  if (error) {
+    return { error: "No se pudo dar de baja a la alumna." };
+  }
+
+  revalidatePath(`/alumnas/${alumnaId}`);
+  revalidatePath("/alumnas");
+  revalidatePath("/pagos/deudoras");
+  return { error: null };
+}
+
+/** Volver a activarla: se limpia `fecha_baja`, así que vuelve a generar cuota. */
+export async function reactivarAlumna(alumnaId: string): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!puedeGestionarAlumnas(profile)) {
+    return { error: "No tenés permiso para reactivar alumnas." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("alumnas")
+    .update({ estado: "activa", fecha_baja: null })
+    .eq("id", alumnaId);
+
+  if (error) {
+    return { error: "No se pudo reactivar a la alumna." };
+  }
+
+  revalidatePath(`/alumnas/${alumnaId}`);
+  revalidatePath("/alumnas");
+  revalidatePath("/pagos/deudoras");
+  return { error: null };
+}
+
 export async function editarAlumna(
   alumnaId: string,
   _prevState: FormState,
@@ -230,11 +289,6 @@ export async function editarAlumna(
   if (errorCampos) {
     return { error: errorCampos };
   }
-
-  const estadoRaw = (formData.get("estado") as string) ?? "activa";
-  const estado: EstadoAlumna = ESTADOS_VALIDOS.includes(estadoRaw as EstadoAlumna)
-    ? (estadoRaw as EstadoAlumna)
-    : "activa";
 
   const contactos = leerContactos(formData);
   const errorContactos = validarContactos(contactos);
@@ -262,7 +316,10 @@ export async function editarAlumna(
       fecha_nacimiento: campos.fecha_nacimiento,
       fecha_inscripcion: campos.fecha_inscripcion || undefined,
       grupo_id: campos.grupo_id,
-      estado,
+      // `estado` **no** se toca acá: salió del formulario y ahora se cambia
+      // solo por `darDeBajaAlumna` / `reactivarAlumna`. Si siguiera leyéndose
+      // del form, editar el teléfono de una alumna de baja la reactivaría en
+      // silencio (el campo ausente caía en el default 'activa').
     })
     .eq("id", alumnaId);
 

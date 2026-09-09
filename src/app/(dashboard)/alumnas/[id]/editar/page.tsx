@@ -5,7 +5,6 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { puedeGestionarAlumnas } from "@/lib/permisos";
 import { AlumnaForm } from "@/components/alumnas/AlumnaForm";
 import { BackButton } from "@/components/ui/BackButton";
-import type { EstadoAlumna } from "@/types";
 import { editarAlumna } from "../../actions";
 
 export const metadata: Metadata = { title: "Editar alumna" };
@@ -45,26 +44,23 @@ export default async function EditarAlumnaPage({
   const editarAlumnaConId = editarAlumna.bind(null, id);
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
+    <div className="mx-auto max-w-2xl space-y-5">
       <BackButton href={`/alumnas/${id}`} />
       <h1 className="text-2xl font-bold tracking-tight">Editar alumna</h1>
-      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
-        <AlumnaForm
-          action={editarAlumnaConId}
-          grupos={grupos ?? []}
-          modo="editar"
-          defaultValues={{
-            apellido: alumna.apellido,
-            nombre: alumna.nombre,
-            dni: alumna.dni,
-            fecha_nacimiento: alumna.fecha_nacimiento,
-            fecha_inscripcion: alumna.fecha_inscripcion,
-            grupo_id: alumna.grupo_id ?? "",
-            estado: alumna.estado as EstadoAlumna,
-            contactos: contactos ?? [],
-          }}
-        />
-      </div>
+      <AlumnaForm
+        action={editarAlumnaConId}
+        grupos={grupos ?? []}
+        modo="editar"
+        defaultValues={{
+          apellido: alumna.apellido,
+          nombre: alumna.nombre,
+          dni: alumna.dni,
+          fecha_nacimiento: alumna.fecha_nacimiento,
+          fecha_inscripcion: alumna.fecha_inscripcion,
+          grupo_id: alumna.grupo_id ?? "",
+          contactos: contactos ?? [],
+        }}
+      />
     </div>
   );
 }

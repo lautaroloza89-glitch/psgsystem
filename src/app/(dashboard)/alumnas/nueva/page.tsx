@@ -20,12 +20,10 @@ export default async function NuevaAlumnaPage() {
   const { data: grupos } = await supabase.from("grupos").select("id, nombre").order("nombre");
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
+    <div className="mx-auto max-w-2xl space-y-5">
       <BackButton href="/alumnas" />
       <h1 className="text-2xl font-bold tracking-tight">Nueva alumna</h1>
-      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
-        <AlumnaForm action={crearAlumna} grupos={grupos ?? []} modo="crear" />
-      </div>
+      <AlumnaForm action={crearAlumna} grupos={grupos ?? []} modo="crear" />
     </div>
   );
 }
