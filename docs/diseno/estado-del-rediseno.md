@@ -63,20 +63,22 @@ Este orden **no es una sugerencia: es el orden de trabajo.** Va de la estructura
 | 1 | **Navegación e Inicio** | La barra de pestañas reemplaza el cajón `☰`, y el inicio pasa a ser distinto por rol («Requiere tu atención» en vez de los cuatro contadores). Es lo que cambia el esqueleto: hacerlo primero evita rehacer pantallas dos veces. Incluye alinear `loading.tsx` con la pantalla real. | ✅ | `a6351f3` · `10c7c33` |
 | 2 | **Miembros** | El más chico, sirve de prueba del sistema visual nuevo: agrupado por rol, detalle editable, `dicta_clases` visible, «Invitar». | ✅ salvo «Invitar» | `cd3fab9` |
 | 3 | **Tareas** | «Mis tareas», vencidas marcadas, `UsuarioRolCargo` dado vuelta (ese componente se ve en tres módulos: arreglarlo acá los arregla todos). | ✅ | `f454c3c` · `677019c` |
-| 4 | **Asistencia** | Entrar directo al grupo de hoy, «Vino / Faltó», estado Parcial, pie fijo. | ⬜ **el que sigue** | — |
-| 5 | **Pagos** | Pantalla con números en vez del menú de cuatro tarjetas, recargo explicado, atraso por alumna. | ⬜ | — |
+| 4 | **Asistencia** | Entrar directo al grupo de hoy, «Vino / Faltó», estado Parcial, pie fijo. | ✅ | `27161b3` |
+| 5 | **Pagos** | Pantalla con números en vez del menú de cuatro tarjetas, recargo explicado, atraso por alumna. | ⬜ **el que sigue** | — |
 | 6 | **Alumnas** | Ficha con asistencia y deuda, teléfono tocable, baja fuera del formulario, listado denso. | ⬜ | — |
 | 7 | **Planificaciones** y **Torneos** | Pestañas Próximos/Pasados, sin duplicar el destacado, señal de notas. | ⬜ | — |
 | 8 | **Participación en torneos** (modelos Tg y Th) | Va última porque es la única pantalla que no existe hoy: se construye sobre `torneo_participantes` y sobre las categorías, que dependen de `alumnas.fecha_nacimiento`. | ⬜ | — |
 
 Antes del módulo 1 hubo dos commits de preparación: los helpers de permisos pasados a type guards (`60b4210`) y los modelos de diseño incorporados al repo (`3f81e42`).
 
-### Al arrancar el módulo 4 (Asistencia)
+### Al arrancar el módulo 5 (Pagos)
 
-Está desbloqueado, se puede empezar directo. Dos cosas para tener a mano:
+Está desbloqueado, se puede empezar directo. El modelo es `docs/diseno/05-pagos.dc.html`: **leerlo entero**, todas sus opciones, antes de escribir nada. En el módulo 3 se saltó la opción `Rd` y el formulario de alta quedó sin hacer hasta que Lauti lo detectó en el preview.
 
-- **La profesora no toma asistencia** — decidido por Lauti y escrito en `docs/decisiones.md`. El modelo del módulo 4 dice lo mismo («la Profesora no, y es a propósito»); el que se contradice es el del módulo 1, que le pone un atajo en su clase del día. Vale el 4. La profesora **sí** ve el estado de sus clases, incluido «asistencia tomada»: necesita saber si ya se cargó.
-- El modelo tiene cuatro opciones: `Aa` (llegar a la fecha), `Ab` (tomar asistencia), `Ac` (alertas — «casi no la toco») y `Ad` (inventario). **Leerlas todas antes de escribir**: en el módulo 3 se saltó la opción `Rd` y el formulario de alta quedó sin hacer hasta que Lauti lo detectó en el preview.
+Dos cosas que el módulo 4 deja servidas y conviene mirar antes:
+
+- **El estado se calcula, no se guarda.** Pendiente / Parcial / Cargada sale de contar filas contra el total (`src/lib/asistencia/dia.ts`). Pagos tiene la misma forma de problema (cuánto se pagó contra cuánto se debe): el patrón ya está escrito.
+- **La confirmación vuelve a la pantalla del día**, no al listado del que se venía. Si Pagos hace algo parecido, que sea el mismo criterio.
 
 ---
 
@@ -90,6 +92,10 @@ Está desbloqueado, se puede empezar directo. Dos cosas para tener a mano:
 - **`src/components/ui/UsuarioRolCargo.tsx`** — ya dado vuelta (persona primero, rol de subtítulo). Se usa en Tareas, Horarios y los dos listados de comentarios: **ya está arreglado en los tres**.
 - **`src/components/tareas/ChipsResponsables.tsx`** — chips que por debajo son checkboxes ocultos, así el formulario anda sin JavaScript. Patrón reusable para cualquier multi-selección.
 - **Patrón visual del listado:** un `<ul>` dentro de `rounded-xl border border-border bg-surface divide-y divide-border`, con encabezado de grupo en `text-sm font-semibold uppercase tracking-wide text-text-subtle`. Es el que usan Inicio, Miembros y Tareas.
+- **`src/lib/asistencia/dia.ts`** — `clasesDelDia()` (qué grupos tienen clase una fecha y cómo viene cargada cada una, derivado de `grupo_horarios` y no de `turnos`), `fechasAtrasadas()` y `diasDeLaSemana()`. El inicio ya lo usa, así que las dos pantallas cuentan igual.
+- **`src/components/asistencia/TiraDeDias.tsx`** — la semana de lunes a sábado con el día activo. Sirve para cualquier pantalla que se recorra por fecha.
+- **`src/lib/asistencia/rachas.ts`** — `rachaDeAlumna()`, el cálculo de «N semanas sin venir». Lo comparten la pantalla de alertas y el aviso que aparece en la fila al tomar asistencia: no pueden discrepar.
+- **Pie fijo con acción** (`TomarAsistenciaForm.tsx`) — `sticky bottom-[calc(4rem+env(safe-area-inset-bottom))]`, que es lo que lo deja justo arriba de la barra de pestañas. Patrón para cualquier formulario largo.
 - **`src/lib/utils/date.ts`** — `hoyArgentina()` para todo cálculo de «hoy», nunca `new Date()`. Si un componente de cliente necesita la fecha, se calcula en el servidor y se pasa como prop.
 
 ---
@@ -122,6 +128,8 @@ La fecha de nacimiento **no se usa para calcular nada**: el modelo decidió expl
 ## Verificación
 
 En cada módulo se corrió `npx tsc --noEmit` y `npx next build`, los dos limpios. El proyecto **no tiene ESLint configurado**, así que no hay linter que correr.
+
+El módulo 4, que cambia cómo se guarda, se verificó además contra la base real: el guardado parcial y el borrado al desmarcar, dentro de una transacción con `rollback` (3 filas de 13, después 2 — la tabla quedó en 0, que es como estaba); la policy `asistencia_admin_headcoach_secretaria` es `for all`, así que el `delete` nuevo entra en el permiso que ya existía; y el cálculo de rachas se probó con siete casos de borde (racha de 3, semana sin marca salteada, presente que corta, semana en curso, volvió esta semana, sin registro, última presencia). **La tabla `asistencia` está vacía en producción**: el módulo nunca se usó, así que todavía no hay datos reales que mirar.
 
 **Ningún módulo se probó en el navegador desde estas sesiones**: no hubo herramienta de browser. Lauti revisa el preview de Vercel de `nueva-ui` — así detectó que faltaba el formulario de alta del módulo 3. El repaso con dos roles que pide el `02-` sigue pendiente. Si en una sesión futura hay browser, o si se crea una cuenta de prueba con rol Secretaria desde el Dashboard, se puede verificar de verdad: incluso sin browser, levantando `next start`, pidiendo el token con la anon key y haciendo `curl` con la cookie de sesión.
 
