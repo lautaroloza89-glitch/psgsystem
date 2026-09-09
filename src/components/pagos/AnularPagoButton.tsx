@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { anularPago } from "@/app/(dashboard)/pagos/actions";
 import { Spinner } from "@/components/ui/spinner";
 
 export function AnularPagoButton({ pagoId }: { pagoId: string }) {
+  const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -16,10 +18,14 @@ export function AnularPagoButton({ pagoId }: { pagoId: string }) {
       const result = await anularPago(pagoId, motivo);
       if (result.error) {
         setError(result.error);
-      } else {
-        setAbierto(false);
-        setMotivo("");
+        return;
       }
+      setAbierto(false);
+      setMotivo("");
+      // Sin esto el pago anulado se quedaba en pantalla hasta recargar a mano:
+      // `revalidatePath` invalida el cache del server, pero no vuelve a pedir
+      // la página desde un componente de cliente.
+      router.refresh();
     });
   }
 

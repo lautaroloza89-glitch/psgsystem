@@ -110,8 +110,10 @@ export default async function PagosPendientesPage({
       .from("pagos")
       .select(SELECT_PAGO)
       .eq("mes_correspondiente", mesISO)
+      // Sin filtrar por `recibo_texto`: un pago verificado al que no se le
+      // llegó a guardar el texto tiene que aparecer igual, o queda sin forma
+      // de anularse.
       .eq("estado", "verificado")
-      .not("recibo_texto", "is", null)
       .order("verificado_en", { ascending: false }),
   ]);
 
@@ -175,11 +177,14 @@ export default async function PagosPendientesPage({
       )}
 
       {/* El recibo dejó de perderse al salir de la pantalla: acá está el de
-          cada pago ya verificado del mes, listo para reenviar. */}
+          cada pago ya verificado del mes, listo para reenviar. Y también la
+          anulación: verificar un pago no puede dejarlo sin forma de corregirse
+          — es la única corrección que existe, y un pago mal cargado se
+          descubre casi siempre después de haberlo dado por bueno. */}
       {verificados.length > 0 && (
         <section aria-labelledby="verificados-titulo" className="space-y-3">
           <h2 id="verificados-titulo" className="text-base font-semibold">
-            Recibos del mes
+            Verificados este mes
           </h2>
           <ul className="space-y-2">
             {verificados.map((p) => (
@@ -197,12 +202,19 @@ export default async function PagosPendientesPage({
                       {formatMonto(Number(p.monto))}
                     </span>
                   </summary>
-                  <div className="border-t border-border p-4">
-                    <ReciboAcciones
-                      texto={p.recibo_texto ?? ""}
-                      contactoNombre={p.contacto?.nombre ?? null}
-                      contactoTelefono={p.contacto?.telefono ?? null}
-                    />
+                  <div className="space-y-3 border-t border-border p-4">
+                    {p.recibo_texto ? (
+                      <ReciboAcciones
+                        texto={p.recibo_texto}
+                        contactoNombre={p.contacto?.nombre ?? null}
+                        contactoTelefono={p.contacto?.telefono ?? null}
+                      />
+                    ) : (
+                      <p className="text-sm text-text-subtle">
+                        Este pago no tiene recibo guardado.
+                      </p>
+                    )}
+                    <AnularPagoButton pagoId={p.id} />
                   </div>
                 </details>
               </li>
