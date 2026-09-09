@@ -30,7 +30,7 @@
 [Se permite el pago parcial](#se-permite-el-pago-parcial) · [El recargo es fijo y sugerido, no automático](#el-recargo-es-fijo-y-sugerido-no-automático) · [Dos transiciones de pago: verificar y anular](#dos-transiciones-de-pago-verificar-y-anular) · [El historial financiero no se borra](#el-historial-financiero-no-se-borra) · [El recibo se arma recién al verificar](#el-recibo-se-arma-recién-al-verificar)
 
 **Asistencia**
-[Asistencia sin sábados](#asistencia-sin-sábados) · [Presente o ausente, sin tercer estado](#presente-o-ausente-sin-tercer-estado) · [El grupo del día queda congelado en la fila](#el-grupo-del-día-queda-congelado-en-la-fila) · [La alerta de inasistencias se mide en semanas](#la-alerta-de-inasistencias-se-mide-en-semanas)
+[La profesora no toma asistencia](#la-profesora-no-toma-asistencia) · [Asistencia sin sábados](#asistencia-sin-sábados) · [Presente o ausente, sin tercer estado](#presente-o-ausente-sin-tercer-estado) · [El grupo del día queda congelado en la fila](#el-grupo-del-día-queda-congelado-en-la-fila) · [La alerta de inasistencias se mide en semanas](#la-alerta-de-inasistencias-se-mide-en-semanas)
 
 **Torneos**
 [Torneos cubre solo el registro](#torneos-cubre-solo-el-registro) · [El calendario de torneos y la convocatoria tienen dueños distintos](#el-calendario-de-torneos-y-la-convocatoria-tienen-dueños-distintos) · [Torneos, exhibiciones y eventos en una sola tabla](#torneos-exhibiciones-y-eventos-en-una-sola-tabla) · [El estado de un torneo se calcula, no se guarda](#el-estado-de-un-torneo-se-calcula-no-se-guarda) · [Torneos es información de todo el club](#torneos-es-información-de-todo-el-club)
@@ -327,6 +327,12 @@ Lautaro es el único Admin real del sistema.
 
 **Decisión:** el texto del recibo (`pagos.recibo_texto`) se genera en el momento de verificar el pago, nunca antes, y queda guardado.
 **Contexto:** antes de la verificación el pago todavía puede no existir como tal; un recibo emitido antes sería el comprobante de algo no confirmado. Guardarlo permite reenviarlo después, en vez de que se vea una sola vez.
+**Estado:** vigente
+
+## La profesora no toma asistencia
+
+**Decisión:** la asistencia la cargan **Admin, Head Coach y Secretaria** (`puedeGestionarAsistencia`), no la profesora. Confirmado por el usuario el 2026-09-08.
+**Contexto:** ya era así en el código y en la RLS desde F2 MOD 4, pero nunca había quedado escrito como decisión, y el modelo del módulo 1 del rediseño proponía un atajo «Tomar asistencia» en la clase de la profesora — que apuntaba a una pantalla a la que ella no entra. Los modelos se contradecían entre sí: el del módulo 4 dice explícitamente «la Profesora no, y es a propósito». Vale ese. El atajo del inicio quedó atado a `puedeGestionarAsistencia`, así que lo ven solo Admin y Head Coach, en su bloque de clases del día. La profesora sí ve el **estado** de cada clase suya (incluido «asistencia tomada»): necesita saber si ya se cargó, aunque no sea ella quien la carga.
 **Estado:** vigente
 
 ## Asistencia sin sábados

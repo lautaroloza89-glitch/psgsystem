@@ -29,7 +29,7 @@ Rama: **`nueva-ui`**, sacada de `main` el 2026-09-08. Base de datos: la misma de
 | 0 | Modelos de diseño al repo | ✅ | `3f81e42` |
 | 1 | Navegación e Inicio | ✅ | `a6351f3` · `10c7c33` |
 | 2 | Miembros | ✅ | `cd3fab9` |
-| 3 | Tareas | 🟡 falta el formulario de alta (modelo `Rd`) | `f454c3c` |
+| 3 | Tareas | ✅ | `f454c3c` · este |
 | 4 | Asistencia | ⬜ pendiente | — |
 | 5 | Pagos | ⬜ pendiente | — |
 | 6 | Alumnas | ⬜ pendiente | — |
@@ -55,7 +55,6 @@ Todo esto está detallado en `docs/pendientes.md`; acá va lo que **condiciona**
 |---|---|---|
 | No hay vínculo `users` ↔ `alumnas` | El inicio del rol Patinador (módulo 1, quedó sin construir) | `main`, cambio de esquema |
 | `alumnas.fecha_nacimiento` está **vacía en las 158** | Módulo 8: la planilla del torneo la necesita | Carga de datos |
-| ¿Toma asistencia la profesora? | Módulo 4 — el modelo asume que sí, hoy no puede | Decisión + RLS en `main` |
 | `users_select_authenticated` es `USING true` | Nada, pero deja el email del personal legible por cualquier autenticado | `main`, cambio de RLS |
 | Falta `service_role key` en el server | «Invitar» del módulo 2 | Variables de entorno |
 | No existe ninguna cuenta con rol Patinador | Probar los gates de cualquier módulo con ese rol | Dashboard de Supabase |

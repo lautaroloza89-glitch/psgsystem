@@ -5,6 +5,7 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { puedeEditarTarea, puedeVerModuloTareas } from "@/lib/permisos";
 import { TareaForm } from "@/components/tareas/TareaForm";
 import { BackButton } from "@/components/ui/BackButton";
+import { hoyArgentina } from "@/lib/utils/date";
 import { editarTarea } from "../../actions";
 
 export const metadata: Metadata = { title: "Editar tarea" };
@@ -53,23 +54,24 @@ export default async function EditarTareaPage({
   const editarTareaConId = editarTarea.bind(null, id);
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
-      <BackButton href={`/tareas/${id}`} />
-      <h1 className="text-2xl font-bold tracking-tight">Editar tarea</h1>
-      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
-        <TareaForm
-          action={editarTareaConId}
-          usuarios={usuarios ?? []}
-          modo="editar"
-          defaultValues={{
-            titulo: tarea.titulo,
-            descripcion: tarea.descripcion ?? "",
-            fecha_inicio: tarea.fecha_inicio ?? "",
-            fecha_vencimiento: tarea.fecha_vencimiento ?? "",
-            asignadosIds,
-          }}
-        />
+    <div className="mx-auto max-w-lg space-y-5">
+      <div className="flex items-center gap-2">
+        <BackButton href={`/tareas/${id}`} />
+        <h1 className="text-xl font-bold tracking-tight">Editar tarea</h1>
       </div>
+      <TareaForm
+        action={editarTareaConId}
+        usuarios={usuarios ?? []}
+        modo="editar"
+        hoy={hoyArgentina()}
+        defaultValues={{
+          titulo: tarea.titulo,
+          descripcion: tarea.descripcion ?? "",
+          fecha_inicio: tarea.fecha_inicio ?? "",
+          fecha_vencimiento: tarea.fecha_vencimiento ?? "",
+          asignadosIds,
+        }}
+      />
     </div>
   );
 }
