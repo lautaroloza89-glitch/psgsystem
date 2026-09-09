@@ -144,6 +144,21 @@ export function puedeAnularPago<T extends PerfilPermisos>(
   return tieneRol(profile, ["Admin", "Head Coach", "Secretaria"]);
 }
 
+/**
+ * El módulo Alumnas entero: listado, ficha, alta, edición y baja. Mismo trío
+ * que Pagos y Asistencia, y también el mismo que la RLS de `alumnas` y
+ * `contactos`.
+ *
+ * Vivía duplicado en cada página del módulo (tres condiciones `rol !== …`
+ * escritas a mano) y una cuarta vez dentro de `alumnas/actions.ts`. Se
+ * consolidó acá al rediseñar el módulo, sin cambiar a quién deja pasar.
+ */
+export function puedeGestionarAlumnas<T extends PerfilPermisos>(
+  profile: T | null | undefined
+): profile is T {
+  return tieneRol(profile, ["Admin", "Head Coach", "Secretaria"]);
+}
+
 /** La recaudación total del club es la excepción de Pagos: Secretaria no la ve. */
 export function puedeVerRecaudacion<T extends PerfilPermisos>(
   profile: T | null | undefined

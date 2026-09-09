@@ -4,17 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
-import type { EstadoAlumna, Rol } from "@/types";
+import { puedeGestionarAlumnas } from "@/lib/permisos";
+import type { EstadoAlumna } from "@/types";
 
 export interface FormState {
   error: string | null;
 }
 
 const ESTADOS_VALIDOS: EstadoAlumna[] = ["activa", "baja"];
-
-function puedeGestionarAlumnas(rol: Rol | undefined): boolean {
-  return rol === "Admin" || rol === "Head Coach" || rol === "Secretaria";
-}
 
 interface ContactoInput {
   id: string | null;
@@ -153,7 +150,7 @@ async function sincronizarContactos(
 
 export async function crearAlumna(_prevState: FormState, formData: FormData): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || !puedeGestionarAlumnas(profile.rol)) {
+  if (!puedeGestionarAlumnas(profile)) {
     return { error: "No tenés permiso para crear alumnas." };
   }
 
@@ -224,7 +221,7 @@ export async function editarAlumna(
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
-  if (!profile || !puedeGestionarAlumnas(profile.rol)) {
+  if (!puedeGestionarAlumnas(profile)) {
     return { error: "No tenés permiso para editar alumnas." };
   }
 

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
+import { puedeGestionarAlumnas } from "@/lib/permisos";
 import { AlumnasListClient } from "@/components/alumnas/AlumnasListClient";
 import type { AlumnaCardData } from "@/components/alumnas/AlumnaCard";
 import type { EstadoAlumna } from "@/types";
@@ -12,10 +13,7 @@ export const metadata: Metadata = { title: "Alumnas" };
 export default async function AlumnasPage() {
   const profile = await getCurrentUserProfile();
 
-  if (
-    !profile ||
-    (profile.rol !== "Admin" && profile.rol !== "Head Coach" && profile.rol !== "Secretaria")
-  ) {
+  if (!puedeGestionarAlumnas(profile)) {
     redirect("/dashboard");
   }
 
