@@ -19,6 +19,8 @@
 
 ## Base de datos e infraestructura
 
+- **`alumnas.fecha_baja` existe pero todavía no la escribe nadie** (módulo 5 del rediseño, 2026-09-08). La columna decide hasta qué mes se le sigue cobrando a una alumna dada de baja, y el formulario que tiene que pedirla es el de baja, que es del **módulo 6 (Alumnas)**. Mientras tanto una baja sin fecha no genera cuota de ningún mes, así que dar de baja desde la app **sigue sacando a la alumna de Deudoras** — que es justo lo que el cambio venía a arreglar. Es lo primero a cerrar del módulo 6. Borrar esta línea cuando el formulario la pida.
+
 - **`tarea_visible_para_head_coach(uuid)` quedó sin uso** (2026-09-08, al ampliar Head Coach a todas las tareas). No se dropeó en esa migración porque es `SECURITY DEFINER` y conviene confirmar antes que no la use ningún trigger, función de notificaciones ni otra policy. Si se confirma que nadie la llama, borrarla en una migración aparte.
 
 - **Revocar los Personal Access Tokens de Supabase** (`sbp_...`) en supabase.com/dashboard/account/tokens: quedaron **10 sin revocar**, uno por sesión que tocó la base — Groundwork 3, Parche de retoques varios y F2 MOD 1 (2026-08-31), F2 MOD 2 y F2 MOD 3 (2026-09-02), verificación de F2 MOD 4, F2 MOD 5 y su corrección de alcance (2026-09-03), Parche de import de alumnas, Correcciones pre-UI y verificación del checklist pre-UI (2026-09-08). No se pueden revocar desde una sesión de Claude Code: la Management API no expone gestión de tokens (`/v1/profile` responde, pero todas las rutas de tokens dan 404), así que es una acción manual de dashboard. Borrar esta línea cuando estén revocados.

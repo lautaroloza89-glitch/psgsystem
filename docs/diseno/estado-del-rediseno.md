@@ -64,21 +64,22 @@ Este orden **no es una sugerencia: es el orden de trabajo.** Va de la estructura
 | 2 | **Miembros** | El más chico, sirve de prueba del sistema visual nuevo: agrupado por rol, detalle editable, `dicta_clases` visible, «Invitar». | ✅ salvo «Invitar» | `cd3fab9` |
 | 3 | **Tareas** | «Mis tareas», vencidas marcadas, `UsuarioRolCargo` dado vuelta (ese componente se ve en tres módulos: arreglarlo acá los arregla todos). | ✅ | `f454c3c` · `677019c` |
 | 4 | **Asistencia** | Entrar directo al grupo de hoy, «Vino / Faltó», estado Parcial, pie fijo. | ✅ | `27161b3` |
-| 5 | **Pagos** | Pantalla con números en vez del menú de cuatro tarjetas, recargo explicado, atraso por alumna. | ⬜ **el que sigue** | — |
-| 6 | **Alumnas** | Ficha con asistencia y deuda, teléfono tocable, baja fuera del formulario, listado denso. | ⬜ | — |
+| 5 | **Pagos** | Pantalla con números en vez del menú de cuatro tarjetas, recargo explicado, atraso por alumna. | ✅ | `d50b8fa` (main) · `40d4a74` |
+| 6 | **Alumnas** | Ficha con asistencia y deuda, teléfono tocable, baja fuera del formulario, listado denso. | ⬜ **el que sigue** | — |
 | 7 | **Planificaciones** y **Torneos** | Pestañas Próximos/Pasados, sin duplicar el destacado, señal de notas. | ⬜ | — |
 | 8 | **Participación en torneos** (modelos Tg y Th) | Va última porque es la única pantalla que no existe hoy: se construye sobre `torneo_participantes` y sobre las categorías, que dependen de `alumnas.fecha_nacimiento`. | ⬜ | — |
 
 Antes del módulo 1 hubo dos commits de preparación: los helpers de permisos pasados a type guards (`60b4210`) y los modelos de diseño incorporados al repo (`3f81e42`).
 
-### Al arrancar el módulo 5 (Pagos)
+### Al arrancar el módulo 6 (Alumnas)
 
-Está desbloqueado, se puede empezar directo. El modelo es `docs/diseno/05-pagos.dc.html`: **leerlo entero**, todas sus opciones, antes de escribir nada. En el módulo 3 se saltó la opción `Rd` y el formulario de alta quedó sin hacer hasta que Lauti lo detectó en el preview.
+Está desbloqueado, se puede empezar directo. El modelo es `docs/diseno/06-alumnas.dc.html`: **leerlo entero**, todas sus opciones, antes de escribir nada. En el módulo 3 se saltó la opción `Rd` y el formulario de alta quedó sin hacer hasta que Lauti lo detectó en el preview.
 
-Dos cosas que el módulo 4 deja servidas y conviene mirar antes:
+Tres cosas para tener a mano, las tres consecuencia del módulo 5:
 
-- **El estado se calcula, no se guarda.** Pendiente / Parcial / Cargada sale de contar filas contra el total (`src/lib/asistencia/dia.ts`). Pagos tiene la misma forma de problema (cuánto se pagó contra cuánto se debe): el patrón ya está escrito.
-- **La confirmación vuelve a la pantalla del día**, no al listado del que se venía. Si Pagos hace algo parecido, que sea el mismo criterio.
+- **`alumnas.fecha_baja` ya existe pero todavía no la escribe nadie.** El formulario de baja es de este módulo («baja fuera del formulario», dice el resumen), y es el que tiene que pedirla. Mientras no se cargue, una alumna de baja no genera cuota de ningún mes — el lado seguro, pero significa que dar de baja hoy desde la app sigue sacando a la alumna de Deudoras. **Es lo primero a cerrar del módulo 6.**
+- **La ficha tiene que mostrar la deuda**, y el cálculo ya está: `calcularDeudorasDelMes` en `src/lib/pagos/saldo.ts` devuelve por alumna el desglose (cuota, recargo, pagado, por qué debe). Para una sola alumna está `calcularSaldoAlumnaMes`.
+- **El teléfono tocable**: usá `enlaceWhatsapp` de `src/lib/utils/whatsapp.ts`, que devuelve `null` cuando el número no es interpretable. No inventes el link — el `tel:` de las alertas de asistencia es el otro precedente.
 
 ---
 
@@ -92,6 +93,9 @@ Dos cosas que el módulo 4 deja servidas y conviene mirar antes:
 - **`src/components/ui/UsuarioRolCargo.tsx`** — ya dado vuelta (persona primero, rol de subtítulo). Se usa en Tareas, Horarios y los dos listados de comentarios: **ya está arreglado en los tres**.
 - **`src/components/tareas/ChipsResponsables.tsx`** — chips que por debajo son checkboxes ocultos, así el formulario anda sin JavaScript. Patrón reusable para cualquier multi-selección.
 - **Patrón visual del listado:** un `<ul>` dentro de `rounded-xl border border-border bg-surface divide-y divide-border`, con encabezado de grupo en `text-sm font-semibold uppercase tracking-wide text-text-subtle`. Es el que usan Inicio, Miembros y Tareas.
+- **`src/components/pagos/NavegadorDeMes.tsx`** — el control de mes del módulo Pagos, con `basePath` y `extra` para conservar otros query params. Cualquier pantalla que se recorra por mes debería usar este, no escribir sus propias flechas.
+- **`src/lib/utils/whatsapp.ts`** — `enlaceWhatsapp()` / `numeroWhatsapp()`, que devuelven `null` cuando el teléfono cargado a mano no se puede interpretar, y `primerNombre()` para los botones («Escribir a Ana»).
+- **`src/lib/pagos/mes.ts`** — `calcularEstadoDelMes()`: recaudación, pendientes, deudoras y «X de Y al día» de un mes, en una sola lectura.
 - **`src/lib/asistencia/dia.ts`** — `clasesDelDia()` (qué grupos tienen clase una fecha y cómo viene cargada cada una, derivado de `grupo_horarios` y no de `turnos`), `fechasAtrasadas()` y `diasDeLaSemana()`. El inicio ya lo usa, así que las dos pantallas cuentan igual.
 - **`src/components/asistencia/TiraDeDias.tsx`** — la semana de lunes a sábado con el día activo. Sirve para cualquier pantalla que se recorra por fecha.
 - **`src/lib/asistencia/rachas.ts`** — `rachaDeAlumna()`, el cálculo de «N semanas sin venir». Lo comparten la pantalla de alertas y el aviso que aparece en la fila al tomar asistencia: no pueden discrepar.
@@ -128,6 +132,8 @@ La fecha de nacimiento **no se usa para calcular nada**: el modelo decidió expl
 ## Verificación
 
 En cada módulo se corrió `npx tsc --noEmit` y `npx next build`, los dos limpios. El proyecto **no tiene ESLint configurado**, así que no hay linter que correr.
+
+El módulo 5 fue el primero que necesitó tocar el esquema, y siguió el camino previsto: la migración (`alumnas.fecha_baja` + `deudas_saldadas`) se escribió y aplicó **en `main`**, se verificó contra el proyecto real (4 escenarios de constraint y la RLS con roles reales, todo con `rollback`, 0 filas de prueba restantes), se documentó en `docs/modelo-datos.md`, se pusheó, y recién ahí se mergeó a `nueva-ui` — sin mezclar esquema y UI en el mismo commit. El cálculo nuevo de deudoras se probó con un cliente Supabase falso: 19 casos, incluidos los tres de baja (de baja este mes sigue debiendo, de baja en marzo no, de baja sin fecha tampoco), el mes saldado que sale de la lista, los tres motivos de deuda, el recargo aplicado en un mes pasado y los cinco del armado del número de WhatsApp.
 
 El módulo 4, que cambia cómo se guarda, se verificó además contra la base real: el guardado parcial y el borrado al desmarcar, dentro de una transacción con `rollback` (3 filas de 13, después 2 — la tabla quedó en 0, que es como estaba); la policy `asistencia_admin_headcoach_secretaria` es `for all`, así que el `delete` nuevo entra en el permiso que ya existía; y el cálculo de rachas se probó con siete casos de borde (racha de 3, semana sin marca salteada, presente que corta, semana en curso, volvió esta semana, sin registro, última presencia). **La tabla `asistencia` está vacía en producción**: el módulo nunca se usó, así que todavía no hay datos reales que mirar.
 
