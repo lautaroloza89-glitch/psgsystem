@@ -3,7 +3,14 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
-import { puedeGestionarTorneos, puedeVerTorneos } from "@/lib/permisos";
+import {
+  puedeGestionarConvocatoria,
+  puedeGestionarTorneos,
+  puedeVerConvocatoria,
+  puedeVerTorneos,
+} from "@/lib/permisos";
+import { convocadasDeTorneo, resumirConvocatoria } from "@/lib/torneos/convocatoria";
+import { BloqueConvocatoria } from "@/components/torneos/BloqueConvocatoria";
 import { hoyArgentina } from "@/lib/utils/date";
 import { estadoTorneo, formatRangoFechasTorneo } from "@/lib/torneos/fechas";
 import { EstadoTorneoBadge } from "@/components/torneos/EstadoTorneoBadge";
@@ -35,6 +42,12 @@ export default async function TorneoDetallePage({
   if (!torneo) {
     notFound();
   }
+
+  // Solo se leen las convocadas si el rol puede verlas: para Empleado/a y
+  // Patinador/a la lista no existe, tampoco como consulta.
+  const convocadas = puedeVerConvocatoria(profile)
+    ? await convocadasDeTorneo(supabase, id, puedeGestionarConvocatoria(profile))
+    : [];
 
   const hoy = hoyArgentina();
   const estado = estadoTorneo(torneo.fecha_inicio, torneo.fecha_fin, hoy);
@@ -71,6 +84,15 @@ export default async function TorneoDetallePage({
           </div>
         )}
       </div>
+
+      {puedeVerConvocatoria(profile) && (
+        <BloqueConvocatoria
+          torneoId={torneo.id}
+          resumen={resumirConvocatoria(convocadas)}
+          puedeGestionar={puedeGestionarConvocatoria(profile)}
+          verPlata={puedeGestionarConvocatoria(profile)}
+        />
+      )}
 
       {torneo.notas && (
         <div className="space-y-2 rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
