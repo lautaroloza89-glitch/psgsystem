@@ -5,6 +5,7 @@ import type { FormState } from "@/app/(dashboard)/horarios/actions";
 import type { TipoTurno } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
 import { ChipOpcion } from "@/components/ui/ChipOpcion";
+import { SelectorFechaDeClase } from "./SelectorFechaDeClase";
 
 const INPUT_CLASS =
   "w-full rounded-md border border-border-strong px-3 py-2.5 text-sm transition-colors duration-[var(--duration-fast)] ease-standard focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-focus-ring";
@@ -25,10 +26,17 @@ export function DuplicarPlanificacionForm({
   action,
   tipoInicial,
   planificacionInicial,
+  diasDisponibles,
+  anioInicial,
+  mesInicial,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   tipoInicial: string;
   planificacionInicial: string;
+  /** Días ISO que entrena el grupo de la clase original. */
+  diasDisponibles: number[];
+  anioInicial: number;
+  mesInicial: number;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const [tipo, setTipo] = useState<TipoTurno>(
@@ -40,23 +48,27 @@ export function DuplicarPlanificacionForm({
     <form action={formAction} className="space-y-6">
       <input type="hidden" name="tipo" value={tipo} />
 
-      <div className="space-y-1.5">
-        <label htmlFor="fecha" className="text-label font-medium">
-          Nueva fecha
-        </label>
-        <input
-          id="fecha"
-          name="fecha"
-          type="date"
-          required
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-          className={INPUT_CLASS}
-        />
+      <fieldset className="space-y-2">
+        <legend className="text-label font-medium">Nueva fecha</legend>
+        {diasDisponibles.length === 0 ? (
+          <p className="text-sm text-error-600">
+            El grupo de esta clase no tiene horario configurado, así que no hay fechas a las que
+            duplicarla.
+          </p>
+        ) : (
+          <SelectorFechaDeClase
+            name="fecha"
+            diasDisponibles={diasDisponibles}
+            anioInicial={anioInicial}
+            mesInicial={mesInicial}
+            value={fecha}
+            onChange={setFecha}
+          />
+        )}
         <p className="text-sm text-text-subtle">
           Se copia el texto y los profesores de la clase original.
         </p>
-      </div>
+      </fieldset>
 
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">

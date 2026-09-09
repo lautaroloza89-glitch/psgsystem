@@ -72,6 +72,8 @@ export default async function EditarTurnoPage({
           profile={{ id: profile.id, rol: profile.rol }}
           profesores={profesores}
           grupos={grupos}
+          anioInicial={Number(turno.fecha.slice(0, 4))}
+          mesInicial={Number(turno.fecha.slice(5, 7))}
           defaultValues={{
             fecha: turno.fecha,
             grupo_id: turno.grupo_id ?? "",

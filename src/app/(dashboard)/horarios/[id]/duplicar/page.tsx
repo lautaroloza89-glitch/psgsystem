@@ -24,7 +24,9 @@ export default async function DuplicarPlanificacionPage({
   const supabase = await createClient();
   const { data: turno } = await supabase
     .from("turnos")
-    .select("id, tipo, planificacion, grupo_legacy, grupo:grupos(nombre)")
+    .select(
+      "id, fecha, tipo, planificacion, grupo_legacy, grupo:grupos(nombre, grupo_horarios(dias))"
+    )
     .eq("id", id)
     .single();
 
@@ -32,10 +34,19 @@ export default async function DuplicarPlanificacionPage({
     notFound();
   }
 
-  const grupoNombre =
-    (turno.grupo as unknown as { nombre: string } | null)?.nombre ??
-    turno.grupo_legacy ??
-    "Sin grupo";
+  const grupo = turno.grupo as unknown as {
+    nombre: string;
+    grupo_horarios: { dias: number[] }[] | null;
+  } | null;
+
+  const grupoNombre = grupo?.nombre ?? turno.grupo_legacy ?? "Sin grupo";
+
+  // Las fechas ofrecibles son las que el grupo entrena: duplicar a un domingo
+  // fallaba recién al guardar, porque el upsert deriva el horario del día de
+  // la semana y no encuentra bloque.
+  const diasDisponibles = [
+    ...new Set((grupo?.grupo_horarios ?? []).flatMap((b) => b.dias)),
+  ].sort((a, b) => a - b);
 
   const duplicarPlanificacionDeTurno = duplicarPlanificacion.bind(null, id);
 
@@ -52,6 +63,9 @@ export default async function DuplicarPlanificacionPage({
           action={duplicarPlanificacionDeTurno}
           tipoInicial={turno.tipo}
           planificacionInicial={turno.planificacion ?? ""}
+          diasDisponibles={diasDisponibles}
+          anioInicial={Number(turno.fecha.slice(0, 4))}
+          mesInicial={Number(turno.fecha.slice(5, 7))}
         />
       </div>
     </div>

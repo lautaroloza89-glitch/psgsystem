@@ -7,6 +7,7 @@ import type { Rol, TipoTurno, User } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
 import { ChipOpcion } from "@/components/ui/ChipOpcion";
 import { ChipsResponsables } from "@/components/tareas/ChipsResponsables";
+import { SelectorFechaDeClase } from "./SelectorFechaDeClase";
 import { diaIsoDeFecha, nombreDia } from "@/lib/utils/date";
 
 const INPUT_CLASS =
@@ -59,12 +60,17 @@ export function TurnoForm({
   profesores,
   grupos,
   defaultValues,
+  anioInicial,
+  mesInicial,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   profile: { id: string; rol: Rol };
   profesores: Pick<User, "id" | "nombre" | "rol" | "cargo">[];
   grupos: GrupoOption[];
   defaultValues?: TurnoFormDefaultValues;
+  /** Mes que abre el selector de fecha. Del servidor, para no depender del reloj del navegador. */
+  anioInicial: number;
+  mesInicial: number;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const [grupoId, setGrupoId] = useState(defaultValues?.grupo_id ?? "");
@@ -75,6 +81,28 @@ export function TurnoForm({
     () => grupos.find((g) => g.id === grupoId) ?? null,
     [grupos, grupoId]
   );
+
+  /** Los días ISO que entrena el grupo elegido, que son las fechas ofrecibles. */
+  const diasDelGrupo = useMemo(() => {
+    const dias = new Set<number>();
+    for (const bloque of grupoSeleccionado?.bloques ?? []) {
+      for (const dia of bloque.dias) dias.add(dia);
+    }
+    return [...dias].sort((a, b) => a - b);
+  }, [grupoSeleccionado]);
+
+  /**
+   * Cambiar de grupo cambia los días válidos, así que la fecha elegida deja de
+   * servir salvo que el grupo nuevo también entrene ese día. Limpiarla evita
+   * mandar una combinación que el servidor va a rechazar.
+   */
+  function cambiarGrupo(nuevo: string) {
+    setGrupoId(nuevo);
+    const bloques = grupos.find((g) => g.id === nuevo)?.bloques ?? [];
+    const sigueSirviendo =
+      !!fecha && bloques.some((b) => b.dias.includes(diaIsoDeFecha(fecha)));
+    if (!sigueSirviendo) setFecha("");
+  }
 
   // El horario ya no se elige a mano: lo determina el día de semana de la
   // fecha elegida (Parche "unificar creación de planificaciones").
@@ -91,26 +119,11 @@ export function TurnoForm({
       <input type="hidden" name="grupo_id" value={grupoId} />
       <input type="hidden" name="tipo" value={tipo} />
 
-      <div className="space-y-1.5">
-        <label htmlFor="fecha" className="text-label font-medium">
-          Fecha
-        </label>
-        <input
-          id="fecha"
-          name="fecha"
-          type="date"
-          required
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-          className={INPUT_CLASS}
-        />
-      </div>
-
       <fieldset className="space-y-2">
         <legend className="text-label font-medium">Grupo</legend>
         <div className="flex flex-wrap gap-2">
           {grupos.map((g) => (
-            <ChipOpcion key={g.id} activo={grupoId === g.id} onClick={() => setGrupoId(g.id)}>
+            <ChipOpcion key={g.id} activo={grupoId === g.id} onClick={() => cambiarGrupo(g.id)}>
               {g.nombre}
             </ChipOpcion>
           ))}
@@ -120,11 +133,27 @@ export function TurnoForm({
             Texto anterior (sin mapear): «{defaultValues.grupo_legacy}»
           </p>
         )}
-        {grupoId && fecha && (
-          <p className={bloqueSeleccionado ? "text-sm text-text-subtle" : "text-sm text-error-600"}>
-            {bloqueSeleccionado
-              ? `${nombreDia(diaIsoDeFecha(fecha))} de ${formatHora(bloqueSeleccionado.hora_inicio)} a ${formatHora(bloqueSeleccionado.hora_fin)}.`
-              : "Ese grupo no tiene clase ese día de la semana."}
+      </fieldset>
+
+      <fieldset className="space-y-2">
+        <legend className="text-label font-medium">Fecha</legend>
+        {grupoId ? (
+          <SelectorFechaDeClase
+            name="fecha"
+            diasDisponibles={diasDelGrupo}
+            anioInicial={anioInicial}
+            mesInicial={mesInicial}
+            value={fecha}
+            onChange={setFecha}
+            fechaExtra={defaultValues?.fecha}
+          />
+        ) : (
+          <p className="text-sm text-text-subtle">Elegí un grupo para ver sus fechas de clase.</p>
+        )}
+        {bloqueSeleccionado && (
+          <p className="text-sm text-text-subtle">
+            {nombreDia(diaIsoDeFecha(fecha))} de {formatHora(bloqueSeleccionado.hora_inicio)} a{" "}
+            {formatHora(bloqueSeleccionado.hora_fin)}.
           </p>
         )}
       </fieldset>
@@ -173,7 +202,7 @@ export function TurnoForm({
 
       <button
         type="submit"
-        disabled={pending || !grupoId}
+        disabled={pending || !grupoId || !fecha}
         className="flex w-full items-center justify-center gap-2 rounded-md bg-primary-500 py-3 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       >
         {pending && <Spinner />}
