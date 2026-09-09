@@ -32,7 +32,6 @@ Antes de arrancar el rediseño se hizo una tanda de **correcciones pre-UI** en c
 | `docs/modelo-datos.md` | Tablas, campos, índices, RLS, triggers. |
 | `docs/diseno/0N-*.dc.html` | Los modelos visuales, uno por módulo. **Mandan en diseño.** |
 | Este archivo | El estado del rediseño. |
-| `docs/diseno/lo-que-falta.md` | La hoja de ruta de lo que queda (módulos 7 y 8 + pendientes). Temporal: se borra al terminar el rediseño. |
 
 ---
 
@@ -68,23 +67,27 @@ Este orden **no es una sugerencia: es el orden de trabajo.** Va de la estructura
 | 5 | **Pagos** | Pantalla con números en vez del menú de cuatro tarjetas, recargo explicado, atraso por alumna. | ✅ | `d50b8fa` (main) · `40d4a74` · `7cbd721` |
 | 6 | **Alumnas** | Ficha con asistencia y deuda, teléfono tocable, baja fuera del formulario, listado denso. | ✅ | `40984cf` · `9e0f80c` |
 | 7 | **Planificaciones** y **Torneos** | Pestañas Próximos/Pasados, sin duplicar el destacado, señal de notas. | ✅ | `935d71f` · `e263812` · `3712573` · `84ffc12` · `30cfb37` · `dc4e272` · `8dccd3c` |
-| 8 | **Participación en torneos** (modelos Tg y Th) | Va última porque es la única pantalla que no existe hoy: se construye sobre `torneo_participantes` y sobre las categorías, que dependen de `alumnas.fecha_nacimiento`. | ⬜ **el que sigue** | — |
+| 8 | **Participación en torneos** (modelos Tg y Th) | Va última porque es la única pantalla que no existe hoy: se construye sobre `torneo_participantes` y sobre las categorías, que dependen de `alumnas.fecha_nacimiento`. | ✅ | `0783dc9` |
 
 Antes del módulo 1 hubo dos commits de preparación: los helpers de permisos pasados a type guards (`60b4210`) y los modelos de diseño incorporados al repo (`3f81e42`).
 
-### Al arrancar el módulo 8 (Participación en torneos)
+---
 
-Está desbloqueado y es el último. El modelo son las opciones **`Tg` y `Th`** de `docs/diseno/08-torneos.dc.html` (la sección `T2`, arriba del todo del archivo): leerlas enteras antes de escribir nada.
+### El rediseño está completo
 
-Es la única pantalla del rediseño que **no existe hoy**. Se construye sobre `torneo_participantes` (modelo ya aplicado en el Bloque 5 de las Correcciones pre-UI, sin pantallas) y sobre `torneos.inscripcion_monto`.
+Los 8 módulos cerrados. **Lo que queda no es construcción, es verificación**: ninguna pantalla se vio en el navegador con un rol real (ver «Verificación» más abajo y `docs/pendientes.md`). Antes de mergear `nueva-ui` a `main` conviene ese repaso, porque `main` es lo que el club usa todos los días.
 
-Tres cosas para tener a mano:
+Al mergear, ojo con dos cosas que cambian el comportamiento de producción y no son solo visuales:
 
-- **Los permisos ya están escritos** en `src/lib/permisos.ts`: `puedeGestionarConvocatoria` (Admin, Head Coach, Secretaria: convocar, sacar, categoría, estado de inscripción) y `puedeVerConvocatoria` (los tres anteriores más Profesor). Pero `Th` los parte más fino que los dos helpers: **convocar y escribir la categoría es solo Admin/Head Coach** —es una decisión deportiva—, mientras que cambiar el estado de inscripción y registrar el pago suma Secretaria. Y la Profesora ve nombres, **no el monto ni el estado de pago**. Cruzarlo con Lauti antes de escribir los botones.
-- **Empleado/a y Patinador/a no ven nada de esto**: ni la lista, ni el bloque del detalle, ni las cifras. Y no solo el botón — el gate va en el servidor. Ojo que hoy la RLS de `torneo_participantes` no lo acompaña (ver `docs/pendientes.md`).
-- **`alumnas.fecha_nacimiento` sigue vacía en las 158.** No frena nada: es una columna de la planilla, no un criterio de cálculo, y la categoría es texto libre. **Recordáselo a Lauti al arrancar** por si prefiere cargarlas antes para probarlo con datos reales. Si aparece algo que sí se rompa sin el dato, frenar y avisar — no inventar un valor por defecto ni derivar la categoría de la edad.
+- **`/horarios` deja de estar abierto a Patinador/a** (módulo 7). Es a propósito, pero es un acceso que hoy existe.
+- **La convocatoria de torneos aparece por primera vez** (módulo 8). La tabla ya estaba, las pantallas no.
 
-Lo que se decidió en el módulo 7 sobre cómo se ve un torneo manda acá: el chip de tipo sin emoji, el destacado que no se repite en la lista, y el ícono de nota como señal de contenido largo.
+### Lo que dejó el módulo 8
+
+- **`src/lib/torneos/convocatoria.ts`** — `convocadasDeTorneo` (con el flag `conPlata`, que es cómo se le esconde el dinero a la Profesora), `resumirConvocatoria`, `alumnasParaConvocar` y `planillaCsv`.
+- **La inscripción no pasa por `pagos`.** Decisión de Lauti: lo que la alumna paga para competir se gira a la organización del torneo, no entra al club como ingreso, así que no suma a la recaudación ni se cuenta contra la cuota del mes. `torneo_participantes.pago_id` queda sin usar — si algún día se conecta, hace falta un concepto en `pagos` y filtrarlo en saldo, Deudoras y Recaudación.
+- **Descargas con datos sensibles: route handler, no blob.** La planilla trae DNI y fecha de nacimiento de menores, así que se sirve desde `/torneos/[id]/planilla/route.ts`, que revalida el rol. Un `<a download>` con un blob armado en el cliente se saltearía ese chequeo. CSV con `;` y BOM: es lo que hace que Excel en español lo abra en columnas sin pasar por el asistente de importación.
+
 
 ### Lo que dejó el módulo 7
 
@@ -134,13 +137,11 @@ Nada de esto bloquea el rediseño. El detalle está en `docs/pendientes.md`.
 | Falta `service_role key` en el server | «Invitar» del módulo 2 quedó sin construir | Variables de entorno |
 | 10 Personal Access Tokens de Supabase sin revocar | Ninguno funcional, pero son credenciales vivas | Dashboard de Supabase, a mano |
 
-### Sobre `fecha_nacimiento` — no frena el módulo 8
+### Sobre `fecha_nacimiento` — el módulo 8 se construyó sin ella
 
-**Se construye el módulo 8 completo sin esperar los datos, y Lauti los carga después.** Decisión suya del 2026-09-08.
+**Se construyó completo sin esperar los datos**, como estaba decidido, y no se rompió nada: la fecha no se usa para calcular nada. Las categorías federativas no se modelan, así que la categoría es texto libre que escribe quien arma la lista («C5 9», «FM 11»), y la fecha es una **columna más de la planilla** que se manda a la organización — nombre, DNI, fecha de nacimiento, categoría.
 
-La fecha de nacimiento **no se usa para calcular nada**: el modelo decidió explícitamente no modelar categorías federativas, así que la categoría es texto libre que escribe quien arma la lista («C5 9», «FM 11»). La fecha es una **columna más de la planilla** que se manda a la organización del torneo — nombre, DNI, fecha de nacimiento, categoría —, y el propio modelo ya contempla que falte: las alumnas sin el dato aparecen igual en el listado y al exportar se avisa cuántas faltan.
-
-**Al arrancar el módulo 8, recordárselo a Lauti** por si prefiere tenerlas cargadas para probarlo con datos reales. Si durante la construcción aparece algo que sí se rompa sin el dato, frenar y avisarle en el momento — no inventar un valor por defecto ni derivar la categoría de la edad.
+Lo que sí hace falta es **cargarlas antes de mandar una planilla de verdad**: las 158 siguen vacías, así que hoy esa columna sale en blanco para todas. La pantalla de convocadas lo dice antes de bajar el archivo («N alumnas no tienen fecha de nacimiento cargada»), y cada fila sin el dato lo marca — pero no bloquea la descarga, porque la lista sirve igual para el resto de las columnas. Se cargan desde la ficha de cada alumna, en Alumnas.
 
 ---
 

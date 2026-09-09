@@ -52,8 +52,8 @@
 
 | # | Módulo | Depende de | Estado |
 |---|---|---|---|
-| — | **UI nueva** (rediseño de la interfaz) | Correcciones pre-UI | 🟡 En progreso — 7 de 8 módulos, ver [docs/diseno/estado-del-rediseno.md](docs/diseno/estado-del-rediseno.md) |
-| — | Participación en torneos: las 3 pantallas (el modelo ya está) — es el módulo 8, el último del rediseño | UI nueva | ⬜ Pendiente |
+| — | **UI nueva** (rediseño de la interfaz) | Correcciones pre-UI | ✅ Terminado — los 8 módulos, en la rama `nueva-ui`. Falta el repaso en el navegador antes de mergear a `main`; ver [docs/diseno/estado-del-rediseno.md](docs/diseno/estado-del-rediseno.md) |
+| — | Participación en torneos: las 3 pantallas | UI nueva | ✅ Terminado (módulo 8 del rediseño) |
 | — | Reenvío de recibo de pago (el campo ya está) | UI nueva | ⬜ Pendiente |
 
 Estados: ⬜ Pendiente · 🟡 En progreso · ✅ Terminado
@@ -74,4 +74,4 @@ Estados: ⬜ Pendiente · 🟡 En progreso · ✅ Terminado
 | Mes | Resumen | Archivo |
 |---|---|---|
 | 2026-08 | Arranque del proyecto y cierre completo de Fase 1 (setup, modelo de datos, auth y roles, Tareas, Clases, Dashboard, Notificaciones con push), auditoría Fase B y groundwork de Fase 2 con Planificaciones. | [docs/historial/2026-08.md](docs/historial/2026-08.md) |
-| 2026-09 | Cierre de Fase 2 (Alumnas, Pagos, Asistencia y Torneos), import de las 158 alumnas reales, los 5 bloques de Correcciones pre-UI, la reorganización de la documentación y el arranque del rediseño de la interfaz en la rama `nueva-ui` (módulos 1 a 6). | [docs/historial/2026-09.md](docs/historial/2026-09.md) |
+| 2026-09 | Cierre de Fase 2 (Alumnas, Pagos, Asistencia y Torneos), import de las 158 alumnas reales, los 5 bloques de Correcciones pre-UI, la reorganización de la documentación y el rediseño completo de la interfaz en la rama `nueva-ui`, los 8 módulos. | [docs/historial/2026-09.md](docs/historial/2026-09.md) |

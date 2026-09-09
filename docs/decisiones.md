@@ -33,7 +33,7 @@
 [La profesora no toma asistencia](#la-profesora-no-toma-asistencia) · [Asistencia sin sábados](#asistencia-sin-sábados) · [Presente o ausente, sin tercer estado](#presente-o-ausente-sin-tercer-estado) · [Sin marcar no es ausente](#sin-marcar-no-es-ausente) · [El grupo del día queda congelado en la fila](#el-grupo-del-día-queda-congelado-en-la-fila) · [La alerta de inasistencias se mide en semanas](#la-alerta-de-inasistencias-se-mide-en-semanas)
 
 **Torneos**
-[Torneos cubre solo el registro](#torneos-cubre-solo-el-registro) · [El calendario de torneos y la convocatoria tienen dueños distintos](#el-calendario-de-torneos-y-la-convocatoria-tienen-dueños-distintos) · [Torneos, exhibiciones y eventos en una sola tabla](#torneos-exhibiciones-y-eventos-en-una-sola-tabla) · [El estado de un torneo se calcula, no se guarda](#el-estado-de-un-torneo-se-calcula-no-se-guarda) · [Torneos es información de todo el club](#torneos-es-información-de-todo-el-club) · [El tipo de evento se escribe, no se dibuja](#el-tipo-de-evento-se-escribe-no-se-dibuja)
+[Torneos cubre solo el registro](#torneos-cubre-solo-el-registro) · [El calendario de torneos y la convocatoria tienen dueños distintos](#el-calendario-de-torneos-y-la-convocatoria-tienen-dueños-distintos) · [Torneos, exhibiciones y eventos en una sola tabla](#torneos-exhibiciones-y-eventos-en-una-sola-tabla) · [El estado de un torneo se calcula, no se guarda](#el-estado-de-un-torneo-se-calcula-no-se-guarda) · [Torneos es información de todo el club](#torneos-es-información-de-todo-el-club) · [El tipo de evento se escribe, no se dibuja](#el-tipo-de-evento-se-escribe-no-se-dibuja) · [La inscripción a un torneo no es plata del club](#la-inscripción-a-un-torneo-no-es-plata-del-club) · [La categoría de competencia es texto libre por torneo](#la-categoría-de-competencia-es-texto-libre-por-torneo)
 
 **Transversales**
 [Un solo criterio de fecha: hoyArgentina()](#un-solo-criterio-de-fecha-hoyargentina) · [Los reportes se consultan, no avisan](#los-reportes-se-consultan-no-avisan) · [Markdown en descripciones y comentarios](#markdown-en-descripciones-y-comentarios)
@@ -243,6 +243,18 @@ Lautaro es el único Admin real del sistema.
 
 **Decisión:** `/horarios` tiene dos pestañas. **Por día** muestra las clases de una fecha con grupo, horario y quién la dicta; **por grupo** muestra el mes de cada grupo, con qué días entrena, cuántas clases tiene cargadas y si le falta el objetivo. La carga de una planificación sigue entrando por grupo → mes, porque crear una es elegir un grupo, un mes y varias fechas de una: desde la vista por día el atajo es el chip «Sin planificación», que abre el formulario con esa fecha ya marcada.
 **Contexto:** con la entrada solo por grupo había que saber de antemano qué grupo tocaba hoy — no existía «qué clases hay hoy». La vista por grupo no se pierde: es donde se arma el mes, y ahora dice dónde queda trabajo pendiente en vez de ser cinco nombres sueltos. El filtro Todas/Activo/Cancelado se sacó: con la barra de días a la vista nunca hay más de tres o cuatro clases en pantalla, y las canceladas se muestran igual con su badge.
+**Estado:** vigente
+
+## La inscripción a un torneo no es plata del club
+
+**Decisión:** lo que una alumna paga para competir **no pasa por `pagos`**. El estado (Pendiente / Paga / Exenta) y el monto viven en `torneo_participantes`, y `torneo_participantes.pago_id` queda sin usar. No suma a la recaudación, no se cuenta contra la cuota del mes y no aparece en Deudoras.
+**Contexto:** es un gasto puntual del torneo que se gira a la organización, no un ingreso del club. Además, `pagos` está escrita sobre el supuesto de que toda fila es una cuota mensual —`mes_correspondiente` y `monto_cuota` son `not null` y no hay campo de concepto—, así que meter una inscripción ahí habría ensuciado el saldo del mes, Deudoras y Recaudación. El modelo `Tg` proponía que «Registrar pago» abriera el formulario de Pagos; se descartó. Si algún día se quiere el circuito unificado, hace falta un concepto en `pagos` y filtrarlo en los tres cálculos.
+**Estado:** vigente
+
+## La categoría de competencia es texto libre por torneo
+
+**Decisión:** la categoría en la que compite una alumna la **escribe a mano** quien arma la lista («C5 9», «FM 11», «PFM 12», «C5 13 FED») y vive en la convocatoria de ese torneo, no en la ficha de la alumna. No hay tabla, enum ni cálculo de categorías federativas, y **no se deriva de la edad**. La fecha de nacimiento es una columna más de la planilla que pide la organización, nunca un criterio de búsqueda ni de filtro.
+**Contexto:** las categorías federativas son demasiadas y cambian por torneo y por federación, así que modelarlas sería mantener un catálogo que igual habría que corregir a mano cada vez. Para convocar, el eje es `alumnas.grupo_id`, que ya existe: los grupos del club se arman por habilidad, que es el criterio con el que la Head Coach elige a quién lleva.
 **Estado:** vigente
 
 ## El tipo de evento se escribe, no se dibuja
