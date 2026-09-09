@@ -39,3 +39,25 @@ export function fechasDeClaseDelMes(
 export function esFechaDeClase(horarios: { dias: number[] }[], fecha: string): boolean {
   return diasDeClaseSinSabado(horarios).includes(diaIsoDeFecha(fecha));
 }
+
+export interface BloqueHorario {
+  dias: number[];
+  hora_inicio: string;
+  hora_fin: string;
+}
+
+/**
+ * Bloque horario que cubre un día ISO, ya con el filtro de sábado aplicado.
+ *
+ * Es el equivalente de `resolverHorarioPorDia` (Planificaciones) para el
+ * listado del día: acá los bloques ya vienen leídos junto con el grupo, así
+ * que resolverlo en memoria evita una consulta por grupo. Si el mismo día
+ * apareciera en más de un bloque se queda con el primero, igual que aquel.
+ */
+export function bloqueDelDia(
+  horarios: BloqueHorario[],
+  diaIso: number
+): BloqueHorario | null {
+  if (diaIso === DIA_SABADO) return null;
+  return horarios.find((bloque) => bloque.dias.includes(diaIso)) ?? null;
+}

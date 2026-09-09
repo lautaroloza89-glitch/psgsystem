@@ -30,7 +30,7 @@
 [Se permite el pago parcial](#se-permite-el-pago-parcial) · [El recargo es fijo y sugerido, no automático](#el-recargo-es-fijo-y-sugerido-no-automático) · [Dos transiciones de pago: verificar y anular](#dos-transiciones-de-pago-verificar-y-anular) · [El historial financiero no se borra](#el-historial-financiero-no-se-borra) · [El recibo se arma recién al verificar](#el-recibo-se-arma-recién-al-verificar)
 
 **Asistencia**
-[La profesora no toma asistencia](#la-profesora-no-toma-asistencia) · [Asistencia sin sábados](#asistencia-sin-sábados) · [Presente o ausente, sin tercer estado](#presente-o-ausente-sin-tercer-estado) · [El grupo del día queda congelado en la fila](#el-grupo-del-día-queda-congelado-en-la-fila) · [La alerta de inasistencias se mide en semanas](#la-alerta-de-inasistencias-se-mide-en-semanas)
+[La profesora no toma asistencia](#la-profesora-no-toma-asistencia) · [Asistencia sin sábados](#asistencia-sin-sábados) · [Presente o ausente, sin tercer estado](#presente-o-ausente-sin-tercer-estado) · [Sin marcar no es ausente](#sin-marcar-no-es-ausente) · [El grupo del día queda congelado en la fila](#el-grupo-del-día-queda-congelado-en-la-fila) · [La alerta de inasistencias se mide en semanas](#la-alerta-de-inasistencias-se-mide-en-semanas)
 
 **Torneos**
 [Torneos cubre solo el registro](#torneos-cubre-solo-el-registro) · [El calendario de torneos y la convocatoria tienen dueños distintos](#el-calendario-de-torneos-y-la-convocatoria-tienen-dueños-distintos) · [Torneos, exhibiciones y eventos en una sola tabla](#torneos-exhibiciones-y-eventos-en-una-sola-tabla) · [El estado de un torneo se calcula, no se guarda](#el-estado-de-un-torneo-se-calcula-no-se-guarda) · [Torneos es información de todo el club](#torneos-es-información-de-todo-el-club)
@@ -343,8 +343,14 @@ Lautaro es el único Admin real del sistema.
 
 ## Presente o ausente, sin tercer estado
 
-**Decisión:** `asistencia.presente` es booleano. No hay estado "justificada". El marcado arranca con nadie tildado y se guarda de a una fecha completa; volver a guardar la misma fecha actualiza en vez de duplicar (unique por alumna + fecha).
+**Decisión:** `asistencia.presente` es booleano. No hay estado "justificada". El marcado arranca vacío y cada alumna se declara con «Vino» o «Faltó»; volver a guardar la misma fecha actualiza en vez de duplicar (unique por alumna + fecha).
 **Contexto:** la justificación de ausencias quedó fuera de alcance. Arrancar vacío en vez de con todas presentes obliga a marcar activamente y evita el falso positivo de guardar sin mirar.
+**Estado:** vigente
+
+## Sin marcar no es ausente
+
+**Decisión:** guardar una fecha escribe **solo las alumnas marcadas**. Las que quedaron sin tocar no tienen fila, la fecha queda en estado **Parcial** hasta completarla, y el pie del formulario avisa cuántas faltan antes de guardar. Desmarcar y volver a guardar borra la fila. Decidido en el modelo del módulo 4 del rediseño (2026-09-08); reemplaza el guardado en bloque de F2 MOD 4, que escribía `presente = false` para toda alumna no tildada.
+**Contexto:** con el guardado en bloque, la alumna que quien cargaba se olvidaba de tocar quedaba ausente sin que nadie lo hubiera dicho, y esa ausencia falsa le contaba para la alerta de 3 semanas. No hizo falta migración: «sin marcar» es la ausencia de fila, no un estado nuevo. El estado de una fecha (Pendiente / Parcial / Cargada) **se calcula** comparando las marcas contra las alumnas activas del grupo — no hay columna que lo guarde. El cálculo de la alerta ya miraba las filas propias de cada alumna, así que una semana sin marca se saltea igual que una semana sin cargar (`src/lib/asistencia/rachas.ts`).
 **Estado:** vigente
 
 ## El grupo del día queda congelado en la fila
@@ -355,7 +361,7 @@ Lautaro es el único Admin real del sistema.
 
 ## La alerta de inasistencias se mide en semanas
 
-**Decisión:** la alerta salta a las **3 semanas calendario consecutivas** (lunes a domingo) sin ningún presente, no a las 3 clases seguidas. La semana en curso no cuenta; una semana solo cuenta si ya tiene asistencia tomada; si la alumna ya vino esta semana, queda fuera de la alerta aunque venga de una racha.
+**Decisión:** la alerta salta a las **3 semanas calendario consecutivas** (lunes a domingo) sin ningún presente, no a las 3 clases seguidas. La semana en curso no cuenta; una semana solo cuenta si la alumna tiene registro propio en ella (ver [Sin marcar no es ausente](#sin-marcar-no-es-ausente)); si la alumna ya vino esta semana, queda fuera de la alerta aunque venga de una racha.
 **Contexto:** contar clases daría un umbral distinto por grupo, porque cada uno tiene 2 o 3 días de clase por semana. Las tres reglas de borde van todas hacia el mismo lado, no inventar alertas: los feriados y las semanas sin cargar se saltean sin sumar ni romper la racha, y quien ya volvió no aparece.
 **Estado:** vigente
 

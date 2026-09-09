@@ -22,9 +22,9 @@ export const metadata: Metadata = { title: "Asistencia del grupo" };
 
 interface ResumenFecha {
   fecha: string;
-  cargada: boolean;
+  /** Alumnas marcadas (vino o faltó) en esa fecha. */
+  marcadas: number;
   presentes: number;
-  total: number;
 }
 
 export default async function AsistenciaGrupoPage({
@@ -67,34 +67,41 @@ export default async function AsistenciaGrupoPage({
   const fechas = fechasDeClaseDelMes(grupo.grupo_horarios ?? [], anio, mes);
   const { anterior, siguiente } = mesAnteriorSiguiente(anio, mes);
 
-  const filas =
+  const [filas, { count: totalAlumnas }] = await Promise.all([
     fechas.length > 0
-      ? await leerAsistenciaDelRango(supabase, fechas[0], fechas[fechas.length - 1], grupoId)
-      : [];
+      ? leerAsistenciaDelRango(supabase, fechas[0], fechas[fechas.length - 1], grupoId)
+      : Promise.resolve([]),
+    supabase
+      .from("alumnas")
+      .select("id", { count: "exact", head: true })
+      .eq("grupo_id", grupoId)
+      .eq("estado", "activa"),
+  ]);
 
-  const conteoPorFecha = new Map<string, { presentes: number; total: number }>();
+  const activas = totalAlumnas ?? 0;
+
+  const conteoPorFecha = new Map<string, { marcadas: number; presentes: number }>();
   for (const fila of filas) {
-    const actual = conteoPorFecha.get(fila.fecha) ?? { presentes: 0, total: 0 };
-    actual.total++;
+    const actual = conteoPorFecha.get(fila.fecha) ?? { marcadas: 0, presentes: 0 };
+    actual.marcadas++;
     if (fila.presente) actual.presentes++;
     conteoPorFecha.set(fila.fecha, actual);
   }
 
-  const resumen: ResumenFecha[] = fechas.map((fecha) => {
-    const conteo = conteoPorFecha.get(fecha);
-    return {
-      fecha,
-      cargada: !!conteo,
-      presentes: conteo?.presentes ?? 0,
-      total: conteo?.total ?? 0,
-    };
-  });
+  const resumen: ResumenFecha[] = fechas.map((fecha) => ({
+    fecha,
+    marcadas: conteoPorFecha.get(fecha)?.marcadas ?? 0,
+    presentes: conteoPorFecha.get(fecha)?.presentes ?? 0,
+  }));
 
-  const pendientes = resumen.filter((r) => !r.cargada && r.fecha <= hoy).length;
+  // «Pendiente» son las fechas ya pasadas que no llegaron a completarse: las
+  // vacías y las que quedaron a medio cargar cuentan igual, porque en las dos
+  // hay alumnas sin marcar.
+  const pendientes = resumen.filter((r) => r.fecha <= hoy && r.marcadas < activas).length;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <BackButton href="/asistencia" />
+      <BackButton href="/asistencia/grupos" />
       <h1 className="text-2xl font-bold tracking-tight">{grupo.nombre}</h1>
 
       <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-2.5">
@@ -136,34 +143,38 @@ export default async function AsistenciaGrupoPage({
               : `${pendientes} ${pendientes === 1 ? "fecha pendiente" : "fechas pendientes"} de cargar en este mes.`}
           </p>
 
-          <ul className="space-y-2">
+          <ul className="overflow-hidden rounded-xl border border-border bg-surface divide-y divide-border">
             {resumen.map((item) => {
               const futura = item.fecha > hoy;
+              const completa = activas > 0 && item.marcadas >= activas;
+              const parcial = item.marcadas > 0 && !completa;
+
               return (
                 <li key={item.fecha}>
                   <Link
                     href={`/asistencia/grupos/${grupoId}/${item.fecha}`}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4 shadow-xs transition duration-[var(--duration-base)] ease-standard hover:border-border-strong hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+                    className="flex items-center justify-between gap-3 px-4 py-3 transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring"
                   >
-                    <div>
-                      <p className="text-sm font-semibold">
+                    <div className="min-w-0">
+                      <p className="font-medium leading-snug">
                         {nombreDia(diaIsoDeFecha(item.fecha))} {formatFecha(item.fecha)}
                       </p>
                       <p className="mt-0.5 text-sm text-text-subtle">
-                        {item.cargada
-                          ? `${item.presentes} de ${item.total} presentes`
+                        {item.marcadas > 0
+                          ? `${item.presentes} de ${item.marcadas} presentes`
                           : futura
                             ? "Todavía no fue la clase"
                             : "Sin cargar"}
                       </p>
                     </div>
-                    {item.cargada ? (
-                      <span
-                        className="shrink-0 rounded-full bg-success-50 px-2.5 py-1 text-sm font-medium text-success-700"
-                        title="Asistencia cargada"
-                      >
-                        <span aria-hidden="true">✓</span>{" "}
-                        <span className="sr-only sm:not-sr-only">Cargada</span>
+
+                    {completa ? (
+                      <span className="shrink-0 rounded-full bg-success-50 px-2.5 py-1 text-sm font-medium tabular-nums text-success-700">
+                        {item.marcadas} de {activas}
+                      </span>
+                    ) : parcial ? (
+                      <span className="shrink-0 rounded-full bg-warning-50 px-2.5 py-1 text-sm font-medium tabular-nums text-warning-800">
+                        {item.marcadas} de {activas}
                       </span>
                     ) : (
                       !futura && (

@@ -7,11 +7,26 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import {
   TomarAsistenciaForm,
   type AlumnaAsistencia,
+  type Marca,
 } from "@/components/asistencia/TomarAsistenciaForm";
 import { guardarAsistencia } from "../../../actions";
 import { puedeGestionarAsistencia } from "@/lib/asistencia/permisos";
-import { esFechaDeClase } from "@/lib/asistencia/fechas";
-import { diaIsoDeFecha, formatFecha, mesQuery, nombreDia } from "@/lib/utils/date";
+import { bloqueDelDia, esFechaDeClase } from "@/lib/asistencia/fechas";
+import { leerAsistenciaDeAlumnas, leerMarcasDelDia } from "@/lib/asistencia/consultas";
+import { SEMANAS_VENTANA } from "@/lib/asistencia/alertas";
+import {
+  SEMANAS_PARA_AVISO_EN_LISTA,
+  agruparPorAlumna,
+  rachaDeAlumna,
+} from "@/lib/asistencia/rachas";
+import {
+  diaIsoDeFecha,
+  hoyArgentina,
+  lunesDeLaSemana,
+  nombreDia,
+  nombreMes,
+  sumarDias,
+} from "@/lib/utils/date";
 
 export const metadata: Metadata = { title: "Tomar asistencia" };
 
@@ -33,7 +48,7 @@ export default async function TomarAsistenciaPage({
   const supabase = await createClient();
   const { data: grupo } = await supabase
     .from("grupos")
-    .select("id, nombre, grupo_horarios(dias)")
+    .select("id, nombre, grupo_horarios(dias, hora_inicio, hora_fin)")
     .eq("id", grupoId)
     .single();
 
@@ -41,60 +56,80 @@ export default async function TomarAsistenciaPage({
     notFound();
   }
 
+  const horarios = grupo.grupo_horarios ?? [];
+
   // Los sábados de Jungla quedan afuera acá también, no solo en el listado:
   // pegando la URL a mano tampoco se llega a tomar asistencia de un sábado.
-  if (!esFechaDeClase(grupo.grupo_horarios ?? [], fecha)) {
+  if (!esFechaDeClase(horarios, fecha)) {
     notFound();
   }
 
-  const [anio, mes] = fecha.split("-").map(Number);
-  const volverA = `/asistencia/grupos/${grupoId}?mes=${mesQuery(anio, mes)}`;
+  const bloque = bloqueDelDia(horarios, diaIsoDeFecha(fecha));
 
-  const [{ data: alumnasData }, { data: asistenciaData }] = await Promise.all([
-    supabase
-      .from("alumnas")
-      .select("id, apellido, nombre")
-      .eq("grupo_id", grupoId)
-      .eq("estado", "activa")
-      .order("apellido", { ascending: true })
-      .order("nombre", { ascending: true }),
-    supabase.from("asistencia").select("alumna_id, presente").eq("fecha", fecha).eq("grupo_id", grupoId),
+  const { data: alumnasData } = await supabase
+    .from("alumnas")
+    .select("id, apellido, nombre")
+    .eq("grupo_id", grupoId)
+    .eq("estado", "activa")
+    .order("apellido", { ascending: true })
+    .order("nombre", { ascending: true });
+
+  const activas = alumnasData ?? [];
+
+  const lunesSemanaActual = lunesDeLaSemana(hoyArgentina());
+  const [marcasDelDia, historial] = await Promise.all([
+    leerMarcasDelDia(supabase, fecha, grupoId),
+    leerAsistenciaDeAlumnas(
+      supabase,
+      activas.map((a) => a.id),
+      sumarDias(lunesSemanaActual, -7 * SEMANAS_VENTANA),
+      fecha
+    ),
   ]);
 
-  const alumnas: AlumnaAsistencia[] = alumnasData ?? [];
-  const presentesIniciales = (asistenciaData ?? [])
-    .filter((a) => a.presente)
-    .map((a) => a.alumna_id);
-  const yaCargada = (asistenciaData ?? []).length > 0;
+  const marcasIniciales: Record<string, Marca> = {};
+  for (const marca of marcasDelDia) {
+    marcasIniciales[marca.alumna_id] = marca.presente ? "vino" : "falto";
+  }
 
+  const porAlumna = agruparPorAlumna(historial);
+
+  const alumnas: AlumnaAsistencia[] = activas.map((alumna) => {
+    const racha = rachaDeAlumna(porAlumna.get(alumna.id) ?? [], lunesSemanaActual);
+    const avisar =
+      !racha.presenteEstaSemana && racha.semanasSinPresente >= SEMANAS_PARA_AVISO_EN_LISTA;
+
+    return {
+      id: alumna.id,
+      apellido: alumna.apellido,
+      nombre: alumna.nombre,
+      semanasSinVenir: avisar ? racha.semanasSinPresente : null,
+    };
+  });
+
+  const [, mes, dia] = fecha.split("-").map(Number);
   const guardar = guardarAsistencia.bind(null, grupoId, fecha);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <BackButton href={volverA} />
+    <div className="mx-auto max-w-2xl space-y-5">
+      <BackButton href={`/asistencia?dia=${fecha}`} />
 
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">
-          {nombreDia(diaIsoDeFecha(fecha))} {formatFecha(fecha)}
-        </h1>
-        <p className="text-sm text-text-subtle">{grupo.nombre}</p>
+        <h1 className="text-2xl font-bold tracking-tight">{grupo.nombre}</h1>
+        <p className="text-sm text-text-subtle">
+          {nombreDia(diaIsoDeFecha(fecha))} {dia} de {nombreMes(mes).toLowerCase()}
+          {bloque && ` · ${bloque.hora_inicio.slice(0, 5)}`}
+        </p>
       </div>
 
       {alumnas.length === 0 ? (
         <EmptyState mensaje="Este grupo no tiene alumnas activas." />
       ) : (
-        <>
-          <p className="text-sm text-text-subtle">
-            {yaCargada
-              ? "Esta fecha ya tiene asistencia cargada. Podés corregirla y volver a guardar."
-              : "Tildá a las alumnas presentes. Las que queden sin tildar se guardan como ausentes."}
-          </p>
-          <TomarAsistenciaForm
-            action={guardar}
-            alumnas={alumnas}
-            presentesIniciales={presentesIniciales}
-          />
-        </>
+        <TomarAsistenciaForm
+          action={guardar}
+          alumnas={alumnas}
+          marcasIniciales={marcasIniciales}
+        />
       )}
     </div>
   );

@@ -1,8 +1,9 @@
 import type { createClient } from "@/lib/supabase/server";
 import { calcularAlertasInasistencia } from "@/lib/asistencia/alertas";
+import { fechasAtrasadas } from "@/lib/asistencia/dia";
 import { calcularDeudorasDelMes } from "@/lib/pagos/saldo";
 import { mesActualISO } from "@/lib/pagos/reglas";
-import { hoyArgentina, sumarDias } from "@/lib/utils/date";
+import { hoyArgentina } from "@/lib/utils/date";
 import type { NombreIcono } from "@/lib/navegacion";
 import type { User } from "@/types";
 
@@ -179,26 +180,15 @@ async function avisoDeudoras(supabase: Supabase): Promise<Aviso | null> {
 }
 
 /**
- * Clases ya pasadas (última semana) a las que nunca se les cargó asistencia.
- * Se mira por `(grupo_id, fecha)`, que es como se guarda cada toma.
+ * Clases ya pasadas (última semana) que quedaron sin cargar o a medio cargar.
+ *
+ * Delega en `fechasAtrasadas`, que es lo mismo que muestra el pie de
+ * `/asistencia`: las dos pantallas tienen que contar igual. Desde que el
+ * guardado es parcial, «tiene alguna fila» ya no significa «está cargada», así
+ * que el conteo se hace contra las alumnas activas del grupo.
  */
 async function avisoAsistenciaFaltante(supabase: Supabase, hoy: string): Promise<Aviso | null> {
-  const desde = sumarDias(hoy, -7);
-
-  const [{ data: turnos }, { data: tomadas }] = await Promise.all([
-    supabase
-      .from("turnos")
-      .select("id, fecha, grupo_id, grupo:grupos(nombre)")
-      .eq("estado", "Activo")
-      .not("grupo_id", "is", null)
-      .gte("fecha", desde)
-      .lt("fecha", hoy)
-      .order("fecha", { ascending: true }),
-    supabase.from("asistencia").select("grupo_id, fecha").gte("fecha", desde).lt("fecha", hoy),
-  ]);
-
-  const conAsistencia = new Set((tomadas ?? []).map((a) => `${a.grupo_id}|${a.fecha}`));
-  const faltantes = (turnos ?? []).filter((t) => !conAsistencia.has(`${t.grupo_id}|${t.fecha}`));
+  const faltantes = await fechasAtrasadas(supabase, hoy);
   if (faltantes.length === 0) return null;
 
   const dias = diasDesde(faltantes[0].fecha, hoy);
@@ -253,16 +243,29 @@ async function clasesDeHoy(
 
   const [{ data: tomadas }, { data: alumnas }] = await Promise.all([
     supabase.from("asistencia").select("grupo_id").eq("fecha", hoy),
-    soloDe && gruposIds.length > 0
+    gruposIds.length > 0
       ? supabase.from("alumnas").select("grupo_id").eq("estado", "activa").in("grupo_id", gruposIds)
       : Promise.resolve({ data: null }),
   ]);
 
-  const conAsistencia = new Set((tomadas ?? []).map((a) => a.grupo_id));
-
   const alumnasPorGrupo = new Map<string, number>();
   for (const a of alumnas ?? []) {
     if (a.grupo_id) alumnasPorGrupo.set(a.grupo_id, (alumnasPorGrupo.get(a.grupo_id) ?? 0) + 1);
+  }
+
+  // Desde el rediseño del módulo 4 el guardado es parcial: una clase está
+  // «tomada» cuando están marcadas todas las alumnas activas, no cuando hay
+  // una fila suelta. Si no, el inicio diría que ya se cargó una clase que
+  // alguien dejó por la mitad.
+  const marcadasPorGrupo = new Map<string, number>();
+  for (const a of tomadas ?? []) {
+    if (a.grupo_id) marcadasPorGrupo.set(a.grupo_id, (marcadasPorGrupo.get(a.grupo_id) ?? 0) + 1);
+  }
+
+  function asistenciaCompleta(grupoId: string | null): boolean {
+    if (!grupoId) return false;
+    const total = alumnasPorGrupo.get(grupoId) ?? 0;
+    return total > 0 && (marcadasPorGrupo.get(grupoId) ?? 0) >= total;
   }
 
   return turnos.map((t) => ({
@@ -275,7 +278,7 @@ async function clasesDeHoy(
       t.profesores as unknown as { profesor: { nombre: string } | null }[]
     ).flatMap((p) => (p.profesor ? [p.profesor.nombre] : [])),
     planificada: !!t.planificacion,
-    asistenciaTomada: !!t.grupo_id && conAsistencia.has(t.grupo_id),
+    asistenciaTomada: asistenciaCompleta(t.grupo_id),
     cantidadAlumnas: soloDe && t.grupo_id ? (alumnasPorGrupo.get(t.grupo_id) ?? 0) : null,
   }));
 }
