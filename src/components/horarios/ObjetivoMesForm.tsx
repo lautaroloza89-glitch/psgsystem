@@ -8,6 +8,17 @@ import { Spinner } from "@/components/ui/spinner";
 
 const initialState: FormState = { error: null };
 
+/**
+ * A partir de acá el objetivo se muestra recortado con «Ver todo».
+ *
+ * Son unas cuatro líneas en un celular. Por debajo de eso, mostrarlo entero no
+ * molesta y un control de más sería ruido; por encima, Luciana escribe
+ * objetivos de párrafos enteros y el panel se comía la pantalla — había que
+ * pasarlo scrolleando cada vez para llegar a las clases del mes, que es a lo
+ * que se entra.
+ */
+const LARGO_PARA_RECORTAR = 180;
+
 export function ObjetivoMesForm({
   grupoId,
   mes,
@@ -23,22 +34,45 @@ export function ObjetivoMesForm({
   vista: ReactNode;
 }) {
   const [editando, setEditando] = useState(false);
+  const [expandido, setExpandido] = useState(false);
   const accion = guardarObjetivoMes.bind(null, grupoId, mes);
   const [state, formAction, pending] = useActionState(accion, initialState);
+
+  const recortable = (objetivoInicial?.length ?? 0) > LARGO_PARA_RECORTAR;
+  const recortado = recortable && !expandido;
+
+  const enlace =
+    "text-sm font-medium text-primary-600 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface rounded";
 
   if (!editando) {
     return (
       <div className="space-y-2">
-        {vista}
-        {puedeEditar && (
-          <button
-            type="button"
-            onClick={() => setEditando(true)}
-            className="text-sm font-medium text-primary-600 hover:text-primary-700"
-          >
-            {objetivoInicial ? "Editar objetivo" : "Cargar objetivo"}
-          </button>
-        )}
+        {/* Recortado y no colapsado del todo: las primeras líneas se leen sin
+            tocar nada, que es lo que hace que el objetivo siga siendo el
+            contexto de la pantalla, pero no empuja las clases fuera de vista.
+            El degradado avisa que sigue, sin escribir «...». */}
+        <div className={`relative ${recortado ? "max-h-24 overflow-hidden" : ""}`}>
+          {vista}
+          {recortado && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-surface to-transparent"
+            />
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {recortable && (
+            <button type="button" onClick={() => setExpandido(!expandido)} className={enlace}>
+              {expandido ? "Ver menos" : "Ver todo"}
+            </button>
+          )}
+          {puedeEditar && (
+            <button type="button" onClick={() => setEditando(true)} className={enlace}>
+              {objetivoInicial ? "Editar objetivo" : "Cargar objetivo"}
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -53,7 +87,7 @@ export function ObjetivoMesForm({
     >
       <textarea
         name="objetivo"
-        rows={4}
+        rows={8}
         required
         defaultValue={objetivoInicial ?? ""}
         placeholder="Objetivo del mes (admite markdown)."

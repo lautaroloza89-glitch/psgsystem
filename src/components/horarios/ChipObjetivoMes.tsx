@@ -27,7 +27,10 @@ export function ChipObjetivoMes({ objetivo }: { objetivo: string | null }) {
         <Icono nombre="target" className="h-4 w-4" />
         Objetivo del mes
       </summary>
-      <div className="mt-2 rounded-lg border border-border bg-surface-muted p-3">
+      {/* Con scroll adentro: en la lista el objetivo es un dato de apoyo, y
+          uno largo abierto empujaría las clases que siguen fuera de la
+          pantalla — que es justo lo que este chip vino a evitar. */}
+      <div className="mt-2 max-h-56 overflow-y-auto overscroll-contain rounded-lg border border-border bg-surface-muted p-3">
         <MarkdownText texto={objetivo} />
       </div>
     </details>
