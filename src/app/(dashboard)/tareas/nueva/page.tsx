@@ -5,6 +5,7 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { puedeCrearTarea } from "@/lib/permisos";
 import { TareaForm } from "@/components/tareas/TareaForm";
 import { BackButton } from "@/components/ui/BackButton";
+import { leerPersonalAsignable } from "@/lib/tareas/asignables";
 import { hoyArgentina } from "@/lib/utils/date";
 import { crearTarea } from "../actions";
 
@@ -18,14 +19,7 @@ export default async function NuevaTareaPage() {
   }
 
   const supabase = await createClient();
-  const { data: usuarios } = await supabase
-    .from("users")
-    .select("id, nombre, rol, cargo")
-    .eq("estado", "activo")
-    // Solo el personal del club: una tarea no se le asigna a una alumna con
-    // login, y hasta ahora el selector las listaba a todas.
-    .neq("rol", "Patinador")
-    .order("nombre");
+  const usuarios = await leerPersonalAsignable(supabase);
 
   return (
     <div className="mx-auto max-w-lg space-y-5">
@@ -33,7 +27,7 @@ export default async function NuevaTareaPage() {
       <h1 className="text-2xl font-bold tracking-tight">Nueva tarea</h1>
       <TareaForm
         action={crearTarea}
-        usuarios={usuarios ?? []}
+        usuarios={usuarios}
         modo="crear"
         hoy={hoyArgentina()}
       />

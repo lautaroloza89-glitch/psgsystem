@@ -5,6 +5,7 @@ import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { puedeEditarTarea, puedeVerModuloTareas } from "@/lib/permisos";
 import { TareaForm } from "@/components/tareas/TareaForm";
 import { BackButton } from "@/components/ui/BackButton";
+import { leerPersonalAsignableConActuales } from "@/lib/tareas/asignables";
 import { hoyArgentina } from "@/lib/utils/date";
 import { editarTarea } from "../../actions";
 
@@ -42,14 +43,9 @@ export default async function EditarTareaPage({
     redirect(`/tareas/${id}`);
   }
 
-  const { data: usuarios } = await supabase
-    .from("users")
-    .select("id, nombre, rol, cargo")
-    .eq("estado", "activo")
-    // Solo el personal del club: una tarea no se le asigna a una alumna con
-    // login, y hasta ahora el selector las listaba a todas.
-    .neq("rol", "Patinador")
-    .order("nombre");
+  // Con los actuales incluidos: un responsable que hoy no sería asignable
+  // tiene que seguir apareciendo tildado, o al guardar se borraría solo.
+  const usuarios = await leerPersonalAsignableConActuales(supabase, asignadosIds);
 
   const editarTareaConId = editarTarea.bind(null, id);
 
@@ -59,7 +55,7 @@ export default async function EditarTareaPage({
       <h1 className="text-2xl font-bold tracking-tight">Editar tarea</h1>
       <TareaForm
         action={editarTareaConId}
-        usuarios={usuarios ?? []}
+        usuarios={usuarios}
         modo="editar"
         hoy={hoyArgentina()}
         defaultValues={{

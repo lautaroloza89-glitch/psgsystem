@@ -15,7 +15,7 @@
 [Los roles son niveles de permiso, no cargos](#los-roles-son-niveles-de-permiso-no-cargos) · [Alcance de cada rol](#alcance-de-cada-rol) · [La navegación y el inicio son distintos por rol](#la-navegación-y-el-inicio-son-distintos-por-rol) · [Alcance del rol Secretaria](#alcance-del-rol-secretaria) · [Asignación de roles del equipo real](#asignación-de-roles-del-equipo-real) · [Head Coach con control total sobre clases](#head-coach-con-control-total-sobre-clases) · [Sin auto-registro público](#sin-auto-registro-público) · [La RLS es la fuente de verdad de los permisos](#la-rls-es-la-fuente-de-verdad-de-los-permisos) · [Las reglas de permiso viven en un solo archivo](#las-reglas-de-permiso-viven-en-un-solo-archivo) · [dicta_clases es independiente del rol](#dicta_clases-es-independiente-del-rol)
 
 **Tareas**
-[Tareas y proyectos son la misma entidad](#tareas-y-proyectos-son-la-misma-entidad) · [Una tarea puede tener varios responsables](#una-tarea-puede-tener-varios-responsables) · [Los comentarios son historial](#los-comentarios-son-historial) · [Aviso cuando una tarea queda sin responsables](#aviso-cuando-una-tarea-queda-sin-responsables)
+[Tareas y proyectos son la misma entidad](#tareas-y-proyectos-son-la-misma-entidad) · [Una tarea puede tener varios responsables](#una-tarea-puede-tener-varios-responsables) · [Los comentarios son historial](#los-comentarios-son-historial) · [Aviso cuando una tarea queda sin responsables](#aviso-cuando-una-tarea-queda-sin-responsables) · [El Admin no puede ser responsable de una tarea](#el-admin-no-puede-ser-responsable-de-una-tarea)
 
 **Clases y planificaciones**
 [Las clases son por fecha puntual, no recurrentes](#las-clases-son-por-fecha-puntual-no-recurrentes) · [Cancelar no es borrar](#cancelar-no-es-borrar) · [Una clase puede tener varios profesores](#una-clase-puede-tener-varios-profesores) · [El horario del club es de lectura abierta](#el-horario-del-club-es-de-lectura-abierta) · [La entrada a Planificaciones es grupo → mes](#la-entrada-a-planificaciones-es-grupo--mes)
@@ -345,6 +345,12 @@ Lautaro es el único Admin real del sistema.
 
 **Decisión:** cerrar el mes de una alumna sin cobrarle se hace con **un motivo obligatorio**, y eso mismo es lo que la saca de la lista (tabla `deudas_saldadas`). No hay dos acciones distintas.
 **Contexto:** hasta acá el saldo solo bajaba con un pago verificado, así que perdonar una deuda obligaba a inventar un pago falso — y eso ensuciaba la recaudación del mes. La tabla aparte la consulta el cálculo igual que a los pagos, pero no toca `pagos`, así que la recaudación queda intacta. Que sean dos acciones separadas («eliminar de la lista» y «marcar como saldada») no se sostiene: en tres meses nadie recordaría qué significaba cada una.
+**Estado:** vigente
+
+## El Admin no puede ser responsable de una tarea
+
+**Decisión:** el usuario `Admin` **no aparece** en el selector de responsables. Sigue creando, editando y cerrando tareas de los demás; lo que no puede es ser el encargado de una. Decidido por Lauti el 2026-09-09.
+**Contexto:** es la cuenta de quien construye y administra el sistema, no de alguien que trabaja en el club — el equipo de trabajo son Head Coach, Profesor, Empleado y Secretaria. Se suma al Patinador, que ya estaba excluido por otro motivo (una tarea no se le asigna a una alumna con login). El filtro vive en `src/lib/tareas/asignables.ts`; al **editar** una tarea vieja, un responsable que hoy no sería asignable se sigue mostrando tildado, porque el guardado sincroniza contra lo que manda el formulario y si no aparece se borraría solo.
 **Estado:** vigente
 
 ## La profesora no toma asistencia
