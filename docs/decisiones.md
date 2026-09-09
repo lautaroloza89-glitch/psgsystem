@@ -24,7 +24,7 @@
 [Alcance de las notificaciones](#alcance-de-las-notificaciones) · [Destinatarios de una notificación](#destinatarios-de-una-notificación) · [Push con Web Push API nativo](#push-con-web-push-api-nativo) · [Los recordatorios de vencimiento corren por cron](#los-recordatorios-de-vencimiento-corren-por-cron) · [Las notificaciones sobreviven al borrado de su origen](#las-notificaciones-sobreviven-al-borrado-de-su-origen)
 
 **Alumnas, grupos y cuotas**
-[Las alumnas no tienen cuenta ni login](#las-alumnas-no-tienen-cuenta-ni-login) · [Los grupos son un catálogo fijo](#los-grupos-son-un-catálogo-fijo) · [La cuota es solo el valor vigente](#la-cuota-es-solo-el-valor-vigente) · [Campos opcionales en base, obligatorios en el formulario](#campos-opcionales-en-base-obligatorios-en-el-formulario) · [Las bajas son lógicas, no borrados](#las-bajas-son-lógicas-no-borrados)
+[Las alumnas no tienen cuenta ni login](#las-alumnas-no-tienen-cuenta-ni-login) · [Los grupos son un catálogo fijo](#los-grupos-son-un-catálogo-fijo) · [La cuota es solo el valor vigente](#la-cuota-es-solo-el-valor-vigente) · [Campos opcionales en base, obligatorios en el formulario](#campos-opcionales-en-base-obligatorios-en-el-formulario) · [Las bajas son lógicas, no borrados](#las-bajas-son-lógicas-no-borrados) · [Dar de baja no es un campo del formulario](#dar-de-baja-no-es-un-campo-del-formulario)
 
 **Pagos**
 [Se permite el pago parcial](#se-permite-el-pago-parcial) · [El recargo es fijo y sugerido, no automático](#el-recargo-es-fijo-y-sugerido-no-automático) · [Dos transiciones de pago: verificar y anular](#dos-transiciones-de-pago-verificar-y-anular) · [El historial financiero no se borra](#el-historial-financiero-no-se-borra) · [El recibo se arma recién al verificar](#el-recibo-se-arma-recién-al-verificar) · [La baja de una alumna no cancela su deuda](#la-baja-de-una-alumna-no-cancela-su-deuda) · [Saldar un mes y sacar a alguien de Deudoras son la misma acción](#saldar-un-mes-y-sacar-a-alguien-de-deudoras-son-la-misma-acción)
@@ -327,6 +327,12 @@ Lautaro es el único Admin real del sistema.
 
 **Decisión:** el texto del recibo (`pagos.recibo_texto`) se genera en el momento de verificar el pago, nunca antes, y queda guardado.
 **Contexto:** antes de la verificación el pago todavía puede no existir como tal; un recibo emitido antes sería el comprobante de algo no confirmado. Guardarlo permite reenviarlo después, en vez de que se vea una sola vez.
+**Estado:** vigente
+
+## Dar de baja no es un campo del formulario
+
+**Decisión:** el estado de una alumna **no se edita** junto con sus datos. Dar de baja es una acción propia de la ficha, con **fecha obligatoria** y confirmación, y reactivar es otra. `editarAlumna` no toca `estado`.
+**Contexto:** era un desplegable «Activa / Baja» adentro del formulario de edición, entre el grupo y los contactos. Es la acción que apaga la alerta de inasistencia y la que decide hasta qué mes se le sigue cobrando: tiene que ser fácil de encontrar y difícil de tocar sin querer. Además, mientras `estado` se leía del formulario, editar el teléfono de una alumna de baja la reactivaba en silencio (el campo ausente caía en el default `'activa'`). La fecha la elige quien da la baja y no es automáticamente hoy: la fecha real en que la alumna dejó de venir casi nunca coincide con el día en que alguien lo carga.
 **Estado:** vigente
 
 ## La baja de una alumna no cancela su deuda

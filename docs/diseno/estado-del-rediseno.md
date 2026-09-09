@@ -65,21 +65,22 @@ Este orden **no es una sugerencia: es el orden de trabajo.** Va de la estructura
 | 3 | **Tareas** | «Mis tareas», vencidas marcadas, `UsuarioRolCargo` dado vuelta (ese componente se ve en tres módulos: arreglarlo acá los arregla todos). | ✅ | `f454c3c` · `677019c` |
 | 4 | **Asistencia** | Entrar directo al grupo de hoy, «Vino / Faltó», estado Parcial, pie fijo. | ✅ | `27161b3` |
 | 5 | **Pagos** | Pantalla con números en vez del menú de cuatro tarjetas, recargo explicado, atraso por alumna. | ✅ | `d50b8fa` (main) · `40d4a74` · `7cbd721` |
-| 6 | **Alumnas** | Ficha con asistencia y deuda, teléfono tocable, baja fuera del formulario, listado denso. | ⬜ **el que sigue** | — |
-| 7 | **Planificaciones** y **Torneos** | Pestañas Próximos/Pasados, sin duplicar el destacado, señal de notas. | ⬜ | — |
+| 6 | **Alumnas** | Ficha con asistencia y deuda, teléfono tocable, baja fuera del formulario, listado denso. | ✅ | `40984cf` · `9e0f80c` |
+| 7 | **Planificaciones** y **Torneos** | Pestañas Próximos/Pasados, sin duplicar el destacado, señal de notas. | ⬜ **el que sigue** | — |
 | 8 | **Participación en torneos** (modelos Tg y Th) | Va última porque es la única pantalla que no existe hoy: se construye sobre `torneo_participantes` y sobre las categorías, que dependen de `alumnas.fecha_nacimiento`. | ⬜ | — |
 
 Antes del módulo 1 hubo dos commits de preparación: los helpers de permisos pasados a type guards (`60b4210`) y los modelos de diseño incorporados al repo (`3f81e42`).
 
-### Al arrancar el módulo 6 (Alumnas)
+### Al arrancar el módulo 7 (Planificaciones y Torneos)
 
-Está desbloqueado, se puede empezar directo. El modelo es `docs/diseno/06-alumnas.dc.html`: **leerlo entero**, todas sus opciones, antes de escribir nada. En el módulo 3 se saltó la opción `Rd` y el formulario de alta quedó sin hacer hasta que Lauti lo detectó en el preview.
+Está desbloqueado. Son **dos modelos**, `docs/diseno/07-planificaciones.dc.html` y `docs/diseno/08-torneos.dc.html`: leerlos **enteros** los dos, todas sus opciones, antes de escribir nada. En el módulo 3 se saltó la opción `Rd` y el formulario de alta quedó sin hacer hasta que Lauti lo detectó en el preview.
 
-Tres cosas para tener a mano, las tres consecuencia del módulo 5:
+Es el primer módulo que agrupa dos pantallas distintas, así que ojo con dos cosas:
 
-- **`alumnas.fecha_baja` ya existe pero todavía no la escribe nadie.** El formulario de baja es de este módulo («baja fuera del formulario», dice el resumen), y es el que tiene que pedirla. Mientras no se cargue, una alumna de baja no genera cuota de ningún mes — el lado seguro, pero significa que dar de baja hoy desde la app sigue sacando a la alumna de Deudoras. **Es lo primero a cerrar del módulo 6.**
-- **La ficha tiene que mostrar la deuda**, y el cálculo ya está: `calcularDeudorasDelMes` en `src/lib/pagos/saldo.ts` devuelve por alumna el desglose (cuota, recargo, pagado, por qué debe). Para una sola alumna está `calcularSaldoAlumnaMes`.
-- **El teléfono tocable**: usá `enlaceWhatsapp` de `src/lib/utils/whatsapp.ts`, que devuelve `null` cuando el número no es interpretable. No inventes el link — el `tel:` de las alertas de asistencia es el otro precedente.
+- **Planificaciones es el único módulo donde escribe la Profesora.** El permiso vive aparte del archivo único: `puedeCargarPlanificaciones`, dentro de `horarios/planificaciones-actions.ts`. Cruzalo con el modelo antes de escribir cualquier botón — y si no coinciden, se le pregunta a Lauti en el momento.
+- **Torneos lo ve todo el club**, incluidos Profesor y Empleado, que no entran a ningún otro módulo de los rediseñados hasta ahora (`puedeVerTorneos` deja pasar a cualquiera logueado; crear y editar es solo Admin/Head Coach, y la convocatoria suma Secretaria). Es el módulo con más roles distintos mirando la misma pantalla: probalo con uno de gestión y uno del personal, que es justamente el repaso que viene quedando pendiente.
+
+El módulo 8 (participación en torneos) se apoya en este, así que lo que se decida acá sobre cómo se ve un torneo manda allá.
 
 ---
 
@@ -93,6 +94,7 @@ Tres cosas para tener a mano, las tres consecuencia del módulo 5:
 - **`src/components/ui/UsuarioRolCargo.tsx`** — ya dado vuelta (persona primero, rol de subtítulo). Se usa en Tareas, Horarios y los dos listados de comentarios: **ya está arreglado en los tres**.
 - **`src/components/tareas/ChipsResponsables.tsx`** — chips que por debajo son checkboxes ocultos, así el formulario anda sin JavaScript. Patrón reusable para cualquier multi-selección.
 - **Patrón visual del listado:** un `<ul>` dentro de `rounded-xl border border-border bg-surface divide-y divide-border`, con encabezado de grupo en `text-sm font-semibold uppercase tracking-wide text-text-subtle`. Es el que usan Inicio, Miembros y Tareas.
+- **`src/lib/alumnas/ficha.ts`** — `datosDeFichaAlumna()` (asistencia del mes + racha + saldo de una alumna, en una lectura), `rachasParaListado()` (las semanas sin venir de todo el club, para marcar la excepción en un listado) y `edadDe()`.
 - **`src/components/pagos/NavegadorDeMes.tsx`** — el control de mes del módulo Pagos, con `basePath` y `extra` para conservar otros query params. Cualquier pantalla que se recorra por mes debería usar este, no escribir sus propias flechas.
 - **`src/lib/utils/whatsapp.ts`** — `enlaceWhatsapp()` / `numeroWhatsapp()`, que devuelven `null` cuando el teléfono cargado a mano no se puede interpretar, y `primerNombre()` para los botones («Escribir a Ana»).
 - **`src/lib/pagos/mes.ts`** — `calcularEstadoDelMes()`: recaudación, pendientes, deudoras y «X de Y al día» de un mes, en una sola lectura.
