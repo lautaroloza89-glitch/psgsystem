@@ -182,17 +182,34 @@ export default async function PagosPendientesPage({
           — es la única corrección que existe, y un pago mal cargado se
           descubre casi siempre después de haberlo dado por bueno. */}
       {verificados.length > 0 && (
-        <section aria-labelledby="verificados-titulo" className="space-y-3">
-          <h2 id="verificados-titulo" className="text-base font-semibold">
-            Verificados este mes
-          </h2>
+        <section
+          aria-labelledby="verificados-titulo"
+          className="space-y-3 border-t border-border pt-5"
+        >
+          <div>
+            <h2 id="verificados-titulo" className="text-base font-semibold">
+              Ya verificados · {nombreMes(mes).toLowerCase()}
+            </h2>
+            <p className="mt-0.5 text-sm text-text-subtle">
+              Estos ya están cobrados. Tocá uno para ver su recibo o anularlo si se cargó mal.
+            </p>
+          </div>
+
           <ul className="space-y-2">
             {verificados.map((p) => (
               <li key={p.id} className="overflow-hidden rounded-xl border border-border bg-surface">
-                <details>
-                  <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-surface-muted">
-                    <span className="min-w-0">
-                      <span className="block font-medium">{nombreAlumna(p)}</span>
+                <details className="group">
+                  <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-surface-muted">
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium">{nombreAlumna(p)}</span>
+                        {/* Sin esto, una fila con solo nombre y monto se lee
+                            como un pendiente más en una pantalla que se llama
+                            «Sin verificar». */}
+                        <span className="shrink-0 rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700">
+                          Verificado
+                        </span>
+                      </span>
                       <span className="block text-text-subtle">
                         {metodosTexto(p)}
                         {p.contacto && ` · ${p.contacto.nombre}`}
@@ -200,6 +217,13 @@ export default async function PagosPendientesPage({
                     </span>
                     <span className="shrink-0 font-medium tabular-nums">
                       {formatMonto(Number(p.monto))}
+                    </span>
+                    {/* La flecha es lo único que dice que la fila se abre. */}
+                    <span
+                      aria-hidden="true"
+                      className="shrink-0 text-text-subtle transition-transform duration-[var(--duration-fast)] ease-standard group-open:rotate-180"
+                    >
+                      ▾
                     </span>
                   </summary>
                   <div className="space-y-3 border-t border-border p-4">
