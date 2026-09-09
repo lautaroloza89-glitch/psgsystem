@@ -5,28 +5,44 @@ import { crearPago, obtenerSaldoAlumnaMes, type FormState } from "@/app/(dashboa
 import type { SaldoAlumnaMes } from "@/lib/pagos/saldo";
 import { RECARGO_MONTO } from "@/lib/pagos/reglas";
 import { normalizarTexto } from "@/lib/utils/texto";
-import { hoyArgentina } from "@/lib/utils/date";
+import { hoyArgentina, nombreMes } from "@/lib/utils/date";
 import { formatMonto } from "@/lib/utils/money";
+import { primerNombre } from "@/lib/utils/whatsapp";
 import type { MetodoPago } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
 
-const INPUT_CLASS =
-  "w-full rounded-md border border-border-strong px-3 py-2.5 text-sm transition-colors duration-[var(--duration-fast)] ease-standard focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-focus-ring";
+/**
+ * Cobrar.
+ *
+ * Cuando se entra desde «Cobrar» en Deudoras, la alumna y el mes ya vienen
+ * resueltos y el formulario **arranca por el dinero**: antes había que pasar
+ * por buscador, mes y contacto para llegar ahí, y el total, el recargo y el
+ * botón quedaban abajo del scroll.
+ *
+ * El recargo deja de ser una casilla que se autotildaba sola sin decir nada:
+ * aparece **sumado, con su motivo**, y se saca de un toque. Misma regla del
+ * día 10.
+ */
+
+const CLASE_FOCO =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
+
+const INPUT_CLASS = `w-full rounded-lg border border-border-strong px-3 py-2.5 text-sm transition-colors duration-[var(--duration-fast)] ease-standard focus:border-primary-500 ${CLASE_FOCO}`;
 
 const METODOS: { value: MetodoPago; label: string }[] = [
   { value: "efectivo", label: "Efectivo" },
-  { value: "transferencia", label: "Transferencia" },
+  { value: "transferencia", label: "Transfer." },
   { value: "debito", label: "Débito" },
 ];
 
-interface AlumnaOpcion {
+export interface AlumnaOpcion {
   id: string;
   apellido: string;
   nombre: string;
   grupoNombre: string;
 }
 
-interface ContactoOpcion {
+export interface ContactoOpcion {
   id: string;
   nombre: string;
   esPagadorPrincipal: boolean;
@@ -48,22 +64,65 @@ function mesActualInput(): string {
   return hoyArgentina().slice(0, 7);
 }
 
+/** «septiembre 2026» a partir de `YYYY-MM`. */
+function mesLargo(mesInput: string): string {
+  const [anio, mesNum] = mesInput.split("-").map(Number);
+  return `${nombreMes(mesNum).toLowerCase()} ${anio}`;
+}
+
 const initialState: FormState = { error: null };
+
+/** Chip: la selección de una opción entre pocas, con área de toque real. */
+function Chip({
+  activo,
+  onClick,
+  children,
+}: {
+  activo: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={activo}
+      onClick={onClick}
+      className={`h-11 rounded-lg border px-4 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard ${CLASE_FOCO} ${
+        activo
+          ? "border-primary-500 bg-primary-500 text-on-primary"
+          : "border-border bg-surface text-text-subtle hover:border-border-strong hover:text-text"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
 
 export function RegistrarPagoForm({
   alumnas,
   contactosPorAlumna,
+  alumnaInicial = null,
+  mesInicial,
 }: {
   alumnas: AlumnaOpcion[];
   contactosPorAlumna: Record<string, ContactoOpcion[]>;
+  /** Viene resuelta cuando se entra por «Cobrar» desde Deudoras. */
+  alumnaInicial?: AlumnaOpcion | null;
+  mesInicial?: string;
 }) {
   const [state, formAction, pending] = useActionState(crearPago, initialState);
 
   const [busqueda, setBusqueda] = useState("");
-  const [alumna, setAlumna] = useState<AlumnaOpcion | null>(null);
-  const [mes, setMes] = useState(mesActualInput());
-  const [contactoId, setContactoId] = useState("");
-  const [metodos, setMetodos] = useState<MetodoRow[]>([{ key: nuevaKey(), metodo: "efectivo", monto: "" }]);
+  const [alumna, setAlumna] = useState<AlumnaOpcion | null>(alumnaInicial);
+  const [mes, setMes] = useState(mesInicial ?? mesActualInput());
+  const [contactoId, setContactoId] = useState(
+    alumnaInicial
+      ? (contactosPorAlumna[alumnaInicial.id] ?? []).find((c) => c.esPagadorPrincipal)?.id ?? ""
+      : ""
+  );
+  const [metodos, setMetodos] = useState<MetodoRow[]>([
+    { key: nuevaKey(), metodo: "efectivo", monto: "" },
+  ]);
   const [incluirRecargo, setIncluirRecargo] = useState(false);
   const [recargoTocado, setRecargoTocado] = useState(false);
   const [saldo, setSaldo] = useState<SaldoAlumnaMes | null>(null);
@@ -117,216 +176,231 @@ export function RegistrarPagoForm({
     setSaldoError(null);
   }
 
-  function agregarMetodo() {
-    setMetodos((prev) => [...prev, { key: nuevaKey(), metodo: "efectivo", monto: "" }]);
+  const recargo = incluirRecargo ? RECARGO_MONTO : 0;
+  const aCobrar = saldo ? Math.max(0, saldo.saldoSinRecargo) + recargo : 0;
+  const totalCargado = metodos.reduce((acc, m) => acc + (Number(m.monto) || 0), 0);
+  const saldoTrasElPago = saldo ? saldo.saldoSinRecargo + recargo - totalCargado : 0;
+
+  function setMonto(key: string, monto: string) {
+    setMetodos((prev) => prev.map((m) => (m.key === key ? { ...m, monto } : m)));
   }
 
-  function quitarMetodo(key: string) {
-    setMetodos((prev) => (prev.length > 1 ? prev.filter((m) => m.key !== key) : prev));
+  // ─────────────────────────── Paso 1: elegir alumna ───────────────────────────
+  if (!alumna) {
+    return (
+      <div className="space-y-3">
+        <label htmlFor="buscar-alumna" className="block text-sm font-medium">
+          ¿A quién le cobrás?
+        </label>
+        <input
+          id="buscar-alumna"
+          type="search"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Apellido o nombre"
+          autoFocus
+          className={INPUT_CLASS}
+        />
+
+        {busqueda.trim().length > 0 && alumnasFiltradas.length === 0 && (
+          <p className="text-sm text-text-subtle">Ninguna alumna coincide con esa búsqueda.</p>
+        )}
+
+        {alumnasFiltradas.length > 0 && (
+          <ul className="overflow-hidden rounded-xl border border-border bg-surface divide-y divide-border">
+            {alumnasFiltradas.map((a) => (
+              <li key={a.id}>
+                <button
+                  type="button"
+                  onClick={() => elegirAlumna(a)}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring"
+                >
+                  <span className="font-medium">
+                    {a.apellido}, {a.nombre}
+                  </span>
+                  <span className="text-sm text-text-subtle">{a.grupoNombre}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
   }
 
-  function actualizarMetodoTipo(key: string, valor: MetodoPago) {
-    setMetodos((prev) => prev.map((m) => (m.key === key ? { ...m, metodo: valor } : m)));
-  }
-
-  function actualizarMetodoMonto(key: string, valor: string) {
-    setMetodos((prev) => prev.map((m) => (m.key === key ? { ...m, monto: valor } : m)));
-  }
-
-  const totalMetodos = metodos.reduce((acc, m) => acc + (Number(m.monto) || 0), 0);
-
-  const montoEsperadoTotal = saldo ? saldo.montoCuota + (incluirRecargo ? RECARGO_MONTO : 0) : null;
-  const pendienteAntesDeEstePago =
-    montoEsperadoTotal !== null && saldo ? montoEsperadoTotal - saldo.montoPagadoVerificado : null;
-  const saldoTrasEstePago =
-    pendienteAntesDeEstePago !== null ? pendienteAntesDeEstePago - totalMetodos : null;
-
+  // ─────────────────────────── Paso 2: el dinero ───────────────────────────
   return (
-    <form action={formAction} className="space-y-5">
-      <input type="hidden" name="alumna_id" value={alumna?.id ?? ""} readOnly />
+    <form action={formAction} className="space-y-4">
+      <input type="hidden" name="alumna_id" value={alumna.id} />
+      <input type="hidden" name="mes_correspondiente" value={mes} />
+      <input type="hidden" name="contacto_id" value={contactoId} />
+      {incluirRecargo && <input type="hidden" name="incluir_recargo" value="on" />}
 
-      <div className="space-y-1.5">
-        <label className="text-label font-medium">Alumna</label>
-        {alumna ? (
-          <div className="flex items-center justify-between gap-2 rounded-md border border-border-strong bg-surface-muted px-3 py-2.5">
-            <div>
-              <p className="text-sm font-medium">
-                {alumna.apellido}, {alumna.nombre}
-              </p>
-              <p className="text-sm text-text-subtle">{alumna.grupoNombre}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold leading-snug">Cobrar a {alumna.nombre}</h2>
+          <p className="text-sm text-text-subtle">
+            {alumna.grupoNombre} · {mesLargo(mes)}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={cambiarAlumna}
+          className={`shrink-0 rounded px-2 py-1 text-sm font-medium text-primary-600 hover:text-primary-700 ${CLASE_FOCO}`}
+        >
+          Cambiar
+        </button>
+      </div>
+
+      <div>
+        <label htmlFor="mes" className="block text-sm font-medium">
+          Mes correspondiente
+        </label>
+        <input
+          id="mes"
+          type="month"
+          value={mes}
+          onChange={(e) => setMes(e.target.value)}
+          className={`${INPUT_CLASS} mt-1`}
+        />
+      </div>
+
+      {/* El resumen que antes eran dos líneas grises perdidas entre los campos. */}
+      <div className="rounded-xl border border-border bg-surface p-4">
+        {cargandoSaldo && !saldo ? (
+          <p className="text-sm text-text-subtle">Calculando el saldo…</p>
+        ) : saldoError ? (
+          <p className="text-sm text-error-600">{saldoError}</p>
+        ) : saldo ? (
+          <dl className="space-y-1.5 text-sm">
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-text-subtle">Cuota de {alumna.grupoNombre}</dt>
+              <dd className="font-medium tabular-nums">{formatMonto(saldo.montoCuota)}</dd>
             </div>
-            <button
-              type="button"
-              onClick={cambiarAlumna}
-              className="text-sm font-medium text-primary-600 hover:text-primary-700"
-            >
-              Cambiar
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <input
-              type="search"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar por apellido o nombre"
-              aria-label="Buscar alumna"
-              className={INPUT_CLASS}
-            />
-            {alumnasFiltradas.length > 0 && (
-              <ul className="divide-y divide-border rounded-md border border-border">
-                {alumnasFiltradas.map((op) => (
-                  <li key={op.id}>
-                    <button
-                      type="button"
-                      onClick={() => elegirAlumna(op)}
-                      className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm hover:bg-surface-muted"
-                    >
-                      <span className="font-medium">
-                        {op.apellido}, {op.nombre}
-                      </span>
-                      <span className="text-text-subtle">{op.grupoNombre}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+
+            {saldo.montoPagadoVerificado > 0 && (
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-text-subtle">Ya pagado y verificado</dt>
+                <dd className="font-medium tabular-nums text-success-700">
+                  −{formatMonto(saldo.montoPagadoVerificado)}
+                </dd>
+              </div>
             )}
-            {busqueda.trim() && alumnasFiltradas.length === 0 && (
-              <p className="text-sm text-text-subtle">Ninguna alumna coincide con la búsqueda.</p>
+
+            {incluirRecargo && (
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-text-subtle">Recargo (pasó el día 10)</dt>
+                <dd className="font-medium tabular-nums">{formatMonto(RECARGO_MONTO)}</dd>
+              </div>
             )}
-          </div>
+
+            <div className="flex items-baseline justify-between gap-3 border-t border-border pt-1.5">
+              <dt className="font-semibold">A cobrar</dt>
+              <dd className="text-lg font-semibold tabular-nums">{formatMonto(aCobrar)}</dd>
+            </div>
+          </dl>
+        ) : null}
+
+        {saldo && (
+          <button
+            type="button"
+            onClick={() => {
+              setRecargoTocado(true);
+              setIncluirRecargo((v) => !v);
+            }}
+            className={`mt-3 rounded text-sm font-medium text-primary-600 hover:text-primary-700 ${CLASE_FOCO}`}
+          >
+            {incluirRecargo ? "Sacar el recargo" : "Agregar el recargo"}
+          </button>
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <label htmlFor="mes_correspondiente" className="text-label font-medium">
-            Mes correspondiente
-          </label>
-          <input
-            id="mes_correspondiente"
-            name="mes_correspondiente"
-            type="month"
-            required
-            value={mes}
-            onChange={(e) => setMes(e.target.value)}
-            className={INPUT_CLASS}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="contacto_id" className="text-label font-medium">
-            Quién paga <span className="font-normal text-text-subtle">(opcional)</span>
-          </label>
-          <select
-            id="contacto_id"
-            name="contacto_id"
-            value={contactoId}
-            onChange={(e) => setContactoId(e.target.value)}
-            disabled={!alumna}
-            className={INPUT_CLASS}
-          >
-            <option value="">Sin especificar</option>
-            {contactosAlumna.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-                {c.esPagadorPrincipal ? " (pagador principal)" : ""}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {alumna && (
-        <div className="rounded-md border border-border bg-surface-muted px-3 py-2.5 text-sm">
-          {cargandoSaldo && "Calculando cuota..."}
-          {!cargandoSaldo && saldoError && <span className="text-error-600">{saldoError}</span>}
-          {!cargandoSaldo && saldo && (
-            <>
-              Cuota del mes: <span className="font-medium">{formatMonto(saldo.montoCuota)}</span>
-              {saldo.montoPagadoVerificado > 0 && (
-                <> · ya pagado y verificado: {formatMonto(saldo.montoPagadoVerificado)}</>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-label font-medium">Métodos de pago</span>
-          <button
-            type="button"
-            onClick={agregarMetodo}
-            className="text-sm font-medium text-primary-600 hover:text-primary-700"
-          >
-            + Agregar método
-          </button>
-        </div>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">Cómo paga</legend>
 
         {metodos.map((fila, i) => (
-          <div key={fila.key} className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
-            <div className="space-y-1.5">
-              {i === 0 && <label className="text-sm font-medium">Método</label>}
-              <select
-                name="metodo"
-                value={fila.metodo}
-                onChange={(e) => actualizarMetodoTipo(fila.key, e.target.value as MetodoPago)}
-                className={INPUT_CLASS}
-              >
-                {METODOS.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
+          <div key={fila.key} className="space-y-2 rounded-xl border border-border bg-surface p-3">
+            <input type="hidden" name="metodo" value={fila.metodo} />
+            <input type="hidden" name="metodo_monto" value={fila.monto} />
+
+            <div className="flex flex-wrap gap-2">
+              {METODOS.map((m) => (
+                <Chip
+                  key={m.value}
+                  activo={fila.metodo === m.value}
+                  onClick={() =>
+                    setMetodos((prev) =>
+                      prev.map((f) => (f.key === fila.key ? { ...f, metodo: m.value } : f))
+                    )
+                  }
+                >
+                  {m.label}
+                </Chip>
+              ))}
             </div>
-            <div className="space-y-1.5">
-              {i === 0 && <label className="text-sm font-medium">Monto</label>}
+
+            <div className="flex items-center gap-2">
               <input
-                name="metodo_monto"
                 type="number"
-                min="0"
-                step="1"
                 inputMode="numeric"
+                min="1"
+                step="1"
                 value={fila.monto}
-                onChange={(e) => actualizarMetodoMonto(fila.key, e.target.value)}
+                onChange={(e) => setMonto(fila.key, e.target.value)}
+                placeholder="Monto"
+                aria-label={`Monto en ${METODOS.find((m) => m.value === fila.metodo)?.label}`}
                 className={INPUT_CLASS}
               />
+              {/* «Todo» es el caso normal: paga lo que debe. */}
+              {i === 0 && aCobrar > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setMonto(fila.key, String(aCobrar))}
+                  className={`h-11 shrink-0 rounded-lg border border-border px-4 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard hover:border-border-strong ${CLASE_FOCO}`}
+                >
+                  Todo
+                </button>
+              )}
+              {metodos.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setMetodos((prev) => prev.filter((f) => f.key !== fila.key))}
+                  className={`h-11 shrink-0 rounded-lg px-3 text-sm font-medium text-text-subtle hover:text-error-600 ${CLASE_FOCO}`}
+                >
+                  Quitar
+                </button>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => quitarMetodo(fila.key)}
-              disabled={metodos.length === 1}
-              className="mb-0.5 h-11 text-sm font-medium text-error-600 hover:text-error-700 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Quitar
-            </button>
           </div>
         ))}
 
-        <p className="text-sm text-text-subtle">Total cargado: {formatMonto(totalMetodos)}</p>
-      </div>
+        {/* El pago partido se conserva, pero deja de ser lo primero que se ve. */}
+        <button
+          type="button"
+          onClick={() =>
+            setMetodos((prev) => [...prev, { key: nuevaKey(), metodo: "efectivo", monto: "" }])
+          }
+          className={`rounded text-sm font-medium text-primary-600 hover:text-primary-700 ${CLASE_FOCO}`}
+        >
+          + Otro método
+        </button>
+      </fieldset>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          name="incluir_recargo"
-          checked={incluirRecargo}
-          onChange={(e) => {
-            setIncluirRecargo(e.target.checked);
-            setRecargoTocado(true);
-          }}
-          className="h-4 w-4 rounded border-border-strong text-primary-500 focus:ring-focus-ring"
-        />
-        Incluir recargo ({formatMonto(RECARGO_MONTO)})
-      </label>
-
-      {saldoTrasEstePago !== null && totalMetodos > 0 && (
-        <p className="text-sm text-text-subtle">
-          {saldoTrasEstePago > 0
-            ? `Quedan ${formatMonto(saldoTrasEstePago)} pendientes de este mes.`
-            : "Con este pago se completa el mes."}
-        </p>
+      {contactosAlumna.length > 0 && (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium">Quién paga</legend>
+          <div className="flex flex-wrap gap-2">
+            {contactosAlumna.map((c) => (
+              <Chip
+                key={c.id}
+                activo={contactoId === c.id}
+                onClick={() => setContactoId((actual) => (actual === c.id ? "" : c.id))}
+              >
+                {primerNombre(c.nombre)}
+              </Chip>
+            ))}
+          </div>
+        </fieldset>
       )}
 
       {state.error && (
@@ -335,14 +409,33 @@ export function RegistrarPagoForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending || !alumna}
-        className="flex w-full items-center justify-center gap-2 rounded-md bg-primary-500 py-2.5 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-      >
-        {pending && <Spinner />}
-        {pending ? "Guardando..." : "Registrar pago"}
-      </button>
+      {/* Pie fijo: el saldo tras el pago y el botón dejan de estar abajo del
+          scroll, que es donde vivían las dos líneas de «Total cargado». */}
+      <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] -mx-4 border-t border-border bg-surface px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] sm:-mx-8 sm:px-8">
+        <div className="mx-auto flex max-w-2xl items-center gap-3">
+          <p aria-live="polite" className="min-w-0 flex-1 text-sm">
+            <span className="block font-medium tabular-nums">
+              {totalCargado > 0 ? formatMonto(totalCargado) : "Sin monto todavía"}
+            </span>
+            <span className="block text-text-subtle">
+              {totalCargado <= 0
+                ? "Entra como pendiente de verificar"
+                : saldoTrasElPago <= 0
+                  ? "Queda saldado · entra como pendiente de verificar"
+                  : `Quedan ${formatMonto(saldoTrasElPago)} pendientes`}
+            </span>
+          </p>
+
+          <button
+            type="submit"
+            disabled={pending || totalCargado <= 0}
+            className={`flex shrink-0 items-center justify-center gap-2 rounded-md bg-primary-500 px-6 py-2.5 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 ${CLASE_FOCO}`}
+          >
+            {pending && <Spinner />}
+            {pending ? "Registrando..." : "Registrar"}
+          </button>
+        </div>
+      </div>
     </form>
   );
 }

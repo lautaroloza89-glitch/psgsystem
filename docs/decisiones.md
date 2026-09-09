@@ -27,7 +27,7 @@
 [Las alumnas no tienen cuenta ni login](#las-alumnas-no-tienen-cuenta-ni-login) · [Los grupos son un catálogo fijo](#los-grupos-son-un-catálogo-fijo) · [La cuota es solo el valor vigente](#la-cuota-es-solo-el-valor-vigente) · [Campos opcionales en base, obligatorios en el formulario](#campos-opcionales-en-base-obligatorios-en-el-formulario) · [Las bajas son lógicas, no borrados](#las-bajas-son-lógicas-no-borrados)
 
 **Pagos**
-[Se permite el pago parcial](#se-permite-el-pago-parcial) · [El recargo es fijo y sugerido, no automático](#el-recargo-es-fijo-y-sugerido-no-automático) · [Dos transiciones de pago: verificar y anular](#dos-transiciones-de-pago-verificar-y-anular) · [El historial financiero no se borra](#el-historial-financiero-no-se-borra) · [El recibo se arma recién al verificar](#el-recibo-se-arma-recién-al-verificar)
+[Se permite el pago parcial](#se-permite-el-pago-parcial) · [El recargo es fijo y sugerido, no automático](#el-recargo-es-fijo-y-sugerido-no-automático) · [Dos transiciones de pago: verificar y anular](#dos-transiciones-de-pago-verificar-y-anular) · [El historial financiero no se borra](#el-historial-financiero-no-se-borra) · [El recibo se arma recién al verificar](#el-recibo-se-arma-recién-al-verificar) · [La baja de una alumna no cancela su deuda](#la-baja-de-una-alumna-no-cancela-su-deuda) · [Saldar un mes y sacar a alguien de Deudoras son la misma acción](#saldar-un-mes-y-sacar-a-alguien-de-deudoras-son-la-misma-acción)
 
 **Asistencia**
 [La profesora no toma asistencia](#la-profesora-no-toma-asistencia) · [Asistencia sin sábados](#asistencia-sin-sábados) · [Presente o ausente, sin tercer estado](#presente-o-ausente-sin-tercer-estado) · [Sin marcar no es ausente](#sin-marcar-no-es-ausente) · [El grupo del día queda congelado en la fila](#el-grupo-del-día-queda-congelado-en-la-fila) · [La alerta de inasistencias se mide en semanas](#la-alerta-de-inasistencias-se-mide-en-semanas)
@@ -327,6 +327,18 @@ Lautaro es el único Admin real del sistema.
 
 **Decisión:** el texto del recibo (`pagos.recibo_texto`) se genera en el momento de verificar el pago, nunca antes, y queda guardado.
 **Contexto:** antes de la verificación el pago todavía puede no existir como tal; un recibo emitido antes sería el comprobante de algo no confirmado. Guardarlo permite reenviarlo después, en vez de que se vea una sola vez.
+**Estado:** vigente
+
+## La baja de una alumna no cancela su deuda
+
+**Decisión:** una alumna que quedó debiendo **sigue figurando en Deudoras** aunque se la dé de baja. Se le cobra hasta el mes de su `fecha_baja` inclusive; una baja sin fecha registrada no genera cuota de ningún mes. La única forma de sacarla de la lista es saldarle el mes (ver abajo). Pedido de Lauti en el modelo del módulo 5 del rediseño; aplicado el 2026-09-08.
+**Contexto:** `calcularDeudorasDelMes` filtraba `estado = 'activa'`, así que dar de baja a alguien la sacaba del reporte con la deuda intacta — la baja funcionando como borrado de deuda sin que nadie lo hubiera decidido. Sacar el filtro sin más tampoco servía: una alumna que se fue en marzo generaría cuota todos los meses para siempre, y por eso hizo falta `alumnas.fecha_baja` (`estado` decía «está de baja» pero no «desde cuándo»). El default de la columna vacía va hacia el lado seguro: no inventar deuda a partir de un dato que nadie cargó.
+**Estado:** vigente
+
+## Saldar un mes y sacar a alguien de Deudoras son la misma acción
+
+**Decisión:** cerrar el mes de una alumna sin cobrarle se hace con **un motivo obligatorio**, y eso mismo es lo que la saca de la lista (tabla `deudas_saldadas`). No hay dos acciones distintas.
+**Contexto:** hasta acá el saldo solo bajaba con un pago verificado, así que perdonar una deuda obligaba a inventar un pago falso — y eso ensuciaba la recaudación del mes. La tabla aparte la consulta el cálculo igual que a los pagos, pero no toca `pagos`, así que la recaudación queda intacta. Que sean dos acciones separadas («eliminar de la lista» y «marcar como saldada») no se sostiene: en tres meses nadie recordaría qué significaba cada una.
 **Estado:** vigente
 
 ## La profesora no toma asistencia

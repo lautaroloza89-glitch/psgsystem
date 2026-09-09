@@ -243,6 +243,77 @@ export async function anularPago(pagoId: string, motivo: string): Promise<FormSt
   return { error: null };
 }
 
+/**
+ * Cerrar el mes de una alumna sin plata de por medio: la saca de Deudoras con
+ * un motivo escrito, en vez de obligar a inventar un pago falso que ensuciaría
+ * la recaudación. «Eliminar de la lista» y «marcar como saldada» son esta
+ * misma acción, no dos: en tres meses nadie recordaría qué significaba cada una.
+ */
+export async function saldarDeuda(
+  alumnaId: string,
+  mesInput: string,
+  motivo: string
+): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!puedeGestionarPagos(profile)) {
+    return { error: "No tenés permiso para saldar deudas." };
+  }
+
+  const motivoLimpio = motivo.trim();
+  if (!motivoLimpio) {
+    return { error: "Escribí por qué se salda el mes." };
+  }
+  if (!/^\d{4}-\d{2}$/.test(mesInput)) {
+    return { error: "Mes inválido." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("deudas_saldadas").insert({
+    alumna_id: alumnaId,
+    mes_correspondiente: `${mesInput}-01`,
+    motivo: motivoLimpio,
+    saldada_por: profile.id,
+  });
+
+  if (error) {
+    // El unique por alumna + mes es la causa esperable: alguien ya lo saldó.
+    return { error: "No se pudo saldar el mes. ¿Ya estaba saldado?" };
+  }
+
+  revalidatePath("/pagos");
+  revalidatePath("/pagos/deudoras");
+  return { error: null };
+}
+
+/** Deshacer lo anterior: la alumna vuelve a figurar en Deudoras con su saldo. */
+export async function deshacerDeudaSaldada(
+  alumnaId: string,
+  mesInput: string
+): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!puedeGestionarPagos(profile)) {
+    return { error: "No tenés permiso." };
+  }
+  if (!/^\d{4}-\d{2}$/.test(mesInput)) {
+    return { error: "Mes inválido." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("deudas_saldadas")
+    .delete()
+    .eq("alumna_id", alumnaId)
+    .eq("mes_correspondiente", `${mesInput}-01`);
+
+  if (error) {
+    return { error: "No se pudo deshacer." };
+  }
+
+  revalidatePath("/pagos");
+  revalidatePath("/pagos/deudoras");
+  return { error: null };
+}
+
 interface ResultadoSaldo {
   error: string | null;
   saldo?: SaldoAlumnaMes;

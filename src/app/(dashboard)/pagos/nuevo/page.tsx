@@ -4,15 +4,27 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
 import { puedeGestionarPagos } from "@/lib/permisos";
 import { BackButton } from "@/components/ui/BackButton";
-import { RegistrarPagoForm } from "@/components/pagos/RegistrarPagoForm";
+import {
+  RegistrarPagoForm,
+  type AlumnaOpcion,
+  type ContactoOpcion,
+} from "@/components/pagos/RegistrarPagoForm";
+import { hoyArgentina } from "@/lib/utils/date";
 
 export const metadata: Metadata = { title: "Registrar pago" };
 
-export default async function NuevoPagoPage() {
+export default async function NuevoPagoPage({
+  searchParams,
+}: {
+  /** `alumna` y `mes` los pone «Cobrar» desde Deudoras: el formulario abre resuelto. */
+  searchParams: Promise<{ alumna?: string; mes?: string }>;
+}) {
   const profile = await getCurrentUserProfile();
   if (!puedeGestionarPagos(profile)) {
     redirect("/dashboard");
   }
+
+  const { alumna: alumnaParam, mes: mesParam } = await searchParams;
 
   const supabase = await createClient();
 
@@ -24,7 +36,7 @@ export default async function NuevoPagoPage() {
     .order("apellido", { ascending: true })
     .order("nombre", { ascending: true });
 
-  const alumnas = (alumnasData ?? []).map((a) => ({
+  const alumnas: AlumnaOpcion[] = (alumnasData ?? []).map((a) => ({
     id: a.id,
     apellido: a.apellido,
     nombre: a.nombre,
@@ -32,7 +44,7 @@ export default async function NuevoPagoPage() {
   }));
 
   const alumnaIds = alumnas.map((a) => a.id);
-  const contactosPorAlumna: Record<string, { id: string; nombre: string; esPagadorPrincipal: boolean }[]> = {};
+  const contactosPorAlumna: Record<string, ContactoOpcion[]> = {};
 
   if (alumnaIds.length > 0) {
     const { data: contactosData } = await supabase
@@ -47,11 +59,25 @@ export default async function NuevoPagoPage() {
     }
   }
 
+  // Una alumna de baja que quedó debiendo no está en `alumnas` (el listado es
+  // de activas), así que «Cobrar» sobre ella no la resolvería. No es un caso
+  // roto: cae en el buscador, que es de donde salía antes.
+  const alumnaInicial = alumnaParam ? alumnas.find((a) => a.id === alumnaParam) ?? null : null;
+  const mesInicial =
+    mesParam && /^\d{4}-\d{2}$/.test(mesParam) ? mesParam : hoyArgentina().slice(0, 7);
+
+  const volverA = alumnaParam ? `/pagos/deudoras?mes=${mesInicial}` : `/pagos?mes=${mesInicial}`;
+
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <BackButton href="/pagos" />
+    <div className="mx-auto max-w-2xl space-y-5">
+      <BackButton href={volverA} />
       <h1 className="text-2xl font-bold tracking-tight">Registrar pago</h1>
-      <RegistrarPagoForm alumnas={alumnas} contactosPorAlumna={contactosPorAlumna} />
+      <RegistrarPagoForm
+        alumnas={alumnas}
+        contactosPorAlumna={contactosPorAlumna}
+        alumnaInicial={alumnaInicial}
+        mesInicial={mesInicial}
+      />
     </div>
   );
 }

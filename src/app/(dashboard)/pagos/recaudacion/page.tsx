@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -7,7 +6,8 @@ import { puedeVerRecaudacion } from "@/lib/permisos";
 import { BackButton } from "@/components/ui/BackButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatMonto } from "@/lib/utils/money";
-import { anioMesDeHoy, mesAnteriorSiguiente, mesQuery, nombreMes, primerDiaDeMes } from "@/lib/utils/date";
+import { NavegadorDeMes } from "@/components/pagos/NavegadorDeMes";
+import { anioMesDeHoy, mesQuery, primerDiaDeMes } from "@/lib/utils/date";
 import type { MetodoPago } from "@/types";
 
 export const metadata: Metadata = { title: "Recaudación del mes" };
@@ -38,7 +38,6 @@ export default async function RecaudacionPage({
     mes = m;
   }
   const mesISO = primerDiaDeMes(anio, mes);
-  const { anterior, siguiente } = mesAnteriorSiguiente(anio, mes);
 
   const supabase = await createClient();
   const { data: pagosVerificados } = await supabase
@@ -64,26 +63,10 @@ export default async function RecaudacionPage({
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <BackButton href="/pagos" />
+      <BackButton href={`/pagos?mes=${mesQuery(anio, mes)}`} />
       <h1 className="text-2xl font-bold tracking-tight">Recaudación del mes</h1>
 
-      <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-2.5">
-        <Link
-          href={`/pagos/recaudacion?mes=${mesQuery(anterior.anio, anterior.mes)}`}
-          className="text-sm font-medium text-primary-600 hover:text-primary-700"
-        >
-          ← Anterior
-        </Link>
-        <span className="text-sm font-semibold">
-          {nombreMes(mes)} {anio}
-        </span>
-        <Link
-          href={`/pagos/recaudacion?mes=${mesQuery(siguiente.anio, siguiente.mes)}`}
-          className="text-sm font-medium text-primary-600 hover:text-primary-700"
-        >
-          Siguiente →
-        </Link>
-      </div>
+      <NavegadorDeMes basePath="/pagos/recaudacion" anio={anio} mes={mes} />
 
       {!pagosVerificados || pagosVerificados.length === 0 ? (
         <EmptyState mensaje="Todavía no hay pagos verificados este mes." />

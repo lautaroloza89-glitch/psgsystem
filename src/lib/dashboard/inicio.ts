@@ -162,19 +162,16 @@ async function avisoAusencias(supabase: Supabase): Promise<Aviso | null> {
 /** Deudoras del mes en curso, con cuántas ya arrastran recargo. */
 async function avisoDeudoras(supabase: Supabase): Promise<Aviso | null> {
   const mes = mesActualISO();
-  const deudoras = await calcularDeudorasDelMes(supabase, mes);
+  const { deudoras, recargoAplicado } = await calcularDeudorasDelMes(supabase, mes);
   if (deudoras.length === 0) return null;
-
-  const conRecargo = deudoras.filter((d) => d.diasAtraso > 0).length;
 
   return {
     icono: "money",
-    tono: conRecargo > 0 ? "urgente" : "atencion",
+    tono: recargoAplicado ? "urgente" : "atencion",
     titulo: `${deudoras.length} ${deudoras.length === 1 ? "alumna debe" : "alumnas deben"} este mes`,
-    detalle:
-      conRecargo > 0
-        ? `${conRecargo} con recargo desde el día 10`
-        : "Todavía sin recargo",
+    detalle: recargoAplicado
+      ? "Con el recargo del día 10 aplicado"
+      : "Todavía sin recargo",
     href: "/pagos/deudoras",
   };
 }
