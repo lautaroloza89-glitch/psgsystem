@@ -67,7 +67,7 @@ Este orden **no es una sugerencia: es el orden de trabajo.** Va de la estructura
 | 4 | **Asistencia** | Entrar directo al grupo de hoy, «Vino / Faltó», estado Parcial, pie fijo. | ✅ | `27161b3` |
 | 5 | **Pagos** | Pantalla con números en vez del menú de cuatro tarjetas, recargo explicado, atraso por alumna. | ✅ | `d50b8fa` (main) · `40d4a74` · `7cbd721` |
 | 6 | **Alumnas** | Ficha con asistencia y deuda, teléfono tocable, baja fuera del formulario, listado denso. | ✅ | `40984cf` · `9e0f80c` |
-| 7 | **Planificaciones** y **Torneos** | Pestañas Próximos/Pasados, sin duplicar el destacado, señal de notas. | ✅ | `935d71f` · `e263812` · `3712573` · `84ffc12` |
+| 7 | **Planificaciones** y **Torneos** | Pestañas Próximos/Pasados, sin duplicar el destacado, señal de notas. | ✅ | `935d71f` · `e263812` · `3712573` · `84ffc12` · `30cfb37` |
 | 8 | **Participación en torneos** (modelos Tg y Th) | Va última porque es la única pantalla que no existe hoy: se construye sobre `torneo_participantes` y sobre las categorías, que dependen de `alumnas.fecha_nacimiento`. | ⬜ **el que sigue** | — |
 
 Antes del módulo 1 hubo dos commits de preparación: los helpers de permisos pasados a type guards (`60b4210`) y los modelos de diseño incorporados al repo (`3f81e42`).
@@ -104,7 +104,8 @@ Lo que se decidió en el módulo 7 sobre cómo se ve un torneo manda acá: el ch
 - **`src/lib/miembros/equipo.ts`** — `iniciales()`, `nombreDeRol()` (femenino: «Profesora», «Empleada»), `subtituloMiembro()`.
 - **`src/lib/tareas/agenda.ts`** — `cuandoVence()` («Venció hace 7 días», «Mañana») y `agruparPorUrgencia()`. Sirve para cualquier listado con fechas.
 - **`src/components/ui/UsuarioRolCargo.tsx`** — ya dado vuelta (persona primero, rol de subtítulo). Se usa en Tareas, Horarios y los dos listados de comentarios: **ya está arreglado en los tres**.
-- **`src/components/tareas/ChipsResponsables.tsx`** — chips que por debajo son checkboxes ocultos, así el formulario anda sin JavaScript. Patrón reusable para cualquier multi-selección.
+- **`src/components/tareas/ChipsResponsables.tsx`** — chips que por debajo son checkboxes ocultos, así el formulario anda sin JavaScript. Patrón reusable para cualquier multi-selección; lo usan los tres formularios de Planificaciones.
+- **`src/components/ui/ChipOpcion.tsx`** — el chip toggle de una opción excluyente y de grupo chico (el día, el tipo de clase, el tipo de evento). **Reemplaza a los `select` nativos**, que en el celular abren la rueda de iOS para elegir entre dos o tres opciones. En Planificaciones y Torneos ya no queda ninguno; si aparece un `<select>` nuevo en un formulario del rediseño, o la lista es larga de verdad, o hay que usar esto.
 - **Patrón visual del listado:** un `<ul>` dentro de `rounded-xl border border-border bg-surface divide-y divide-border`, con encabezado de grupo en `text-sm font-semibold uppercase tracking-wide text-text-subtle`. Es el que usan Inicio, Miembros y Tareas.
 - **`src/lib/alumnas/ficha.ts`** — `datosDeFichaAlumna()` (asistencia del mes + racha + saldo de una alumna, en una lectura), `rachasParaListado()` (las semanas sin venir de todo el club, para marcar la excepción en un listado) y `edadDe()`.
 - **`src/components/pagos/NavegadorDeMes.tsx`** — el control de mes del módulo Pagos, con `basePath` y `extra` para conservar otros query params. Cualquier pantalla que se recorra por mes debería usar este, no escribir sus propias flechas.
