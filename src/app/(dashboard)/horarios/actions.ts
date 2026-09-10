@@ -77,6 +77,15 @@ export async function editarTurno(
     .eq("id", turnoId);
 
   if (error) {
+    // 23505 = la constraint `turnos_grupo_fecha_tipo_unica`: mover esta clase
+    // la dejaría pisando otra del mismo grupo, la misma fecha y el mismo tipo.
+    // Sin este caso el mensaje genérico no deja entender qué pasó ni cómo
+    // salir, y es el único error de esta acción que el usuario puede resolver.
+    if (error.code === "23505") {
+      return {
+        error: `Ese grupo ya tiene una clase de ${tipo} en esa fecha. Editá esa, o elegí otra fecha.`,
+      };
+    }
     return { error: "No se pudo actualizar la clase." };
   }
 
