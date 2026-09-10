@@ -31,7 +31,7 @@ export function BloqueClasesHoy({
   titulo,
   verTodas,
   clases,
-  /** La profesora ve «Tomar asistencia» en su primera clase del día: es la acción que repite todos los días y hoy está a tres toques. */
+  /** Quien toma asistencia ve «Tomar asistencia» como acción del bloque: es lo que repite todos los días y hoy está a tres toques. */
   conAccionAsistencia = false,
 }: {
   titulo: string;
@@ -39,6 +39,12 @@ export function BloqueClasesHoy({
   clases: ClaseDeHoy[];
   conAccionAsistencia?: boolean;
 }) {
+  // El botón es del bloque entero, no de una clase puntual: `/asistencia` es la
+  // entrada general del módulo, donde se elige cualquiera de los grupos de hoy.
+  // Colgado del `<li>` de la primera clase daba a entender que iba a esa clase.
+  const faltaTomarAsistencia =
+    conAccionAsistencia && clases.some((clase) => !clase.asistenciaTomada);
+
   return (
     <section aria-labelledby="clases-titulo" className="space-y-3">
       <div className="flex items-baseline justify-between gap-3">
@@ -57,7 +63,7 @@ export function BloqueClasesHoy({
         <EmptyState mensaje="Hoy no hay clases." />
       ) : (
         <ul className="overflow-hidden rounded-xl border border-border bg-surface divide-y divide-border">
-          {clases.map((clase, i) => (
+          {clases.map((clase) => (
             <li key={clase.id}>
               <Link
                 href={`/horarios/${clase.id}`}
@@ -105,21 +111,19 @@ export function BloqueClasesHoy({
                   </span>
                 </Link>
               )}
-
-              {conAccionAsistencia && i === 0 && !clase.asistenciaTomada && (
-                <div className="px-4 pb-3">
-                  <Link
-                    href="/asistencia"
-                    className="inline-flex items-center gap-2 rounded-md bg-primary-500 px-3 py-2 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-                  >
-                    <Icono nombre="check-square" className="h-4 w-4" />
-                    Tomar asistencia
-                  </Link>
-                </div>
-              )}
             </li>
           ))}
         </ul>
+      )}
+
+      {faltaTomarAsistencia && (
+        <Link
+          href="/asistencia"
+          className="inline-flex items-center gap-2 rounded-md bg-primary-500 px-3 py-2 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        >
+          <Icono nombre="check-square" className="h-4 w-4" />
+          Tomar asistencia
+        </Link>
       )}
     </section>
   );
