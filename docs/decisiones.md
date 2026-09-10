@@ -12,7 +12,7 @@
 [Alcance del producto](#alcance-del-producto) · [Stack técnico](#stack-técnico) · [Estructura de carpetas](#estructura-de-carpetas)
 
 **Roles y permisos**
-[Los roles son niveles de permiso, no cargos](#los-roles-son-niveles-de-permiso-no-cargos) · [Alcance de cada rol](#alcance-de-cada-rol) · [La navegación y el inicio son distintos por rol](#la-navegación-y-el-inicio-son-distintos-por-rol) · [Alcance del rol Secretaria](#alcance-del-rol-secretaria) · [Asignación de roles del equipo real](#asignación-de-roles-del-equipo-real) · [Head Coach con control total sobre clases](#head-coach-con-control-total-sobre-clases) · [Sin auto-registro público](#sin-auto-registro-público) · [La RLS es la fuente de verdad de los permisos](#la-rls-es-la-fuente-de-verdad-de-los-permisos) · [Las reglas de permiso viven en un solo archivo](#las-reglas-de-permiso-viven-en-un-solo-archivo) · [dicta_clases es independiente del rol](#dicta_clases-es-independiente-del-rol)
+[Los roles son niveles de permiso, no cargos](#los-roles-son-niveles-de-permiso-no-cargos) · [Cómo se lee cada rol y cada módulo en pantalla](#cómo-se-lee-cada-rol-y-cada-módulo-en-pantalla) · [Alcance de cada rol](#alcance-de-cada-rol) · [La navegación y el inicio son distintos por rol](#la-navegación-y-el-inicio-son-distintos-por-rol) · [Alcance del rol Secretaria](#alcance-del-rol-secretaria) · [Asignación de roles del equipo real](#asignación-de-roles-del-equipo-real) · [Head Coach con control total sobre clases](#head-coach-con-control-total-sobre-clases) · [Sin auto-registro público](#sin-auto-registro-público) · [La RLS es la fuente de verdad de los permisos](#la-rls-es-la-fuente-de-verdad-de-los-permisos) · [Las reglas de permiso viven en un solo archivo](#las-reglas-de-permiso-viven-en-un-solo-archivo) · [dicta_clases es independiente del rol](#dicta_clases-es-independiente-del-rol)
 
 **Tareas**
 [Tareas y proyectos son la misma entidad](#tareas-y-proyectos-son-la-misma-entidad) · [Una tarea puede tener varios responsables](#una-tarea-puede-tener-varios-responsables) · [Los comentarios son historial](#los-comentarios-son-historial) · [Aviso cuando una tarea queda sin responsables](#aviso-cuando-una-tarea-queda-sin-responsables) · [El Admin no puede ser responsable de una tarea](#el-admin-no-puede-ser-responsable-de-una-tarea)
@@ -21,7 +21,7 @@
 [Las clases son por fecha puntual, no recurrentes](#las-clases-son-por-fecha-puntual-no-recurrentes) · [Cancelar no es borrar](#cancelar-no-es-borrar) · [Una clase puede tener varios profesores](#una-clase-puede-tener-varios-profesores) · [El horario del club es de lectura abierta](#el-horario-del-club-es-de-lectura-abierta) · [Los comentarios de una clase son del equipo que la organiza](#los-comentarios-de-una-clase-son-del-equipo-que-la-organiza) · [La entrada a Planificaciones es por día y por grupo](#la-entrada-a-planificaciones-es-por-día-y-por-grupo) · [Patín y Preparación física son dos planificaciones de una misma clase](#patín-y-preparación-física-son-dos-planificaciones-de-una-misma-clase)
 
 **Notificaciones**
-[Alcance de las notificaciones](#alcance-de-las-notificaciones) · [Destinatarios de una notificación](#destinatarios-de-una-notificación) · [Push con Web Push API nativo](#push-con-web-push-api-nativo) · [Los recordatorios de vencimiento corren por cron](#los-recordatorios-de-vencimiento-corren-por-cron) · [Las notificaciones sobreviven al borrado de su origen](#las-notificaciones-sobreviven-al-borrado-de-su-origen)
+[Alcance de las notificaciones](#alcance-de-las-notificaciones) · [Destinatarios de una notificación](#destinatarios-de-una-notificación) · [Push con Web Push API nativo](#push-con-web-push-api-nativo) · [Los recordatorios de vencimiento corren por cron](#los-recordatorios-de-vencimiento-corren-por-cron) · [Las notificaciones se borran solas a los 7 días](#las-notificaciones-se-borran-solas-a-los-7-días) · [Las notificaciones sobreviven al borrado de su origen](#las-notificaciones-sobreviven-al-borrado-de-su-origen)
 
 **Alumnas, grupos y cuotas**
 [Las alumnas no tienen cuenta ni login](#las-alumnas-no-tienen-cuenta-ni-login) · [Los grupos son un catálogo fijo](#los-grupos-son-un-catálogo-fijo) · [La cuota es solo el valor vigente](#la-cuota-es-solo-el-valor-vigente) · [Campos opcionales en base, obligatorios en el formulario](#campos-opcionales-en-base-obligatorios-en-el-formulario) · [Las bajas son lógicas, no borrados](#las-bajas-son-lógicas-no-borrados) · [Dar de baja no es un campo del formulario](#dar-de-baja-no-es-un-campo-del-formulario)
@@ -101,6 +101,12 @@ Los módulos de Fase 2 (alumnas, pagos, asistencia, torneos) siguen el mismo pat
 
 **Decisión:** `users.rol` define 6 niveles de permiso (Admin, Head Coach, Profesor, Secretaria, Empleado, Patinador). Varios puestos del club pueden compartir el mismo rol. Para diferenciar a dos personas con el mismo rol existe `users.cargo`: texto libre, descriptivo, **sin efecto alguno en permisos**.
 **Contexto:** el club tiene más puestos que niveles de acceso reales (dos profesoras con especialidades distintas necesitan los mismos permisos). Separar rol de cargo evita crear un rol nuevo cada vez que aparece un puesto nuevo. Detalle en `docs/roles-actualizacion.md`.
+**Estado:** vigente
+
+## Cómo se lee cada rol y cada módulo en pantalla
+
+**Decisión:** el valor guardado y la etiqueta que se muestra son dos cosas distintas, y la etiqueta se cambia sin migrar nada. Hoy: `users.rol = 'Empleado'` se lee **«Ayudante»**, `'Profesor'` se lee «Profesora» y `'Patinador'` se lee «Alumna» (todo centralizado en `nombreDeRol()`, `src/lib/miembros/equipo.ts`). El módulo de `/alumnas` se llama **«Registro»** en la navegación y «Registro de alumnas» en la pantalla. La pantalla `/pagos/deudoras` se titula **«Deudores»** — quien debe es la familia, no la alumna.
+**Contexto:** renombrar un valor de `users.rol` obliga a migrar la columna, su CHECK y todas las policies que la leen; renombrar una ruta rompe enlaces ya guardados. Ninguna de las dos cosas cambia nada de lo que se ve, así que las etiquetas viven solo en la capa de presentación. Por el mismo criterio, los identificadores del dominio de Deudores (`Deudora`, `calcularDeudorasDelMes`, la ruta) siguen en femenino, por coherencia con la tabla `alumnas` sobre la que se calculan. «Ayudante» además sirve para cualquier género, a diferencia del resto de la tabla de etiquetas.
 **Estado:** vigente
 
 ## Alcance de cada rol
@@ -291,6 +297,12 @@ Lautaro es el único Admin real del sistema.
 
 **Decisión:** los avisos de tarea por vencer y vencida los genera un job de `pg_cron` diario a las 08:00 Argentina, no un chequeo al abrir el dashboard. Los umbrales son en días completos: 2 días antes, 1 día antes, y vencida. Cada combinación de tarea + destinatario + tipo se avisa una sola vez.
 **Contexto:** con un chequeo al cargar la app, el aviso no llega los días que nadie entra. Los umbrales son en días y no en horas porque `fecha_vencimiento` es `date`, sin componente de hora — la propuesta original de "48hs/16hs antes" no se podía calcular con precisión sobre ese tipo de dato. El dedup evita que el cron reenvíe el mismo aviso cada día mientras la tarea siga pendiente.
+**Estado:** vigente
+
+## Las notificaciones se borran solas a los 7 días
+
+**Decisión:** un job de `pg_cron` diario (02:00 Argentina) borra de `notificaciones` todo lo que pasó los 7 días desde `creado_en`, leído o no leído.
+**Contexto:** la tabla no tenía ninguna política de retención y crecía desde el arranque del proyecto; el ícono de campana mostraba el histórico entero, donde una notificación de hace dos meses no le sirve a nadie. No se distingue por `leida` porque a los 7 días una notificación sin leer tampoco aporta, y el evento que la originó sigue vivo en su módulo. Consecuencia aceptada a propósito: el dedup de vencimientos se apoya en que la fila anterior exista, así que una tarea que sigue vencida y sin completar vuelve a generar su aviso de `'tarea_vencida'` cuando el original se purga — es un recordatorio, no un bug.
 **Estado:** vigente
 
 ## Las notificaciones sobreviven al borrado de su origen
