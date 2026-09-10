@@ -37,6 +37,12 @@ async function upsertPlanificacionFecha(
     .select("id")
     .eq("grupo_id", grupo_id)
     .eq("fecha", fecha)
+    // Sin `tipo` acá, cargar la Preparación física de un grupo pisaba la
+    // planificación de Patín de esa misma fecha y la primera se perdía de la
+    // base. Un grupo como Avanzado entrena 19:30-22:00 con la media hora
+    // inicial de física: es una sola clase real y un solo horario, pero son
+    // dos contenidos distintos, y por eso son dos filas de `turnos`.
+    .eq("tipo", tipo)
     .maybeSingle();
 
   let turnoId = existente?.id as string | undefined;
@@ -195,6 +201,10 @@ export async function duplicarPlanificacion(
     .select("id")
     .eq("grupo_id", origen.grupo_id)
     .eq("fecha", fecha)
+    // Misma razón: ahora una fecha puede tener Patín y Preparación física, y
+    // sin filtrar por tipo este `single()` fallaría con las dos cargadas,
+    // mandando el redirect al fallback en vez de a la clase recién creada.
+    .eq("tipo", tipo)
     .single();
 
   revalidatePath(`/horarios/grupos/${origen.grupo_id}`);
