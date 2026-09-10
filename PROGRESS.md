@@ -52,7 +52,7 @@
 
 | # | Módulo | Depende de | Estado |
 |---|---|---|---|
-| — | **UI nueva** (rediseño de la interfaz) | Correcciones pre-UI | ✅ Terminado — los 8 módulos, en la rama `nueva-ui`. Falta el repaso en el navegador antes de mergear a `main`; ver [docs/diseno/estado-del-rediseno.md](docs/diseno/estado-del-rediseno.md) |
+| — | **UI nueva** (rediseño de la interfaz) | Correcciones pre-UI | ✅ Terminado y **mergeada a `main`** el 2026-09-10 (fast-forward, 51 commits). Es lo que el club usa. Historia y decisiones del rediseño en [docs/diseno/estado-del-rediseno.md](docs/diseno/estado-del-rediseno.md) |
 | — | Participación en torneos: las 3 pantallas | UI nueva | ✅ Terminado (módulo 8 del rediseño) |
 | — | Reenvío de recibo de pago (el campo ya está) | UI nueva | ⬜ Pendiente |
 
