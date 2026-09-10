@@ -45,6 +45,26 @@ export interface ClasePlanificada {
   grupoHaceFisica: boolean;
   /** Esa fecha ya tiene su fila de física, así que el link no va. */
   yaTieneFisica: boolean;
+  /**
+   * La Preparación física de esa misma franja, cuando existe. Va **adentro**
+   * de la clase y no como una entrada hermana: el grupo entrena una sola vez y
+   * comparte horario, así que dos tarjetas con el mismo nombre y el mismo
+   * horario se leían como dos grupos distintos. Mismo modelo que
+   * `ClaseDeHoy.fisica` en `src/lib/dashboard/inicio.ts`.
+   *
+   * `null` también cuando la única fila de la franja **es** la física: en ese
+   * caso la clase se muestra sola, con `tipo === "Preparación física"`.
+   */
+  fisica: PlanificacionFisica | null;
+}
+
+/** El bloque de física colgado de su clase: solo lo que la tarjeta necesita. */
+export interface PlanificacionFisica {
+  turnoId: string;
+  profesores: string[];
+  esMia: boolean;
+  tienePlanificacion: boolean;
+  estado: EstadoTurno;
 }
 
 /** Una fila de la vista por grupo: cómo viene el mes de ese grupo. */
@@ -212,25 +232,63 @@ export async function clasesPlanificadasDelDia(
         estado: "Activo",
         tipo: "Patín",
         yaTieneFisica: false,
+        fisica: null,
       });
       continue;
     }
 
-    const tieneFisica = delGrupo.some((t) => t.tipo === "Preparación física");
+    // Cada fila trae **sus** profesoras, por `turno_id` y no por grupo: la
+    // física casi siempre la da otra persona que el patín.
+    const profesorasDe = (turno: (typeof delGrupo)[number]) =>
+      (turno.profesores ?? []).map((p) => p.profesor?.nombre ?? "").filter(Boolean);
+    const esMiaDe = (turno: (typeof delGrupo)[number]) =>
+      (turno.profesores ?? []).some((p) => p.profesor_id === profileId);
 
-    for (const turno of delGrupo) {
-      // Cada fila trae **sus** profesoras, por `turno_id` y no por grupo: la
-      // física casi siempre la da otra persona que el patín.
-      const asignados = turno.profesores ?? [];
+    const turnoFisica = delGrupo.find((t) => t.tipo === "Preparación física") ?? null;
+    const turnoPatin = delGrupo.find((t) => t.tipo !== "Preparación física") ?? null;
+    const tieneFisica = turnoFisica !== null;
+
+    const fisica: PlanificacionFisica | null = turnoFisica && {
+      turnoId: turnoFisica.id,
+      profesores: profesorasDe(turnoFisica),
+      esMia: esMiaDe(turnoFisica),
+      tienePlanificacion: !!turnoFisica.planificacion,
+      estado: turnoFisica.estado,
+    };
+
+    if (turnoPatin) {
+      // El caso normal: la clase es la de patín y la física cuelga de ella.
       clases.push({
         ...comun,
-        profesores: asignados.map((p) => p.profesor?.nombre ?? "").filter(Boolean),
-        esMia: asignados.some((p) => p.profesor_id === profileId),
-        turnoId: turno.id,
-        tienePlanificacion: !!turno.planificacion,
-        estado: turno.estado,
-        tipo: turno.tipo,
+        profesores: profesorasDe(turnoPatin),
+        // «Mía» si estoy en cualquiera de las dos: la física de un grupo puede
+        // ser mía aunque el patín no lo sea, y la tarjeta es una sola.
+        esMia: esMiaDe(turnoPatin) || (fisica?.esMia ?? false),
+        turnoId: turnoPatin.id,
+        tienePlanificacion: !!turnoPatin.planificacion,
+        estado: turnoPatin.estado,
+        tipo: turnoPatin.tipo,
         yaTieneFisica: tieneFisica,
+        fisica,
+      });
+      continue;
+    }
+
+    // Cargada la física pero todavía no el patín de esa franja: se muestra
+    // sola, como cualquier clase, en vez de desaparecer del listado. Mismo
+    // criterio que el inicio (`inicio.ts`). El `· Preparación física` del
+    // título lo pone la tarjeta, leyendo `tipo`.
+    if (turnoFisica) {
+      clases.push({
+        ...comun,
+        profesores: profesorasDe(turnoFisica),
+        esMia: esMiaDe(turnoFisica),
+        turnoId: turnoFisica.id,
+        tienePlanificacion: !!turnoFisica.planificacion,
+        estado: turnoFisica.estado,
+        tipo: turnoFisica.tipo,
+        yaTieneFisica: true,
+        fisica: null,
       });
     }
   }

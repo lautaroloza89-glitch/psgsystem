@@ -187,15 +187,16 @@ async function VistaPorDia({
       ) : (
         <>
           <ul className="space-y-3">
-            {clases.map((clase, i) => (
+            {clases.map((clase) => (
               <ClaseDelDiaCard
-                // Un grupo puede aparecer dos veces el mismo día (Patín y su
-                // Preparación física), así que la key lleva el tipo.
+                // Un grupo aparece una sola vez por día: la Preparación física
+                // va dentro de su clase, no como tarjeta aparte. El `tipo`
+                // sigue en la key porque una franja puede tener la física
+                // cargada y el patín todavía no, y ahí la física va sola.
                 key={`${clase.grupoId}-${clase.tipo}`}
                 clase={clase}
                 fecha={dia}
                 puedeCargar={puedeCargar}
-                pegadaALaAnterior={i > 0 && clases[i - 1].grupoId === clase.grupoId}
               />
             ))}
           </ul>
