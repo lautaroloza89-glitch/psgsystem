@@ -25,7 +25,7 @@ export interface Destino {
  * destinos pesaban lo mismo y nada indicaba dónde estabas parado.
  *
  * El criterio no es la jerarquía del rol sino la frecuencia de uso: Secretaria
- * tiene Pagos y Alumnas a mano porque es lo que abre todos los días, y Head
+ * tiene Pagos y Registro a mano porque es lo que abre todos los días, y Head
  * Coach tiene Planificaciones y Asistencia por el mismo motivo.
  */
 
@@ -42,7 +42,7 @@ const ASISTENCIA: Destino = {
   icono: "check-square",
 };
 const TAREAS: Destino = { href: "/tareas", label: "Tareas", icono: "list-checks" };
-const ALUMNAS: Destino = { href: "/alumnas", label: "Alumnas", icono: "users-three" };
+const ALUMNAS: Destino = { href: "/alumnas", label: "Registro", icono: "users-three" };
 const PAGOS: Destino = { href: "/pagos", label: "Pagos", icono: "money" };
 const TORNEOS: Destino = { href: "/torneos", label: "Torneos", icono: "trophy" };
 const MIEMBROS: Destino = {

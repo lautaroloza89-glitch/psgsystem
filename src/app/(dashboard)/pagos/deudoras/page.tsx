@@ -14,7 +14,7 @@ import { formatMonto } from "@/lib/utils/money";
 import { enlaceWhatsapp, primerNombre } from "@/lib/utils/whatsapp";
 import { anioMesDeHoy, mesQuery, nombreMes, primerDiaDeMes } from "@/lib/utils/date";
 
-export const metadata: Metadata = { title: "Deudoras" };
+export const metadata: Metadata = { title: "Deudores" };
 
 /**
  * La pantalla que se mira antes de hablar con una madre.
@@ -24,6 +24,12 @@ export const metadata: Metadata = { title: "Deudoras" };
  * deja de repetirse igual en todas las filas — sale del mes, no de la alumna,
  * así que va una sola vez en el encabezado. En su lugar, cada línea dice **por
  * qué** debe.
+ *
+ * La pantalla se titula «Deudores» (2026-09-10): quien debe es la familia, no
+ * la alumna. La ruta `/pagos/deudoras` y los identificadores del dominio
+ * (`Deudora`, `calcularDeudorasDelMes`) siguen en femenino a propósito, igual
+ * que la tabla `alumnas` sobre la que se calculan — renombrarlos cambiaría
+ * enlaces ya guardados sin cambiar nada de lo que se ve.
  */
 
 const CLASE_FOCO =
@@ -100,7 +106,7 @@ export default async function DeudorasPage({
       <BackButton href={`/pagos?mes=${mesParaLinks}`} />
 
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Deudoras</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Deudores</h1>
         <p className="text-sm text-text-subtle">
           {nombreMes(mes)} ·{" "}
           {deudoras.length === 0

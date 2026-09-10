@@ -101,7 +101,7 @@ export function AccionesAlumna({
       </p>
       <p className="mt-1 text-sm text-error-800/80">
         Sale de los listados y deja de contar para la alerta de inasistencia.{" "}
-        <strong>La deuda no se borra:</strong> si quedó debiendo, sigue en Deudoras hasta el mes
+        <strong>La deuda no se borra:</strong> si quedó debiendo, sigue en Deudores hasta el mes
         de la baja.
       </p>
 

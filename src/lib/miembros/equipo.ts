@@ -19,7 +19,7 @@ export interface MiembroLista {
 const GRUPOS: { titulo: string; roles: Rol[] }[] = [
   { titulo: "Dirección", roles: ["Admin", "Head Coach", "Secretaria"] },
   { titulo: "Profesoras", roles: ["Profesor"] },
-  { titulo: "Empleadas", roles: ["Empleado"] },
+  { titulo: "Ayudantes", roles: ["Empleado"] },
   { titulo: "Alumnas con acceso", roles: ["Patinador"] },
 ];
 
@@ -42,13 +42,21 @@ export function iniciales(nombre: string): string {
   return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
 }
 
-/** Femenino donde el club lo usa así; `Rol` en la base es masculino singular. */
+/**
+ * Cómo se lee cada rol en pantalla. `Rol` en la base es masculino singular; acá
+ * se usa el femenino donde el club habla así.
+ *
+ * `Empleado` se muestra como «Ayudante»: el valor en `users.rol` no cambia
+ * (renombrarlo obligaría a migrar la columna, sus checks y todas las policies
+ * que la leen), pero «Empleada» no describe lo que hacen en el club. «Ayudante»
+ * sirve además para cualquier género, a diferencia del resto de la tabla.
+ */
 const ROL_EN_FICHA: Record<Rol, string> = {
   Admin: "Admin",
   "Head Coach": "Head Coach",
   Secretaria: "Secretaria",
   Profesor: "Profesora",
-  Empleado: "Empleada",
+  Empleado: "Ayudante",
   Patinador: "Alumna",
 };
 
@@ -59,7 +67,7 @@ export function nombreDeRol(rol: Rol): string {
 /**
  * La segunda línea de cada fila: el cargo si lo hay, y si no «da clases»
  * —el `dicta_clases` que hasta ahora se guardaba sin mostrarse en ningún
- * lado, y que es lo que explica que Male dicte siendo Empleada—.
+ * lado, y que es lo que explica que Male dicte siendo Ayudante—.
  */
 export function subtituloMiembro(miembro: MiembroLista): string {
   const partes = [nombreDeRol(miembro.rol)];

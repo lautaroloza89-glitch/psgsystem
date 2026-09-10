@@ -222,7 +222,7 @@ export default async function PagosPage({
           href={`/pagos/deudoras?mes=${mesParaLinks}`}
           className={`rounded font-medium text-primary-600 hover:text-primary-700 ${CLASE_FOCO}`}
         >
-          Deudoras
+          Deudores
         </Link>{" "}
         ·{" "}
         <Link

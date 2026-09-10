@@ -77,7 +77,7 @@ export default async function ConvocadasPage({
                 {resumen.sinFechaNacimiento === 1
                   ? "1 alumna no tiene fecha de nacimiento cargada"
                   : `${resumen.sinFechaNacimiento} alumnas no tienen fecha de nacimiento cargada`}
-                . Se cargan desde la ficha de cada una, en Alumnas.
+                . Se cargan desde la ficha de cada una, en Registro.
               </li>
             )}
             {resumen.sinCategoria > 0 && (

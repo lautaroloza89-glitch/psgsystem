@@ -8,7 +8,7 @@ import { AlumnasListClient, type AlumnaFila } from "@/components/alumnas/Alumnas
 import { rachasParaListado } from "@/lib/alumnas/ficha";
 import type { EstadoAlumna } from "@/types";
 
-export const metadata: Metadata = { title: "Alumnas" };
+export const metadata: Metadata = { title: "Registro de alumnas" };
 
 export default async function AlumnasPage() {
   const profile = await getCurrentUserProfile();
@@ -43,7 +43,7 @@ export default async function AlumnasPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">Alumnas</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Registro de alumnas</h1>
         <Link
           href="/alumnas/nueva"
           className="shrink-0 rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
