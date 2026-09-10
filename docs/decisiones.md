@@ -18,7 +18,7 @@
 [Tareas y proyectos son la misma entidad](#tareas-y-proyectos-son-la-misma-entidad) · [Una tarea puede tener varios responsables](#una-tarea-puede-tener-varios-responsables) · [Los comentarios son historial](#los-comentarios-son-historial) · [Aviso cuando una tarea queda sin responsables](#aviso-cuando-una-tarea-queda-sin-responsables) · [El Admin no puede ser responsable de una tarea](#el-admin-no-puede-ser-responsable-de-una-tarea)
 
 **Clases y planificaciones**
-[Las clases son por fecha puntual, no recurrentes](#las-clases-son-por-fecha-puntual-no-recurrentes) · [Cancelar no es borrar](#cancelar-no-es-borrar) · [Una clase puede tener varios profesores](#una-clase-puede-tener-varios-profesores) · [El horario del club es de lectura abierta](#el-horario-del-club-es-de-lectura-abierta) · [Los comentarios de una clase son del equipo que la organiza](#los-comentarios-de-una-clase-son-del-equipo-que-la-organiza) · [La entrada a Planificaciones es por día y por grupo](#la-entrada-a-planificaciones-es-por-día-y-por-grupo)
+[Las clases son por fecha puntual, no recurrentes](#las-clases-son-por-fecha-puntual-no-recurrentes) · [Cancelar no es borrar](#cancelar-no-es-borrar) · [Una clase puede tener varios profesores](#una-clase-puede-tener-varios-profesores) · [El horario del club es de lectura abierta](#el-horario-del-club-es-de-lectura-abierta) · [Los comentarios de una clase son del equipo que la organiza](#los-comentarios-de-una-clase-son-del-equipo-que-la-organiza) · [La entrada a Planificaciones es por día y por grupo](#la-entrada-a-planificaciones-es-por-día-y-por-grupo) · [Patín y Preparación física son dos planificaciones de una misma clase](#patín-y-preparación-física-son-dos-planificaciones-de-una-misma-clase)
 
 **Notificaciones**
 [Alcance de las notificaciones](#alcance-de-las-notificaciones) · [Destinatarios de una notificación](#destinatarios-de-una-notificación) · [Push con Web Push API nativo](#push-con-web-push-api-nativo) · [Los recordatorios de vencimiento corren por cron](#los-recordatorios-de-vencimiento-corren-por-cron) · [Las notificaciones sobreviven al borrado de su origen](#las-notificaciones-sobreviven-al-borrado-de-su-origen)
@@ -261,6 +261,12 @@ Lautaro es el único Admin real del sistema.
 
 **Decisión:** en Torneos el tipo (Torneo / Exhibición / Evento) es un chip de texto, sin emoji. Los emojis se conservan en `ICONO_TIPO_TORNEO` y siguen usándose en la línea del próximo evento del inicio.
 **Contexto:** eran un emoji suelto delante del nombre y la palabra solo aparecía en el detalle. Escrito se lee mejor y no depende de que el emoji cargue en el celular de cada una. El modelo lo dejaba como decisión abierta de Lauti (`Tf`) y la resolvió al cerrar el módulo 7. Por el mismo motivo el módulo sigue llamándose «Torneos» para todos los roles, y no «Calendario» para la alumna.
+**Estado:** vigente
+
+## Patín y Preparación física son dos planificaciones de una misma clase
+
+**Decisión:** un grupo que entrena 19:30–22:00 con la media hora inicial de preparación física tiene **una sola clase real y un solo horario**, pero **dos filas de `turnos`** con distinto `tipo`. Las dos muestran el horario completo; el diferenciador es texto (` · Preparación física`), sin ícono. Cada una tiene su profesora y se edita por separado. `grupo_horarios` sigue con un bloque por día — la división no existe en el horario, solo en la planificación.
+**Contexto:** el equipo ya sabe que la parte física dura media hora aproximada, así que partir el horario en dos bloques sería modelar una precisión que nadie usa. Un grupo aparece con las dos solo si cargó física alguna vez, y ese flag se enciende con la primera carga en vez de configurarse en algún lado. Quién da la física se lee de la última fila cargada de ese grupo, no de una constante en el código, para que no haya que tocar nada el día que cambie la persona.
 **Estado:** vigente
 
 ## Alcance de las notificaciones
