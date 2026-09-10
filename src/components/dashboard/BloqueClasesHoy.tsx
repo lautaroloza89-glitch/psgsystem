@@ -80,6 +80,32 @@ export function BloqueClasesHoy({
                 </span>
               </Link>
 
+              {/* La Preparación física de la misma franja: indentada bajo su
+                  clase, sin repetir nombre ni horario —es la misma clase, el
+                  grupo entrena una sola vez— pero con su propia profesora, que
+                  casi nunca es la del patín. */}
+              {clase.fisica && (
+                <Link
+                  href={`/horarios/${clase.fisica.id}`}
+                  className="flex items-start gap-3 border-t border-border py-2 pl-[4.25rem] pr-4 transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring"
+                >
+                  <span className="min-w-0 flex-1 text-sm">
+                    <span className="block font-medium leading-snug">Preparación física</span>
+                    <span className="block text-text-subtle">
+                      {clase.fisica.profesores.length > 0
+                        ? clase.fisica.profesores.join(", ")
+                        : "Sin profesor asignado"}{" "}
+                      ·{" "}
+                      {clase.fisica.planificada ? (
+                        <span>planificada</span>
+                      ) : (
+                        <span className="font-semibold text-warning-700">sin planificar</span>
+                      )}
+                    </span>
+                  </span>
+                </Link>
+              )}
+
               {conAccionAsistencia && i === 0 && !clase.asistenciaTomada && (
                 <div className="px-4 pb-3">
                   <Link

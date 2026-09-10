@@ -96,13 +96,20 @@ async function upsertPlanificacionFecha(
  * no existe más un formulario de "Nueva clase" aparte.
  */
 export async function guardarPlanificacion(
-  grupoId: string,
   _prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
   if (!puedeCargarPlanificaciones(profile)) {
     return { error: "No tenés permiso para cargar planificaciones." };
+  }
+
+  // El grupo viaja en el formulario y ya no en el bind de la action: desde la
+  // pestaña «Por grupo» se entra a cargar sin haber elegido ninguno todavía,
+  // y se elige adentro con los mismos chips que usa «Editar clase».
+  const grupoId = (formData.get("grupo_id") as string) || "";
+  if (!grupoId) {
+    return { error: "Elegí un grupo." };
   }
 
   const fechas = formData.getAll("fechas") as string[];

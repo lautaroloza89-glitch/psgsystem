@@ -39,6 +39,15 @@ export interface ClaseDeHoy {
   asistenciaTomada: boolean;
   /** Solo se cuenta para las clases propias; en la vista del club sobra. */
   cantidadAlumnas: number | null;
+  /**
+   * La Preparación física de esa misma franja, si está cargada.
+   *
+   * Va anidada y no como una entrada más de la lista: son una sola clase real
+   * —el grupo entrena 19:30–22:00 y la media hora inicial es física—, así que
+   * dos filas seguidas con el mismo nombre y el mismo horario se leerían como
+   * un error de datos. Trae **su** profesora, que casi nunca es la del patín.
+   */
+  fisica: { id: string; profesores: string[]; planificada: boolean } | null;
 }
 
 export interface AccesoRapido {
@@ -218,7 +227,7 @@ async function clasesDeHoy(
     ? await supabase
         .from("turnos")
         .select(
-          "id, hora_inicio, hora_fin, grupo_id, grupo_legacy, planificacion, grupo:grupos(nombre), profesores:turno_profesores!inner(profesor_id, profesor:users(nombre))"
+          "id, hora_inicio, hora_fin, grupo_id, grupo_legacy, tipo, planificacion, grupo:grupos(nombre), profesores:turno_profesores!inner(profesor_id, profesor:users(nombre))"
         )
         .eq("estado", "Activo")
         .eq("fecha", hoy)
@@ -227,7 +236,7 @@ async function clasesDeHoy(
     : await supabase
         .from("turnos")
         .select(
-          "id, hora_inicio, hora_fin, grupo_id, grupo_legacy, planificacion, grupo:grupos(nombre), profesores:turno_profesores(profesor_id, profesor:users(nombre))"
+          "id, hora_inicio, hora_fin, grupo_id, grupo_legacy, tipo, planificacion, grupo:grupos(nombre), profesores:turno_profesores(profesor_id, profesor:users(nombre))"
         )
         .eq("estado", "Activo")
         .eq("fecha", hoy)
@@ -265,19 +274,71 @@ async function clasesDeHoy(
     return total > 0 && (marcadasPorGrupo.get(grupoId) ?? 0) >= total;
   }
 
-  return turnos.map((t) => ({
-    id: t.id,
-    horaInicio: t.hora_inicio,
-    horaFin: t.hora_fin,
-    grupoNombre:
-      (t.grupo as unknown as { nombre: string } | null)?.nombre ?? t.grupo_legacy ?? "Sin grupo",
-    profesores: (
-      t.profesores as unknown as { profesor: { nombre: string } | null }[]
-    ).flatMap((p) => (p.profesor ? [p.profesor.nombre] : [])),
-    planificada: !!t.planificacion,
-    asistenciaTomada: asistenciaCompleta(t.grupo_id),
-    cantidadAlumnas: soloDe && t.grupo_id ? (alumnasPorGrupo.get(t.grupo_id) ?? 0) : null,
-  }));
+  const nombresDe = (t: (typeof turnos)[number]) =>
+    (t.profesores as unknown as { profesor: { nombre: string } | null }[]).flatMap((p) =>
+      p.profesor ? [p.profesor.nombre] : []
+    );
+
+  /**
+   * Patín y Preparación física de la misma franja son **una** clase con dos
+   * contenidos, así que se agrupan por grupo + horario antes de renderizar. Sin
+   * esto la lista mostraría «Avanzado · 19:30–22:00» dos veces seguidas.
+   */
+  const porFranja = new Map<string, ClaseDeHoy>();
+
+  const nombreDeGrupo = (t: (typeof turnos)[number]) =>
+    (t.grupo as unknown as { nombre: string } | null)?.nombre ?? t.grupo_legacy ?? "Sin grupo";
+  const claveDe = (t: (typeof turnos)[number]) =>
+    `${t.grupo_id ?? nombreDeGrupo(t)}|${t.hora_inicio}|${t.hora_fin}`;
+
+  // Dos pasadas y no una: las dos filas de una franja tienen la misma
+  // `hora_inicio`, así que el orden en que vienen de la base es indefinido y
+  // no se puede asumir que el patín llegue primero.
+  for (const t of turnos) {
+    if (t.tipo === "Preparación física") continue;
+    const clave = claveDe(t);
+    if (porFranja.has(clave)) continue;
+
+    porFranja.set(clave, {
+      id: t.id,
+      horaInicio: t.hora_inicio,
+      horaFin: t.hora_fin,
+      grupoNombre: nombreDeGrupo(t),
+      profesores: nombresDe(t),
+      planificada: !!t.planificacion,
+      asistenciaTomada: asistenciaCompleta(t.grupo_id),
+      cantidadAlumnas: soloDe && t.grupo_id ? (alumnasPorGrupo.get(t.grupo_id) ?? 0) : null,
+      fisica: null,
+    });
+  }
+
+  for (const t of turnos) {
+    if (t.tipo !== "Preparación física") continue;
+    const clave = claveDe(t);
+    const fisica = { id: t.id, profesores: nombresDe(t), planificada: !!t.planificacion };
+    const principal = porFranja.get(clave);
+
+    if (principal) {
+      principal.fisica = fisica;
+      continue;
+    }
+
+    // Cargada la física pero todavía no el patín de esa franja: se muestra
+    // sola, como cualquier clase, en vez de desaparecer del inicio.
+    porFranja.set(clave, {
+      id: t.id,
+      horaInicio: t.hora_inicio,
+      horaFin: t.hora_fin,
+      grupoNombre: `${nombreDeGrupo(t)} · Preparación física`,
+      profesores: nombresDe(t),
+      planificada: !!t.planificacion,
+      asistenciaTomada: asistenciaCompleta(t.grupo_id),
+      cantidadAlumnas: soloDe && t.grupo_id ? (alumnasPorGrupo.get(t.grupo_id) ?? 0) : null,
+      fisica: null,
+    });
+  }
+
+  return [...porFranja.values()].sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
 }
 
 export async function datosDelInicio(

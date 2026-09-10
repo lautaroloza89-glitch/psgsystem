@@ -17,10 +17,17 @@ export function ClaseDelDiaCard({
   clase,
   fecha,
   puedeCargar,
+  pegadaALaAnterior = false,
 }: {
   clase: ClasePlanificada;
   fecha: string;
   puedeCargar: boolean;
+  /**
+   * La tarjeta de arriba es del mismo grupo (Patín y su Preparación física).
+   * Se acercan para que se lean como una clase con dos contenidos y no como
+   * dos grupos distintos que coinciden de nombre y horario.
+   */
+  pegadaALaAnterior?: boolean;
 }) {
   const mes = fecha.slice(0, 7);
   const cancelada = clase.estado === "Cancelado";
@@ -41,7 +48,7 @@ export function ClaseDelDiaCard({
     <li
       className={`space-y-2 rounded-xl border bg-surface p-4 shadow-xs ${
         cancelada ? "border-neutral-300" : "border-border"
-      }`}
+      } ${pegadaALaAnterior ? "-mt-2" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-base font-semibold">
@@ -50,6 +57,12 @@ export function ClaseDelDiaCard({
             className="hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           >
             {clase.grupoNombre}
+            {/* El diferenciador va en el título y es texto, sin ícono: las dos
+                tarjetas son del mismo grupo y muestran el mismo horario, así
+                que el nombre solo no alcanza para distinguirlas. */}
+            {clase.tipo === "Preparación física" && (
+              <span className="font-normal text-text-muted"> · Preparación física</span>
+            )}
             <span aria-hidden="true" className="ml-1.5 text-text-subtle">
               ›
             </span>
@@ -61,7 +74,6 @@ export function ClaseDelDiaCard({
       <p className="text-sm text-text-subtle">
         {clase.horaInicio.slice(0, 5)}–{clase.horaFin.slice(0, 5)}
         {clase.profesores.length > 0 ? ` · ${clase.profesores.join(", ")}` : ""}
-        {clase.tipo === "Preparación física" ? " · Preparación física" : ""}
       </p>
 
       <div className="flex flex-wrap items-start gap-2">
@@ -89,6 +101,23 @@ export function ClaseDelDiaCard({
           </span>
         )}
       </div>
+
+      {/* La segunda planificación de la misma franja. Vive al pie de la
+          tarjeta y no como acción suelta de la pantalla porque pertenece a esta
+          clase. Solo en grupos que ya cargaron física alguna vez —el flag se
+          enciende solo con la primera— y solo mientras esa fecha no la tenga:
+          con las dos cargadas desaparece. */}
+      {puedeCargar && clase.grupoHaceFisica && !clase.yaTieneFisica && (
+        <div className="border-t border-border pt-2">
+          <Link
+            href={`${hrefCargar}&tipo=${encodeURIComponent("Preparación física")}`}
+            className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-primary-600 transition-colors duration-[var(--duration-fast)] ease-standard hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          >
+            <Icono nombre="plus" className="h-4 w-4" />
+            Agregar Preparación física
+          </Link>
+        </div>
+      )}
     </li>
   );
 }

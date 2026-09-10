@@ -71,7 +71,22 @@ export default async function HorariosPage({
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <h1 className="text-2xl font-bold tracking-tight">Planificaciones</h1>
+      <div className="flex items-start justify-between gap-2">
+        <h1 className="text-2xl font-bold tracking-tight">Planificaciones</h1>
+        {/* Solo en «Por grupo»: crear una planificación es elegir un grupo, un
+            mes y varias fechas de una, y acá el formulario abre con el mes que
+            se está mirando. Desde la vista por día el atajo es el chip «Sin
+            planificación» de cada clase, que ya lleva grupo y fecha. */}
+        {puedeCargar && vista === "grupo" && (
+          <Link
+            href={`/horarios/planificar?mes=${mesQuery(anio, mes)}`}
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-md bg-primary-500 px-4 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          >
+            <Icono nombre="plus" className="h-4 w-4" />
+            Nueva
+          </Link>
+        )}
+      </div>
 
       <TabsPlanificaciones vista={vista} hrefDia={hrefDia} hrefGrupo={hrefGrupo} />
 
@@ -172,12 +187,15 @@ async function VistaPorDia({
       ) : (
         <>
           <ul className="space-y-3">
-            {clases.map((clase) => (
+            {clases.map((clase, i) => (
               <ClaseDelDiaCard
-                key={clase.grupoId}
+                // Un grupo puede aparecer dos veces el mismo día (Patín y su
+                // Preparación física), así que la key lleva el tipo.
+                key={`${clase.grupoId}-${clase.tipo}`}
                 clase={clase}
                 fecha={dia}
                 puedeCargar={puedeCargar}
+                pegadaALaAnterior={i > 0 && clases[i - 1].grupoId === clase.grupoId}
               />
             ))}
           </ul>

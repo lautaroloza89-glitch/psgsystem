@@ -41,6 +41,10 @@ export interface ClasePlanificada {
   tipo: TipoTurno;
   /** El objetivo del mes del grupo, para el chip que lo abre. */
   objetivoDelMes: string | null;
+  /** El grupo cargó Preparación física alguna vez: enciende el link para sumarla. */
+  grupoHaceFisica: boolean;
+  /** Esa fecha ya tiene su fila de física, así que el link no va. */
+  yaTieneFisica: boolean;
 }
 
 /** Una fila de la vista por grupo: cómo viene el mes de ese grupo. */
@@ -51,8 +55,14 @@ export interface GrupoDelMes {
   diasLabel: string;
   /** Fechas del mes en las que el grupo tiene clase. */
   totalFechas: number;
-  /** De esas fechas, cuántas ya tienen planificación cargada. */
+  /** De esas fechas, cuántas ya tienen al menos una planificación cargada. */
   cargadas: number;
+  /**
+   * Filas de Preparación física del mes. Va **sin denominador** a propósito:
+   * nadie sabe cuántas de las fechas del grupo *deberían* tener física, así
+   * que un «3 de 9» inventaría un pendiente de 6 clases que no existe.
+   */
+  clasesDeFisica: number;
   objetivoDelMes: string | null;
 }
 
@@ -155,15 +165,21 @@ export async function clasesPlanificadasDelDia(
   const diaIso = diaIsoDeFecha(fecha);
   const mesISO = primerDiaDeMes(Number(fecha.slice(0, 4)), Number(fecha.slice(5, 7)));
 
-  const [grupos, turnos, objetivos] = await Promise.all([
+  const [grupos, turnos, objetivos, gruposConFisica] = await Promise.all([
     leerGruposConHorarios(supabase),
     leerTurnos(supabase, fecha, fecha),
     leerObjetivosDelMes(supabase, mesISO),
+    gruposQueHacenFisica(supabase),
   ]);
 
-  const turnoPorGrupo = new Map<string, TurnoDelMes>();
+  // Una fecha puede tener dos filas del mismo grupo: Patín y Preparación
+  // física comparten horario pero son contenidos distintos.
+  const turnosPorGrupo = new Map<string, TurnoDelMes[]>();
   for (const turno of turnos) {
-    if (turno.grupo_id) turnoPorGrupo.set(turno.grupo_id, turno);
+    if (!turno.grupo_id) continue;
+    const actuales = turnosPorGrupo.get(turno.grupo_id) ?? [];
+    actuales.push(turno);
+    turnosPorGrupo.set(turno.grupo_id, actuales);
   }
 
   const clases: ClasePlanificada[] = [];
@@ -172,25 +188,109 @@ export async function clasesPlanificadasDelDia(
     const bloque = bloqueDeEseDia(grupo.grupo_horarios ?? [], diaIso);
     if (!bloque) continue;
 
-    const turno = turnoPorGrupo.get(grupo.id);
-    const asignados = turno?.profesores ?? [];
+    const haceFisica = gruposConFisica.has(grupo.id);
+    const delGrupo = turnosPorGrupo.get(grupo.id) ?? [];
 
-    clases.push({
+    const comun = {
       grupoId: grupo.id,
       grupoNombre: grupo.nombre,
       horaInicio: bloque.hora_inicio,
       horaFin: bloque.hora_fin,
-      profesores: asignados.map((p) => p.profesor?.nombre ?? "").filter(Boolean),
-      esMia: asignados.some((p) => p.profesor_id === profileId),
-      turnoId: turno?.id ?? null,
-      tienePlanificacion: !!turno?.planificacion,
-      estado: turno?.estado ?? "Activo",
-      tipo: turno?.tipo ?? "Patín",
       objetivoDelMes: objetivos.get(grupo.id) ?? null,
-    });
+      grupoHaceFisica: haceFisica,
+    };
+
+    if (delGrupo.length === 0) {
+      // El hueco: el grupo entrena ese día pero todavía no cargó nada. Es lo
+      // que hace visible «Sin planificación».
+      clases.push({
+        ...comun,
+        profesores: [],
+        esMia: false,
+        turnoId: null,
+        tienePlanificacion: false,
+        estado: "Activo",
+        tipo: "Patín",
+        yaTieneFisica: false,
+      });
+      continue;
+    }
+
+    const tieneFisica = delGrupo.some((t) => t.tipo === "Preparación física");
+
+    for (const turno of delGrupo) {
+      // Cada fila trae **sus** profesoras, por `turno_id` y no por grupo: la
+      // física casi siempre la da otra persona que el patín.
+      const asignados = turno.profesores ?? [];
+      clases.push({
+        ...comun,
+        profesores: asignados.map((p) => p.profesor?.nombre ?? "").filter(Boolean),
+        esMia: asignados.some((p) => p.profesor_id === profileId),
+        turnoId: turno.id,
+        tienePlanificacion: !!turno.planificacion,
+        estado: turno.estado,
+        tipo: turno.tipo,
+        yaTieneFisica: tieneFisica,
+      });
+    }
   }
 
-  return clases.sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+  return clases.sort((a, b) => {
+    // Por hora primero; dentro del mismo grupo y horario, Patín antes que
+    // Preparación física — no por hora, que comparten, sino por convención:
+    // la física son los primeros treinta minutos.
+    const porHora = a.horaInicio.localeCompare(b.horaInicio);
+    if (porHora !== 0) return porHora;
+    if (a.grupoId !== b.grupoId) return a.grupoNombre.localeCompare(b.grupoNombre, "es");
+    return ordenDeTipo(a.tipo) - ordenDeTipo(b.tipo);
+  });
+}
+
+/** Patín primero, Preparación física después. */
+function ordenDeTipo(tipo: TipoTurno): number {
+  return tipo === "Preparación física" ? 1 : 0;
+}
+
+/**
+ * Los grupos que **alguna vez** cargaron Preparación física, en cualquier
+ * fecha. Es lo que enciende el link «+ Agregar Preparación física»: no hace
+ * falta una columna ni una pantalla de configuración, la primera física se
+ * carga desde «+ Nueva» y a partir de ahí el grupo queda marcado solo.
+ */
+export async function gruposQueHacenFisica(supabase: Supabase): Promise<Set<string>> {
+  const { data } = await supabase
+    .from("turnos")
+    .select("grupo_id")
+    .eq("tipo", "Preparación física")
+    .not("grupo_id", "is", null);
+
+  return new Set((data ?? []).map((t) => t.grupo_id as string));
+}
+
+/**
+ * Quién viene dando la Preparación física de un grupo: los profesores de la
+ * última fila cargada de ese tipo.
+ *
+ * Sirve para precargar el formulario cuando se agrega la física de una fecha
+ * nueva. Se lee de los datos en vez de dejar un nombre escrito en el código,
+ * así el día que cambie la persona se actualiza solo — mismo criterio que el
+ * flag de arriba. Devuelve `undefined` si el grupo todavía no cargó ninguna.
+ */
+export async function ultimaProfesoraDeFisica(
+  supabase: Supabase,
+  grupoId: string
+): Promise<string[] | undefined> {
+  const { data } = await supabase
+    .from("turnos")
+    .select("profesores:turno_profesores(profesor_id)")
+    .eq("grupo_id", grupoId)
+    .eq("tipo", "Preparación física")
+    .order("fecha", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const profesores = (data?.profesores ?? []) as unknown as { profesor_id: string }[];
+  return profesores.length > 0 ? profesores.map((p) => p.profesor_id) : undefined;
 }
 
 /**
@@ -215,18 +315,27 @@ export async function gruposDelMes(
     leerObjetivosDelMes(supabase, mesISO),
   ]);
 
-  const conPlanificacionPorGrupo = new Map<string, Set<string>>();
+  // **Fechas** distintas con algo cargado, no filas: desde que una fecha puede
+  // tener Patín y Preparación física, contar filas daría «10 de 9».
+  const fechasCargadasPorGrupo = new Map<string, Set<string>>();
+  const fisicaPorGrupo = new Map<string, number>();
+
   for (const turno of turnos) {
     if (!turno.grupo_id || !turno.planificacion) continue;
-    const fechas = conPlanificacionPorGrupo.get(turno.grupo_id) ?? new Set<string>();
+
+    const fechas = fechasCargadasPorGrupo.get(turno.grupo_id) ?? new Set<string>();
     fechas.add(turno.fecha);
-    conPlanificacionPorGrupo.set(turno.grupo_id, fechas);
+    fechasCargadasPorGrupo.set(turno.grupo_id, fechas);
+
+    if (turno.tipo === "Preparación física") {
+      fisicaPorGrupo.set(turno.grupo_id, (fisicaPorGrupo.get(turno.grupo_id) ?? 0) + 1);
+    }
   }
 
   return grupos.map((grupo) => {
     const dias = diasDeClase(grupo.grupo_horarios ?? []);
     const fechasDelMes = dias.flatMap((dia) => fechasDelMesPorDia(anio, mes, dia));
-    const cargadas = conPlanificacionPorGrupo.get(grupo.id) ?? new Set<string>();
+    const cargadas = fechasCargadasPorGrupo.get(grupo.id) ?? new Set<string>();
 
     return {
       grupoId: grupo.id,
@@ -234,6 +343,7 @@ export async function gruposDelMes(
       diasLabel: etiquetaDeDias(dias),
       totalFechas: fechasDelMes.length,
       cargadas: fechasDelMes.filter((fecha) => cargadas.has(fecha)).length,
+      clasesDeFisica: fisicaPorGrupo.get(grupo.id) ?? 0,
       objetivoDelMes: objetivos.get(grupo.id) ?? null,
     };
   });

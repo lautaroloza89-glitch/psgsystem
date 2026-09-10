@@ -1,102 +1,31 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { getCurrentUserProfile } from "@/lib/supabase/get-current-user";
-import { puedeCargarPlanificaciones } from "@/lib/permisos";
-import { BackButton } from "@/components/ui/BackButton";
-import { PlanificarForm } from "@/components/horarios/PlanificarForm";
-import { guardarPlanificacion } from "../../../planificaciones-actions";
-import { anioMesDeHoy, mesQuery, nombreMes } from "@/lib/utils/date";
+import { PantallaPlanificar } from "@/components/horarios/PantallaPlanificar";
+import { mesQuery } from "@/lib/utils/date";
+import { anioMesDeHoy } from "@/lib/utils/date";
 
 export const metadata: Metadata = { title: "Nueva planificación" };
 
-export default async function PlanificarPage({
+/** Entrada desde un grupo: el chip de grupo viene preseleccionado. */
+export default async function PlanificarDeGrupoPage({
   params,
   searchParams,
 }: {
   params: Promise<{ grupoId: string }>;
-  searchParams: Promise<{ mes?: string; fecha?: string }>;
+  searchParams: Promise<{ mes?: string; fecha?: string; tipo?: string }>;
 }) {
   const { grupoId } = await params;
-  const { mes: mesParam, fecha: fechaParam } = await searchParams;
-
-  const profile = await getCurrentUserProfile();
-  if (!puedeCargarPlanificaciones(profile)) {
-    redirect(`/horarios/grupos/${grupoId}`);
-  }
+  const { mes, fecha, tipo } = await searchParams;
 
   const hoyAM = anioMesDeHoy();
-  let anio = hoyAM.anio;
-  let mes = hoyAM.mes;
-  if (mesParam && /^\d{4}-\d{2}$/.test(mesParam)) {
-    const [y, m] = mesParam.split("-").map(Number);
-    anio = y;
-    mes = m;
-  }
-
-  const supabase = await createClient();
-  const { data: grupo } = await supabase
-    .from("grupos")
-    .select("id, nombre, grupo_horarios(dias)")
-    .eq("id", grupoId)
-    .single();
-
-  if (!grupo) {
-    notFound();
-  }
-
-  const diasDisponibles = [
-    ...new Set((grupo.grupo_horarios ?? []).flatMap((b) => b.dias as number[])),
-  ].sort((a, b) => a - b);
-
-  const { data: usuarios } = await supabase
-    .from("users")
-    .select("id, nombre, rol, cargo, dicta_clases")
-    .eq("estado", "activo")
-    .order("nombre");
-
-  const profesores = (usuarios ?? []).filter((u) => u.rol === "Profesor" || u.dicta_clases);
-
-  const guardarPlanificacionDeGrupo = guardarPlanificacion.bind(null, grupoId);
-
-  // La fecha del atajo «Sin planificación» solo vale si cae dentro del mes que
-  // se está cargando; si no, el formulario abriría con una fecha que ni
-  // siquiera aparece en la lista.
-  const fechaInicial =
-    fechaParam &&
-    /^\d{4}-\d{2}-\d{2}$/.test(fechaParam) &&
-    fechaParam.startsWith(mesQuery(anio, mes))
-      ? fechaParam
-      : undefined;
+  const mesVolver = mes ?? mesQuery(hoyAM.anio, hoyAM.mes);
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
-      <BackButton href={`/horarios/grupos/${grupoId}?mes=${mesQuery(anio, mes)}`} />
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Nueva planificación</h1>
-        <p className="text-sm text-text-subtle">
-          {grupo.nombre} · {nombreMes(mes).toLowerCase()}
-        </p>
-      </div>
-
-      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs sm:p-8">
-        {diasDisponibles.length === 0 ? (
-          <p className="text-sm text-text-subtle">
-            Este grupo todavía no tiene horario configurado.
-          </p>
-        ) : (
-          <PlanificarForm
-            action={guardarPlanificacionDeGrupo}
-            profile={{ id: profile.id, rol: profile.rol }}
-            profesores={profesores}
-            diasDisponibles={diasDisponibles}
-            anio={anio}
-            mes={mes}
-            mesLabel={`${nombreMes(mes)} ${anio}`}
-            fechaInicial={fechaInicial}
-          />
-        )}
-      </div>
-    </div>
+    <PantallaPlanificar
+      grupoIdInicial={grupoId}
+      mesParam={mes}
+      fechaParam={fecha}
+      tipoParam={tipo}
+      volverA={`/horarios/grupos/${grupoId}?mes=${mesVolver}`}
+    />
   );
 }

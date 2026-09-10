@@ -11,9 +11,9 @@ function textoCarga(grupo: GrupoDelMes): string {
   if (grupo.totalFechas === 0) return "Sin horario cargado";
   if (grupo.cargadas === 0) return "sin cargar";
   if (grupo.cargadas === grupo.totalFechas) {
-    return `${grupo.totalFechas} ${grupo.totalFechas === 1 ? "clase cargada" : "clases cargadas"}`;
+    return `${grupo.totalFechas} ${grupo.totalFechas === 1 ? "fecha cargada" : "fechas cargadas"}`;
   }
-  return `${grupo.cargadas} de ${grupo.totalFechas} cargadas`;
+  return `${grupo.cargadas} de ${grupo.totalFechas} fechas`;
 }
 
 export function GrupoDelMesFila({ grupo, mes }: { grupo: GrupoDelMes; mes: string }) {
@@ -46,6 +46,15 @@ export function GrupoDelMesFila({ grupo, mes }: { grupo: GrupoDelMes; mes: strin
               </>
             )}
           </p>
+          {/* Renglón aparte y sin denominador: el conteo de arriba existe para
+              responder «¿me falta cargar algo?», y para eso el denominador
+              tiene que ser real. Para la física no lo hay — nadie sabe cuántas
+              de esas fechas deberían tenerla. */}
+          {grupo.clasesDeFisica > 0 && (
+            <p className="text-sm text-text-subtle">
+              + {grupo.clasesDeFisica} de preparación física
+            </p>
+          )}
         </div>
       </div>
       <ChipObjetivoMes objetivo={grupo.objetivoDelMes} />

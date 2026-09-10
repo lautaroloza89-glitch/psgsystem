@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import type { FormState } from "@/app/(dashboard)/horarios/actions";
-import type { Rol, User } from "@/types";
+import type { Rol, TipoTurno, User } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
 import { ChipsResponsables } from "@/components/tareas/ChipsResponsables";
 import { ChipOpcion } from "@/components/ui/ChipOpcion";
@@ -12,6 +12,13 @@ const INPUT_CLASS =
   "w-full rounded-md border border-border-strong px-3 py-2.5 text-sm transition-colors duration-[var(--duration-fast)] ease-standard focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-focus-ring";
 
 const initialState: FormState = { error: null };
+
+export interface GrupoParaPlanificar {
+  id: string;
+  nombre: string;
+  /** Días ISO (1=lunes...7=domingo) en los que entrena, según `grupo_horarios`. */
+  dias: number[];
+}
 
 /**
  * Mismos campos, mismo orden y misma lógica de upsert que antes: lo que cambia
@@ -28,17 +35,22 @@ export function PlanificarForm({
   action,
   profile,
   profesores,
-  diasDisponibles,
+  grupos,
+  grupoIdInicial = "",
   anio,
   mes,
   mesLabel,
   fechaInicial,
+  tipoInicial = "Patín",
+  responsablesIniciales,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   profile: { id: string; rol: Rol };
   profesores: Pick<User, "id" | "nombre" | "rol" | "cargo">[];
-  /** Días ISO (1=lunes...7=domingo) en los que el grupo tiene clase, según grupo_horarios. */
-  diasDisponibles: number[];
+  /** Todos los grupos del club, con sus días: el grupo se elige acá adentro. */
+  grupos: GrupoParaPlanificar[];
+  /** Preseleccionado al entrar desde un grupo; vacío desde la pestaña «Por grupo». */
+  grupoIdInicial?: string;
   anio: number;
   mes: number;
   mesLabel: string;
@@ -47,8 +59,21 @@ export function PlanificarForm({
    * formulario con ese día de la semana elegido y solo esa fecha marcada.
    */
   fechaInicial?: string;
+  /** «+ Agregar Preparación física» abre el formulario ya en ese tipo. */
+  tipoInicial?: TipoTurno;
+  /**
+   * Profesoras marcadas de entrada. Lo usa «+ Agregar Preparación física», que
+   * precarga a quien viene dando la física de ese grupo. Editable igual.
+   */
+  responsablesIniciales?: string[];
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
+  const [grupoId, setGrupoId] = useState(grupoIdInicial);
+
+  const diasDisponibles = useMemo(
+    () => grupos.find((g) => g.id === grupoId)?.dias ?? [],
+    [grupos, grupoId]
+  );
 
   const diaInicial = useMemo(() => {
     if (!fechaInicial) return diasDisponibles[0] ?? "";
@@ -59,7 +84,7 @@ export function PlanificarForm({
   }, [fechaInicial, diasDisponibles]);
 
   const [diaIso, setDiaIso] = useState<number | "">(diaInicial);
-  const [tipo, setTipo] = useState("Patín");
+  const [tipo, setTipo] = useState<TipoTurno>(tipoInicial);
 
   const fechas = useMemo(
     () => (diaIso === "" ? [] : fechasDelMesPorDia(anio, mes, diaIso)),
@@ -73,6 +98,19 @@ export function PlanificarForm({
   );
   const [tocoFechas, setTocoFechas] = useState(!!fechaInicial);
   const seleccionadas = tocoFechas ? fechas.filter((f) => marcadas.has(f)) : fechas;
+
+  /**
+   * Cambiar de grupo cambia los días que entrena, así que el día elegido y las
+   * fechas marcadas dejan de servir. Se arranca de nuevo con el primer día del
+   * grupo nuevo, igual que al abrir el formulario.
+   */
+  function cambiarGrupo(nuevo: string) {
+    setGrupoId(nuevo);
+    const dias = grupos.find((g) => g.id === nuevo)?.dias ?? [];
+    setDiaIso(dias.includes(diaIso as number) ? diaIso : (dias[0] ?? ""));
+    setTocoFechas(false);
+    setMarcadas(new Set());
+  }
 
   function cambiarDia(nuevo: number) {
     setDiaIso(nuevo);
@@ -101,9 +139,21 @@ export function PlanificarForm({
     <form action={formAction} className="space-y-6">
       <input type="hidden" name="mes" value={`${anio}-${String(mes).padStart(2, "0")}`} />
       <input type="hidden" name="tipo" value={tipo} />
+      <input type="hidden" name="grupo_id" value={grupoId} />
       {seleccionadas.map((fecha) => (
         <input key={fecha} type="hidden" name="fechas" value={fecha} />
       ))}
+
+      <fieldset className="space-y-2">
+        <legend className="text-label font-medium">Grupo</legend>
+        <div className="flex flex-wrap gap-2">
+          {grupos.map((g) => (
+            <ChipOpcion key={g.id} activo={grupoId === g.id} onClick={() => cambiarGrupo(g.id)}>
+              {g.nombre}
+            </ChipOpcion>
+          ))}
+        </div>
+      </fieldset>
 
       <fieldset className="space-y-2">
         <legend className="text-label font-medium">Día de la semana</legend>
@@ -154,7 +204,11 @@ export function PlanificarForm({
       {profile.rol === "Admin" || profile.rol === "Head Coach" ? (
         <fieldset className="space-y-2">
           <legend className="text-label font-medium">Profesor/a a cargo</legend>
-          <ChipsResponsables usuarios={profesores} name="profesores" />
+          <ChipsResponsables
+            usuarios={profesores}
+            seleccionados={responsablesIniciales}
+            name="profesores"
+          />
         </fieldset>
       ) : (
         <p className="text-sm text-text-subtle">
@@ -193,7 +247,7 @@ export function PlanificarForm({
 
       <button
         type="submit"
-        disabled={pending || seleccionadas.length === 0}
+        disabled={pending || !grupoId || seleccionadas.length === 0}
         className="flex w-full items-center justify-center gap-2 rounded-md bg-primary-500 py-3 text-sm font-medium text-on-primary transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-primary-600 active:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       >
         {pending && <Spinner />}
