@@ -89,12 +89,19 @@ export function BloqueClasesHoy({
               {/* La Preparación física de la misma franja: indentada bajo su
                   clase, sin repetir nombre ni horario —es la misma clase, el
                   grupo entrena una sola vez— pero con su propia profesora, que
-                  casi nunca es la del patín. */}
+                  casi nunca es la del patín.
+
+                  La indentación sale de repetir la grilla de la fila de arriba
+                  (`px-4` + la columna de horario vacía + `gap-3`), no de un
+                  `pl-` calculado a mano: ese número ya se había quedado 16px
+                  corto —se olvidaba del `px-4`— y los nombres de las dos filas
+                  no arrancaban en la misma vertical. */}
               {clase.fisica && (
                 <Link
                   href={`/horarios/${clase.fisica.id}`}
-                  className="flex items-start gap-3 border-t border-border py-2 pl-[4.25rem] pr-4 transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring"
+                  className="flex items-start gap-3 border-t border-border px-4 py-2 transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring"
                 >
+                  <span className="w-14 flex-none" aria-hidden="true" />
                   <span className="min-w-0 flex-1 text-sm">
                     <span className="block font-medium leading-snug">Preparación física</span>
                     <span className="block text-text-subtle">
