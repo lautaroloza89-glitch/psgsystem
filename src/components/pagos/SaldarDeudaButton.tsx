@@ -21,11 +21,14 @@ export function SaldarDeudaButton({
   alumnaId,
   alumnaNombre,
   mes,
+  compacto = false,
 }: {
   alumnaId: string;
   alumnaNombre: string;
   /** `YYYY-MM` */
   mes: string;
+  /** Mismo alto que los otros botones de la tarjeta de Deudores. */
+  compacto?: boolean;
 }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
@@ -52,7 +55,7 @@ export function SaldarDeudaButton({
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className={`rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-subtle transition-colors duration-[var(--duration-fast)] ease-standard hover:border-border-strong hover:text-text ${CLASE_FOCO}`}
+        className={`rounded-lg border border-border px-3 ${compacto ? "py-1.5" : "py-2"} text-sm font-medium text-text-subtle transition-colors duration-[var(--duration-fast)] ease-standard hover:border-border-strong hover:text-text ${CLASE_FOCO}`}
       >
         Saldar sin cobrar
       </button>

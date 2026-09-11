@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -9,7 +10,10 @@ import { MarcarVerificadoButton } from "@/components/pagos/MarcarVerificadoButto
 import { AnularPagoButton } from "@/components/pagos/AnularPagoButton";
 import { ReciboAcciones } from "@/components/pagos/ReciboAcciones";
 import { NavegadorDeMes } from "@/components/pagos/NavegadorDeMes";
+import { BuscadorAlumnas, FiltroAlumnas, ListaFiltrada } from "@/components/alumnas/FiltroAlumnas";
+import { enlaceFicha } from "@/lib/alumnas/origen";
 import { formatMonto } from "@/lib/utils/money";
+import { compararAlumnas } from "@/lib/utils/texto";
 import {
   anioMesDeHoy,
   hoyArgentina,
@@ -38,6 +42,7 @@ const LABELS_METODO: Record<MetodoPago, string> = {
 
 interface FilaPago {
   id: string;
+  alumna_id: string;
   monto: number;
   monto_recargo: number;
   created_at: string;
@@ -49,7 +54,7 @@ interface FilaPago {
 }
 
 const SELECT_PAGO =
-  "id, monto, monto_recargo, created_at, recibo_texto, alumna:alumnas(apellido, nombre), contacto:contactos(nombre, telefono), registrador:registrado_por(nombre), metodos:pagos_metodos(metodo, monto)";
+  "id, alumna_id, monto, monto_recargo, created_at, recibo_texto, alumna:alumnas(apellido, nombre), contacto:contactos(nombre, telefono), registrador:registrado_por(nombre), metodos:pagos_metodos(metodo, monto)";
 
 function diasEntre(desdeISO: string, hasta: string): number {
   const ms = Date.parse(`${hasta}T00:00:00Z`) - Date.parse(`${desdeISO.slice(0, 10)}T00:00:00Z`);
@@ -74,6 +79,15 @@ function metodosTexto(fila: FilaPago): string {
 
 function nombreAlumna(fila: FilaPago): string {
   return fila.alumna ? `${fila.alumna.apellido}, ${fila.alumna.nombre}` : "Alumna";
+}
+
+function alumnaDe(fila: FilaPago): { apellido: string; nombre: string } {
+  return fila.alumna ?? { apellido: "", nombre: "" };
+}
+
+/** Mismo orden que Deudores: alfabético por apellido y nombre. */
+function porAlumna(a: FilaPago, b: FilaPago): number {
+  return compararAlumnas(alumnaDe(a), alumnaDe(b));
 }
 
 export default async function PagosPendientesPage({
@@ -117,8 +131,9 @@ export default async function PagosPendientesPage({
       .order("verificado_en", { ascending: false }),
   ]);
 
-  const pendientes = (pendientesData ?? []) as unknown as FilaPago[];
-  const verificados = (verificadosData ?? []) as unknown as FilaPago[];
+  const pendientes = ((pendientesData ?? []) as unknown as FilaPago[]).sort(porAlumna);
+  const verificados = ((verificadosData ?? []) as unknown as FilaPago[]).sort(porAlumna);
+  const mesParaLinks = mesQuery(anio, mes);
 
   const total = pendientes.reduce((acc, p) => acc + Number(p.monto), 0);
   const conTotales = puedeVerRecaudacion(profile);
@@ -140,15 +155,28 @@ export default async function PagosPendientesPage({
 
       <NavegadorDeMes basePath="/pagos/pendientes" anio={anio} mes={mes} />
 
+      <FiltroAlumnas>
+      {/* Un buscador para las dos listas de la pantalla. */}
+      {pendientes.length + verificados.length > 0 && <BuscadorAlumnas />}
+
       {pendientes.length === 0 ? (
         <EmptyState mensaje="No hay pagos pendientes de verificar este mes." />
       ) : (
-        <ul className="space-y-3">
-          {pendientes.map((p) => (
-            <li key={p.id} className="space-y-3 rounded-xl border border-border bg-surface p-4 shadow-xs">
+        <ListaFiltrada
+          className="space-y-3"
+          items={pendientes.map((p) => ({
+            clave: p.id,
+            ...alumnaDe(p),
+            fila: (
+            <li className="space-y-3 rounded-xl border border-border bg-surface p-4 shadow-xs">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold leading-snug">{nombreAlumna(p)}</p>
+                  <Link
+                    href={enlaceFicha(p.alumna_id, "pendientes", mesParaLinks)}
+                    className="rounded font-semibold leading-snug hover:text-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                  >
+                    {nombreAlumna(p)}
+                  </Link>
                   <p className="mt-0.5 text-sm text-text-subtle">
                     {metodosTexto(p)}
                     {p.contacto && ` · paga ${p.contacto.nombre}`}
@@ -172,8 +200,9 @@ export default async function PagosPendientesPage({
               />
               <AnularPagoButton pagoId={p.id} />
             </li>
-          ))}
-        </ul>
+            ),
+          }))}
+        />
       )}
 
       {/* El recibo dejó de perderse al salir de la pantalla: acá está el de
@@ -195,9 +224,13 @@ export default async function PagosPendientesPage({
             </p>
           </div>
 
-          <ul className="space-y-2">
-            {verificados.map((p) => (
-              <li key={p.id} className="overflow-hidden rounded-xl border border-border bg-surface">
+          <ListaFiltrada
+            className="space-y-2"
+            items={verificados.map((p) => ({
+              clave: p.id,
+              ...alumnaDe(p),
+              fila: (
+              <li className="overflow-hidden rounded-xl border border-border bg-surface">
                 <details className="group">
                   <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm transition-colors duration-[var(--duration-fast)] ease-standard hover:bg-surface-muted">
                     <span className="min-w-0 flex-1">
@@ -238,14 +271,24 @@ export default async function PagosPendientesPage({
                         Este pago no tiene recibo guardado.
                       </p>
                     )}
-                    <AnularPagoButton pagoId={p.id} />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <AnularPagoButton pagoId={p.id} />
+                      <Link
+                        href={enlaceFicha(p.alumna_id, "pendientes", mesParaLinks)}
+                        className="rounded text-sm font-medium text-primary-600 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                      >
+                        Ver la ficha
+                      </Link>
+                    </div>
                   </div>
                 </details>
               </li>
-            ))}
-          </ul>
+              ),
+            }))}
+          />
         </section>
       )}
+      </FiltroAlumnas>
     </div>
   );
 }

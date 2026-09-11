@@ -55,6 +55,7 @@
 | — | **UI nueva** (rediseño de la interfaz) | Correcciones pre-UI | ✅ Terminado y **mergeada a `main`** el 2026-09-10 (fast-forward, 51 commits). Es lo que el club usa. Historia y decisiones del rediseño en [docs/diseno/estado-del-rediseno.md](docs/diseno/estado-del-rediseno.md) |
 | — | Participación en torneos: las 3 pantallas | UI nueva | ✅ Terminado (módulo 8 del rediseño) |
 | — | Reenvío de recibo de pago (el campo ya está) | UI nueva | ⬜ Pendiente |
+| — | Patch UI: Pagos (Deudores) y Torneos — los 4 bloques | UI nueva | ✅ Terminado el 2026-09-11. Causa raíz de las tarjetas partidas: no eran dos componentes, sino un `slice(0, 2)` con dos renders en la misma página, y el orden era por saldo. Detalle en el historial de septiembre |
 
 Estados: ⬜ Pendiente · 🟡 En progreso · ✅ Terminado
 

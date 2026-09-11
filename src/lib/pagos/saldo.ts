@@ -1,4 +1,5 @@
 import type { createClient } from "@/lib/supabase/server";
+import { compararAlumnas } from "@/lib/utils/texto";
 import { RECARGO_MONTO, diasDeAtraso, haPasadoDiaLimite } from "./reglas";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -115,7 +116,8 @@ function motivoDeDeuda(montoPagado: number, cuota: number): MotivoDeuda {
 }
 
 /**
- * Alumnas con saldo pendiente de un mes, de mayor a menor.
+ * Alumnas con saldo pendiente de un mes, en orden alfabético y con las de
+ * baja al final.
  *
  * **La baja no cancela la deuda** (2026-09-08). Antes esto filtraba
  * `estado = 'activa'`, así que dar de baja a una alumna la sacaba del reporte
@@ -191,7 +193,10 @@ export async function calcularDeudorasDelMes(
     });
   }
 
-  deudoras.sort((a, b) => b.saldo - a.saldo);
+  // Alfabético de punta a punta, con las bajas agrupadas al final para que no
+  // estorben el cobro diario. Antes era por saldo, de mayor a menor: con
+  // recargos y pagos parciales, las «A» quedaban repartidas en dos tramos.
+  deudoras.sort((a, b) => Number(a.deBaja) - Number(b.deBaja) || compararAlumnas(a, b));
 
   return {
     deudoras,

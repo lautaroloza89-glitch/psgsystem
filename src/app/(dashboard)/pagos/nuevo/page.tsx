@@ -43,7 +43,32 @@ export default async function NuevoPagoPage({
     grupoNombre: (a.grupo as unknown as { nombre: string } | null)?.nombre ?? "Sin grupo",
   }));
 
+  // «Cobrar» sobre una alumna de baja que quedó debiendo: no está en el
+  // listado (el buscador es de activas), así que se la trae aparte. Antes caía
+  // en el buscador vacío y no había forma de cobrarle desde Deudores.
+  let alumnaInicial = alumnaParam ? alumnas.find((a) => a.id === alumnaParam) ?? null : null;
+  if (alumnaParam && !alumnaInicial) {
+    const { data: deBaja } = await supabase
+      .from("alumnas")
+      .select("id, apellido, nombre, grupo:grupos(nombre)")
+      .eq("id", alumnaParam)
+      .not("grupo_id", "is", null)
+      .maybeSingle();
+
+    if (deBaja) {
+      alumnaInicial = {
+        id: deBaja.id,
+        apellido: deBaja.apellido,
+        nombre: deBaja.nombre,
+        grupoNombre: (deBaja.grupo as unknown as { nombre: string } | null)?.nombre ?? "Sin grupo",
+      };
+    }
+  }
+
   const alumnaIds = alumnas.map((a) => a.id);
+  if (alumnaInicial && !alumnaIds.includes(alumnaInicial.id)) {
+    alumnaIds.push(alumnaInicial.id);
+  }
   const contactosPorAlumna: Record<string, ContactoOpcion[]> = {};
 
   if (alumnaIds.length > 0) {
@@ -59,10 +84,6 @@ export default async function NuevoPagoPage({
     }
   }
 
-  // Una alumna de baja que quedó debiendo no está en `alumnas` (el listado es
-  // de activas), así que «Cobrar» sobre ella no la resolvería. No es un caso
-  // roto: cae en el buscador, que es de donde salía antes.
-  const alumnaInicial = alumnaParam ? alumnas.find((a) => a.id === alumnaParam) ?? null : null;
   const mesInicial =
     mesParam && /^\d{4}-\d{2}$/.test(mesParam) ? mesParam : hoyArgentina().slice(0, 7);
 

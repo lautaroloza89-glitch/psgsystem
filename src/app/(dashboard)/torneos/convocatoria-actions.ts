@@ -142,16 +142,115 @@ export async function guardarCategoria(
   return { error: null };
 }
 
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+function montoValido(monto: number | null): boolean {
+  return monto === null || (Number.isFinite(monto) && monto >= 0 && monto < 100_000_000);
+}
+
+/**
+ * Guarda el monto que la lista venía **sugiriendo** para esta fila, solo si
+ * la fila sigue sin monto propio. La sugerencia (el monto cargado a otra
+ * alumna del mismo torneo) no se escribe sola: se confirma recién cuando se
+ * actúa sobre la fila — se la marca paga o se le pone el recargo.
+ */
+async function guardarSugerenciaSiFalta(
+  supabase: Supabase,
+  torneoId: string,
+  participanteId: string,
+  montoSugerido: number | null
+) {
+  if (montoSugerido === null || !montoValido(montoSugerido)) return;
+  await supabase
+    .from("torneo_participantes")
+    .update({ inscripcion_monto: montoSugerido })
+    .eq("id", participanteId)
+    .eq("torneo_id", torneoId)
+    .is("inscripcion_monto", null);
+}
+
+/**
+ * El monto de la inscripción de una alumna. Varía por torneo y a veces por
+ * alumna (media beca, categoría doble), así que se escribe fila por fila,
+ * igual que la categoría. `null` lo deja vacío.
+ */
+export async function guardarMontoInscripcion(
+  torneoId: string,
+  participanteId: string,
+  monto: number | null
+): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!puedeGestionarConvocatoria(profile)) {
+    return { error: "No tenés permiso para editar el monto." };
+  }
+  if (!montoValido(monto)) {
+    return { error: "El monto no es válido." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("torneo_participantes")
+    .update({ inscripcion_monto: monto })
+    .eq("id", participanteId)
+    .eq("torneo_id", torneoId);
+
+  if (error) {
+    return { error: "No se pudo guardar el monto." };
+  }
+
+  revalidarTorneo(torneoId);
+  return { error: null };
+}
+
+/**
+ * Prende o apaga el recargo de una alumna. Igual que en cuotas, **no es
+ * automático por fecha**: lo marca quien cobra, que es quien sabe si pagó
+ * tarde. El valor es `RECARGO_MONTO`, el mismo de Pagos.
+ */
+export async function alternarRecargoInscripcion(
+  torneoId: string,
+  participanteId: string,
+  aplicado: boolean,
+  montoSugerido: number | null
+): Promise<FormState> {
+  const profile = await getCurrentUserProfile();
+  if (!puedeGestionarConvocatoria(profile)) {
+    return { error: "No tenés permiso para tocar el recargo." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("torneo_participantes")
+    .update({ recargo_aplicado: aplicado })
+    .eq("id", participanteId)
+    .eq("torneo_id", torneoId);
+
+  if (error) {
+    return { error: "No se pudo guardar el recargo." };
+  }
+
+  if (aplicado) {
+    await guardarSugerenciaSiFalta(supabase, torneoId, participanteId, montoSugerido);
+  }
+
+  revalidarTorneo(torneoId);
+  return { error: null };
+}
+
 /**
  * El estado de la inscripción. **No toca `pagos`**: lo que la alumna paga para
  * competir se gira a la organización del torneo, no entra al club, así que no
  * puede sumar a la recaudación ni contarse contra la cuota del mes (decisión
  * de Lauti, 2026-09-09).
+ *
+ * Al marcarla paga, si la fila no tenía monto propio se guarda el que la lista
+ * le sugería: una inscripción paga sin monto dejaría la planilla sin la cifra.
  */
 export async function cambiarEstadoInscripcion(
   torneoId: string,
   participanteId: string,
-  estado: string
+  estado: string,
+  montoSugerido: number | null = null
 ): Promise<FormState> {
   const profile = await getCurrentUserProfile();
   if (!puedeGestionarConvocatoria(profile)) {
@@ -171,6 +270,10 @@ export async function cambiarEstadoInscripcion(
 
   if (error) {
     return { error: "No se pudo actualizar la inscripción." };
+  }
+
+  if (estado === "Paga") {
+    await guardarSugerenciaSiFalta(supabase, torneoId, participanteId, montoSugerido);
   }
 
   revalidarTorneo(torneoId);

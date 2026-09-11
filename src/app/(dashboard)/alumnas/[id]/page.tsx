@@ -7,6 +7,7 @@ import { puedeGestionarAlumnas } from "@/lib/permisos";
 import { BackButton } from "@/components/ui/BackButton";
 import { AccionesAlumna } from "@/components/alumnas/AccionesAlumna";
 import { datosDeFichaAlumna, edadDe } from "@/lib/alumnas/ficha";
+import { volverDesdeFicha } from "@/lib/alumnas/origen";
 import { mesActualISO } from "@/lib/pagos/reglas";
 import { formatMonto } from "@/lib/utils/money";
 import { enlaceWhatsapp, primerNombre } from "@/lib/utils/whatsapp";
@@ -73,10 +74,14 @@ function Recuadro({
 
 export default async function AlumnaDetallePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  /** De dónde se abrió la ficha: la flecha vuelve ahí (ver `lib/alumnas/origen.ts`). */
+  searchParams: Promise<{ from?: string; mes?: string }>;
 }) {
   const { id } = await params;
+  const { from, mes } = await searchParams;
   const profile = await getCurrentUserProfile();
 
   if (!puedeGestionarAlumnas(profile)) {
@@ -121,7 +126,7 @@ export default async function AlumnaDetallePage({
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <BackButton href="/alumnas" />
+      <BackButton href={volverDesdeFicha(alumna.id, from, mes)} />
 
       <div className="flex items-start gap-3">
         <span

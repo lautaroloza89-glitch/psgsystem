@@ -35,7 +35,8 @@ export async function GET(
     return new NextResponse("Torneo no encontrado", { status: 404 });
   }
 
-  const convocadas = await convocadasDeTorneo(supabase, id, puedeGestionarConvocatoria(profile));
+  const conPlata = puedeGestionarConvocatoria(profile);
+  const convocadas = await convocadasDeTorneo(supabase, id, conPlata);
 
   // `Copa González Molina` → `copa-gonzalez-molina-2026-10-04.csv`: sin tildes
   // ni espacios, que es lo que sobrevive a mandarlo por mail o WhatsApp.
@@ -43,7 +44,7 @@ export async function GET(
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")}-${torneo.fecha_inicio}.csv`;
 
-  return new NextResponse(planillaCsv(convocadas), {
+  return new NextResponse(planillaCsv(convocadas, conPlata), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="${nombreArchivo}"`,

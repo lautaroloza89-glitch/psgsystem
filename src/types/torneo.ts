@@ -29,6 +29,8 @@ export interface TorneoParticipante {
   categoria: string | null;
   inscripcion_estado: EstadoInscripcion;
   inscripcion_monto: number | null;
+  /** Se le cobró el recargo: suma `RECARGO_MONTO` (el mismo de Pagos) al monto. */
+  recargo_aplicado: boolean;
   pago_id: string | null;
   convocada_por: string;
   creado_en: string;

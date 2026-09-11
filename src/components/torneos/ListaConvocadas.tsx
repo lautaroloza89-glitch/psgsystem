@@ -4,10 +4,14 @@ import { useMemo, useState, useTransition } from "react";
 import type { Convocada } from "@/lib/torneos/convocatoria";
 import type { EstadoInscripcion } from "@/types";
 import {
+  alternarRecargoInscripcion,
   cambiarEstadoInscripcion,
   guardarCategoria,
+  guardarMontoInscripcion,
   quitarConvocada,
 } from "@/app/(dashboard)/torneos/convocatoria-actions";
+import { RECARGO_MONTO, totalInscripcion } from "@/lib/torneos/inscripcion";
+import { formatMonto, formatNumero, parsearMonto } from "@/lib/utils/money";
 import { Spinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -46,6 +50,14 @@ export function ListaConvocadas({
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [error, setError] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
+  // El último monto que se escribió a mano en esta pantalla.
+  const [ultimoMonto, setUltimoMonto] = useState<number | null>(null);
+
+  // La cascada: el monto cargado a una alumna se sugiere en las casillas
+  // vacías de las demás. Es solo un valor en el campo — no se guarda hasta
+  // que se actúa sobre esa fila, y nunca pisa un monto ya cargado.
+  const sugerencia =
+    ultimoMonto ?? convocadas.find((c) => c.inscripcionMonto != null)?.inscripcionMonto ?? null;
 
   const sinPagar = useMemo(
     () => convocadas.filter((c) => c.inscripcionEstado === "Pendiente").length,
@@ -103,7 +115,9 @@ export function ListaConvocadas({
       )}
 
       <ul className="space-y-2">
-        {visibles.map((c) => (
+        {visibles.map((c) => {
+          const sugerenciaFila = c.inscripcionMonto == null ? sugerencia : null;
+          return (
           <li
             key={c.id}
             className="space-y-3 rounded-xl border border-border bg-surface p-4 shadow-xs"
@@ -127,11 +141,18 @@ export function ListaConvocadas({
               {verPlata && c.inscripcionEstado && (
                 <EstadoInscripcionControl
                   estado={c.inscripcionEstado}
-                  monto={c.inscripcionMonto}
+                  monto={totalInscripcion(c)}
                   puedeGestionar={puedeGestionar}
                   pendiente={pendiente}
                   onCambiar={(nuevo) =>
-                    ejecutar(() => cambiarEstadoInscripcion(torneoId, c.id, nuevo))
+                    ejecutar(() =>
+                      cambiarEstadoInscripcion(
+                        torneoId,
+                        c.id,
+                        nuevo,
+                        nuevo === "Paga" ? sugerenciaFila : null
+                      )
+                    )
                   }
                 />
               )}
@@ -143,6 +164,52 @@ export function ListaConvocadas({
                 puedeEditar={puedeGestionar}
                 onGuardar={(valor) => ejecutar(() => guardarCategoria(torneoId, c.id, valor))}
               />
+              {verPlata && (
+                <>
+                  <CampoMonto
+                    valorGuardado={c.inscripcionMonto}
+                    sugerencia={sugerenciaFila}
+                    puedeEditar={puedeGestionar}
+                    onGuardar={(monto) => {
+                      if (monto !== null) setUltimoMonto(monto);
+                      ejecutar(() => guardarMontoInscripcion(torneoId, c.id, monto));
+                    }}
+                  />
+                  {/* Prendido: el total cobrado a la alumna incluye el recargo.
+                      Mismo valor que en cuotas (`RECARGO_MONTO`), y se marca a
+                      mano: no se aplica solo por fecha. */}
+                  {puedeGestionar ? (
+                    <button
+                      type="button"
+                      aria-pressed={!!c.recargoAplicado}
+                      disabled={pendiente}
+                      onClick={() =>
+                        ejecutar(() =>
+                          alternarRecargoInscripcion(
+                            torneoId,
+                            c.id,
+                            !c.recargoAplicado,
+                            sugerenciaFila
+                          )
+                        )
+                      }
+                      className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-standard disabled:opacity-50 ${CLASE_FOCO} ${
+                        c.recargoAplicado
+                          ? "border-primary-500 bg-primary-500 text-on-primary"
+                          : "border-border text-text-subtle hover:border-border-strong hover:text-text"
+                      }`}
+                    >
+                      {c.recargoAplicado ? "Con recargo" : "+ Recargo"} {formatMonto(RECARGO_MONTO)}
+                    </button>
+                  ) : (
+                    c.recargoAplicado && (
+                      <span className="text-sm text-text-subtle">
+                        + recargo {formatMonto(RECARGO_MONTO)}
+                      </span>
+                    )
+                  )}
+                </>
+              )}
               {puedeGestionar && (
                 <button
                   type="button"
@@ -158,7 +225,8 @@ export function ListaConvocadas({
               )}
             </div>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       {visibles.length === 0 && (
@@ -212,6 +280,101 @@ function CampoCategoria({
   );
 }
 
+/**
+ * El monto de la inscripción: mismo comportamiento que la categoría — se
+ * escribe en la fila y se guarda al salir del foco (o con Enter).
+ *
+ * Si la fila no tiene monto propio y otra alumna del torneo sí, el campo
+ * muestra ese valor como **sugerencia**, en gris. Es solo eso: no se guarda por
+ * aparecer. Queda confirmado si se edita, si se toca Enter sobre él, o si se
+ * marca la inscripción paga o con recargo.
+ */
+function CampoMonto({
+  valorGuardado,
+  sugerencia,
+  puedeEditar,
+  onGuardar,
+}: {
+  valorGuardado: number | null;
+  sugerencia: number | null;
+  puedeEditar: boolean;
+  onGuardar: (monto: number | null) => void;
+}) {
+  const [texto, setTexto] = useState("");
+  const [tocado, setTocado] = useState(false);
+  const [invalido, setInvalido] = useState(false);
+
+  if (!puedeEditar) {
+    return (
+      <p className="text-sm">
+        <span className="text-text-subtle">Monto: </span>
+        {valorGuardado != null ? (
+          formatMonto(valorGuardado)
+        ) : (
+          <span className="text-text-subtle">sin cargar</span>
+        )}
+      </p>
+    );
+  }
+
+  const muestraSugerencia = !tocado && valorGuardado == null && sugerencia != null;
+  const valor = tocado
+    ? texto
+    : valorGuardado != null
+      ? formatNumero(valorGuardado)
+      : sugerencia != null
+        ? formatNumero(sugerencia)
+        : "";
+
+  function guardar() {
+    if (!tocado) return;
+    const monto = parsearMonto(texto);
+    if (monto !== null && Number.isNaN(monto)) {
+      setInvalido(true);
+      return;
+    }
+    setInvalido(false);
+    if (monto === valorGuardado) return;
+    onGuardar(monto);
+  }
+
+  return (
+    <label className="flex items-center gap-2 text-sm">
+      <span className="text-text-subtle">Monto $</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={valor}
+        onChange={(e) => {
+          setTocado(true);
+          setTexto(e.target.value);
+        }}
+        onBlur={guardar}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          // Enter sobre la sugerencia sin tocarla es la forma de aceptarla.
+          if (muestraSugerencia && sugerencia != null) {
+            setTocado(true);
+            setTexto(formatNumero(sugerencia));
+            onGuardar(sugerencia);
+            return;
+          }
+          e.currentTarget.blur();
+        }}
+        placeholder="Escribilo"
+        aria-invalid={invalido}
+        title={muestraSugerencia ? "Sugerido: se guarda al editarlo, con Enter o al marcarla paga" : undefined}
+        className={`w-28 rounded-md border px-2 py-1.5 text-sm tabular-nums transition-colors duration-[var(--duration-fast)] ease-standard focus:border-primary-500 ${CLASE_FOCO} ${
+          invalido ? "border-error-500" : "border-border-strong"
+        } ${muestraSugerencia ? "italic text-text-subtle" : ""}`}
+      />
+      {muestraSugerencia && <span className="text-xs text-text-subtle">sugerido</span>}
+      {invalido && <span className="text-xs text-error-600">no es un monto</span>}
+    </label>
+  );
+}
+
 const ESTADOS: EstadoInscripcion[] = ["Pendiente", "Paga", "Exenta"];
 
 const ESTILO_ESTADO: Record<EstadoInscripcion, string> = {
@@ -241,11 +404,14 @@ function EstadoInscripcionControl({
   pendiente: boolean;
   onCambiar: (estado: EstadoInscripcion) => void;
 }) {
+  // `monto` ya trae el recargo sumado si se aplicó.
   const etiqueta =
-    estado === "Pendiente" && monto
-      ? `Sin pagar · $${monto.toLocaleString("es-AR")}`
-      : estado === "Pendiente"
-        ? "Sin pagar"
+    estado === "Pendiente"
+      ? monto
+        ? `Sin pagar · ${formatMonto(monto)}`
+        : "Sin pagar"
+      : estado === "Paga" && monto
+        ? `Paga · ${formatMonto(monto)}`
         : estado;
 
   const clase = `flex-none rounded-full border px-3 py-1 text-sm font-medium ${ESTILO_ESTADO[estado]}`;

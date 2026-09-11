@@ -462,6 +462,7 @@ Bloque 5 de las Correcciones pre-UI (2026-09-08). Una fila por alumna convocada 
 | `categoria` | `text` | nullable, **texto libre sin enum ni validación** — ver nota abajo |
 | `inscripcion_estado` | `text` | `not null`, default `'Pendiente'`, check: `'Pendiente' \| 'Paga' \| 'Exenta'` — `'Exenta'` porque a veces no se cobra |
 | `inscripcion_monto` | `numeric(10,2)` | nullable — se precarga de `torneos.inscripcion_monto` y se puede pisar por alumna |
+| `recargo_aplicado` | `boolean` | `not null`, default `false` — se le cobró el recargo; suma `RECARGO_MONTO` (la constante de Pagos, no un segundo valor). Migración `20260911120000_torneo_participantes_recargo.sql`, aditiva, sin cambios de RLS |
 | `pago_id` | `uuid` | FK a `pagos(id)`, nullable, `on delete set null` — une la inscripción con el pago real |
 | `convocada_por` | `uuid` | FK a `users(id)`, `not null`, `on delete restrict` — mismo criterio que `asistencia.registrado_por` y `pagos.registrado_por` |
 | `creado_en` | `timestamptz` | default `now()` |

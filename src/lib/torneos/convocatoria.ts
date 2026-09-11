@@ -2,6 +2,8 @@ import type { createClient } from "@/lib/supabase/server";
 import type { EstadoInscripcion } from "@/types";
 import { calcularDeudorasDelMes } from "@/lib/pagos/saldo";
 import { primerDiaDeMes } from "@/lib/utils/date";
+import { formatNumero } from "@/lib/utils/money";
+import { RECARGO_MONTO, totalInscripcion } from "./inscripcion";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -38,6 +40,8 @@ export interface Convocada {
   /** `null` para quien no puede ver la plata (Profesor). */
   inscripcionEstado: EstadoInscripcion | null;
   inscripcionMonto: number | null;
+  /** Se le cobró el recargo. `null` para quien no puede ver la plata. */
+  recargoAplicado: boolean | null;
 }
 
 /** Una alumna en el listado desde el que se convoca. */
@@ -63,6 +67,7 @@ interface FilaParticipante {
   categoria: string | null;
   inscripcion_estado: EstadoInscripcion;
   inscripcion_monto: number | null;
+  recargo_aplicado: boolean;
   alumna: {
     apellido: string;
     nombre: string;
@@ -72,7 +77,7 @@ interface FilaParticipante {
 }
 
 const SELECT_PARTICIPANTE =
-  "id, alumna_id, categoria, inscripcion_estado, inscripcion_monto, alumna:alumnas(apellido, nombre, dni, fecha_nacimiento)";
+  "id, alumna_id, categoria, inscripcion_estado, inscripcion_monto, recargo_aplicado, alumna:alumnas(apellido, nombre, dni, fecha_nacimiento)";
 
 /** Ordena como la planilla: por apellido y después por nombre. */
 function porApellido(a: Convocada, b: Convocada): number {
@@ -111,7 +116,9 @@ export async function convocadasDeTorneo(
       fechaNacimiento: fila.alumna?.fecha_nacimiento ?? null,
       categoria: fila.categoria,
       inscripcionEstado: conPlata ? fila.inscripcion_estado : null,
-      inscripcionMonto: conPlata ? fila.inscripcion_monto : null,
+      inscripcionMonto:
+        conPlata && fila.inscripcion_monto != null ? Number(fila.inscripcion_monto) : null,
+      recargoAplicado: conPlata ? fila.recargo_aplicado : null,
     }))
     .sort(porApellido);
 }
@@ -204,24 +211,53 @@ function celda(valor: string): string {
 }
 
 /**
+ * La celda «Monto»: lo que efectivamente pagó. Con recargo va desglosado
+ * («60.000 + 10.000») para que se vea de dónde sale la diferencia.
+ */
+function montoParaPlanilla(c: Convocada): string {
+  if (c.inscripcionEstado === "Exenta") return "Exenta";
+  if (c.inscripcionEstado !== "Paga") return "Sin pagar";
+  if (c.inscripcionMonto == null) return "";
+  return c.recargoAplicado
+    ? `${formatNumero(c.inscripcionMonto)} + ${formatNumero(RECARGO_MONTO)}`
+    : formatNumero(c.inscripcionMonto);
+}
+
+/**
  * La planilla que se manda a la organización: nombre, DNI, fecha de nacimiento
  * y categoría, las mismas columnas de siempre.
+ *
+ * Con `conPlata` se suma la columna **Monto** (lo pagado por cada una, con el
+ * recargo a la vista) y el **total al pie**, que suma solo las que pagaron.
+ * Sin `conPlata` —la Profesora también puede bajarla— la planilla sale sin
+ * plata, igual que la pantalla.
  *
  * Separador `;` y BOM: es lo que hace que Excel en español abra el archivo en
  * columnas de una, sin pasar por el asistente de importación. Las alumnas sin
  * fecha de nacimiento van igual, con la celda vacía — la pantalla avisa
  * cuántas son antes de bajarlo.
  */
-export function planillaCsv(convocadas: Convocada[]): string {
+export function planillaCsv(convocadas: Convocada[], conPlata: boolean): string {
+  const encabezado = ["Apellido y nombre", "DNI", "Fecha de nacimiento", "Categoría"];
   const filas = [
-    ["Apellido y nombre", "DNI", "Fecha de nacimiento", "Categoría"],
-    ...convocadas.map((c) => [
-      `${c.apellido}, ${c.nombre}`,
-      c.dni ?? "",
-      fechaParaPlanilla(c.fechaNacimiento),
-      c.categoria ?? "",
-    ]),
+    conPlata ? [...encabezado, "Monto"] : encabezado,
+    ...convocadas.map((c) => {
+      const fila = [
+        `${c.apellido}, ${c.nombre}`,
+        c.dni ?? "",
+        fechaParaPlanilla(c.fechaNacimiento),
+        c.categoria ?? "",
+      ];
+      return conPlata ? [...fila, montoParaPlanilla(c)] : fila;
+    }),
   ];
+
+  if (conPlata) {
+    const total = convocadas
+      .filter((c) => c.inscripcionEstado === "Paga")
+      .reduce((acc, c) => acc + (totalInscripcion(c) ?? 0), 0);
+    filas.push(["Total", "", "", "", formatNumero(total)]);
+  }
 
   return `﻿${filas.map((f) => f.map(celda).join(";")).join("\r\n")}\r\n`;
 }
