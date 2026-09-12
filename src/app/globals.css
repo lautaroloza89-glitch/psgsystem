@@ -152,6 +152,19 @@ body {
   color: var(--color-text);
 }
 
+/* El rebote del scroll de iOS despegaba la barra de pestañas.
+   Instalada en la pantalla de inicio de un iPhone, al llegar al final de una
+   lista el documento entero rebota, y con él se mueve todo lo que está en
+   `position: fixed` — la barra saltaba y quedaba flotando en el medio. En
+   Chrome no se notaba porque la barra del navegador se come el gesto.
+   `overscroll-behavior-y: none` corta ese rebote sin tocar el scroll normal.
+   Va en `html` y en `body` porque Safari decide el rebote del documento
+   mirando los dos. */
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
 /* iOS Safari hace zoom automático al enfocar un input con font-size < 16px
    y no siempre vuelve al nivel original al desenfocar. El !important es
    necesario para pisar las utilidades de Tailwind (text-sm, text-label, etc.)

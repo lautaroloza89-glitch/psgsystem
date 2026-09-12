@@ -14,7 +14,11 @@ export function AppHeader({ profile }: { profile: User }) {
   const primerNombre = profile.nombre.split(" ")[0];
 
   return (
-    <header className="border-b border-border bg-surface">
+    // El `pt-` del área segura es la contraparte de `viewport-fit=cover`: en la
+    // pantalla de inicio de un iPhone el contenido se dibuja debajo de la barra
+    // de estado, así que sin esto la hora y la señal taparían el saludo. El
+    // fondo del encabezado sube y cubre esa franja.
+    <header className="border-b border-border bg-surface pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-8">
         <div className="min-w-0">
           <p className="truncate text-xl font-bold tracking-tight sm:text-2xl">
